@@ -15,7 +15,8 @@ services:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
     volumes:
-      - ../sql/gitclub.sql:/docker-entrypoint-initdb.d/1-gitclub.sql
+      - ../sql/openfga.sql:/docker-entrypoint-initdb.d/1-openfga.sql
+      - ../sql/gitclub.sql:/docker-entrypoint-initdb.d/2-gitclub.sql
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
       interval: 5s
@@ -31,7 +32,7 @@ services:
     command: migrate
     environment:
       - OPENFGA_DATASTORE_ENGINE=postgres
-      - OPENFGA_DATASTORE_URI=postgres://postgres:password@postgres:5432/postgres?sslmode=disable
+      - OPENFGA_DATASTORE_URI=postgres://postgres:password@postgres:5432/postgres?sslmode=disable&search_path=openfga
     networks:
       - openfga
 
@@ -43,7 +44,7 @@ services:
     container_name: openfga
     environment:
       - OPENFGA_DATASTORE_ENGINE=postgres
-      - OPENFGA_DATASTORE_URI=postgres://postgres:password@postgres:5432/postgres?sslmode=disable
+      - OPENFGA_DATASTORE_URI=postgres://postgres:password@postgres:5432/postgres?sslmode=disable&search_path=openfga
       - OPENFGA_LOG_FORMAT=json
     command: run
     networks:
