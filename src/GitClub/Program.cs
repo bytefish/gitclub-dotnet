@@ -104,7 +104,7 @@ try
     });
 
     // Add Exception Handling
-    builder.Services.AddSingleton<IExceptionTranslator, DefaultErrorExceptionTranslator>();
+    builder.Services.AddSingleton<IExceptionTranslator, DefaultExceptionTranslator>();
     builder.Services.AddSingleton<IExceptionTranslator, ApplicationErrorExceptionTranslator>();
     builder.Services.AddSingleton<IExceptionTranslator, InvalidModelStateExceptionTranslator>();
 

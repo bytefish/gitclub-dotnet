@@ -5,11 +5,11 @@ using GitClub.Models;
 
 namespace GitClub.Infrastructure.Errors.Translators
 {
-    public class DefaultErrorExceptionTranslator : IExceptionTranslator
+    public class DefaultExceptionTranslator : IExceptionTranslator
     {
-        private readonly ILogger<DefaultErrorExceptionTranslator> _logger;
+        private readonly ILogger<DefaultExceptionTranslator> _logger;
 
-        public DefaultErrorExceptionTranslator(ILogger<DefaultErrorExceptionTranslator> logger)
+        public DefaultExceptionTranslator(ILogger<DefaultExceptionTranslator> logger)
         {
             _logger = logger;
         }
