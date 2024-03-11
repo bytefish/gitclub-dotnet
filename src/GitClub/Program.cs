@@ -1,6 +1,11 @@
 using Serilog.Filters;
 using Serilog.Sinks.SystemConsole.Themes;
 using Serilog;
+using OpenFga.Sdk.Client;
+using GitClub.Services;
+using GitClub.Database;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 // We will log to %LocalAppData%/RebacExperiments to store the Logs, so it doesn't need to be configured 
 // to a different path, when you run it on your machine.
@@ -30,7 +35,50 @@ try
         .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
         .AddEnvironmentVariables();
 
-    // Add services to the container.
+    // Logging
+    builder.Services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
+
+    // Database
+    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    {
+        var connectionString = builder.Configuration.GetConnectionString("ApplicationDatabase");
+
+        if (connectionString == null)
+        {
+            throw new InvalidOperationException("No ConnectionString named 'ApplicationDatabase' was found");
+        }
+
+        // Since version 7.0, NpgsqlDataSource is the recommended way to use Npgsql. When using NpsgqlDataSource,
+        // NodaTime currently has to be configured twice - once at the EF level, and once at the underlying ADO.NET
+        // level (there are plans to improve this):
+        var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
+
+        // Call UseNodaTime() when building your data source:
+        dataSourceBuilder.UseNodaTime();
+
+        var dataSource = dataSourceBuilder.Build();
+
+        // Then, when configuring EF Core with UseNpgsql(), call UseNodaTime() there as well:
+        options
+            .EnableSensitiveDataLogging()
+            .UseNpgsql(dataSource, options => options.UseNodaTime());
+    });
+
+    // OpenFGA
+    builder.Services.AddSingleton<OpenFgaClient>(sp =>
+    {
+        var configuration = new ClientConfiguration
+        {
+            ApiUrl = builder.Configuration.GetValue<string>("OpenFGA:ApiUrl")!,
+            StoreId = builder.Configuration.GetValue<string>("OpenFGA:StoreId")!,
+            AuthorizationModelId = builder.Configuration.GetValue<string>("OpenFGA:AuthorizationModelId")!,
+        };
+
+        return new OpenFgaClient(configuration);
+    });
+
+    builder.Services.AddScoped<AclService>();
+
 
     builder.Services.AddControllers();
 

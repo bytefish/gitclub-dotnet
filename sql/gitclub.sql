@@ -46,6 +46,7 @@ CREATE SEQUENCE IF NOT EXISTS gitclub.repository_role_seq
 CREATE TABLE IF NOT EXISTS gitclub.user (
 	user_id integer default nextval('gitclub.user_seq'),
 	email varchar(2000) not null,
+	preferred_name varchar(2000) not null,
 	last_edited_by integer not null,
 	sys_period tstzrange not null default tstzrange(current_timestamp, null),
 	CONSTRAINT user_pkey
@@ -58,7 +59,7 @@ CREATE TABLE IF NOT EXISTS gitclub.user (
 CREATE TABLE IF NOT EXISTS gitclub.organization (
 	organization_id integer default nextval('gitclub.organization_seq'),
 	name varchar(255) not null,
-	base_repo_role varchar(255) not null,
+	base_repository_role varchar(255) not null,
 	billing_address text null,
 	last_edited_by integer not null,
 	sys_period tstzrange not null default tstzrange(current_timestamp, null),
@@ -91,7 +92,7 @@ CREATE TABLE IF NOT EXISTS gitclub.issue (
 	content text not null,
 	closed boolean default false,
 	repository_id integer not null,
-	creator_id integer not null,
+	created_by integer not null,
 	last_edited_by integer not null,
 	sys_period tstzrange not null default tstzrange(current_timestamp, null),
 	CONSTRAINT issue_pkey
@@ -99,8 +100,8 @@ CREATE TABLE IF NOT EXISTS gitclub.issue (
 	CONSTRAINT issue_repository_id_fkey 
 		FOREIGN KEY (repository_id)
 		REFERENCES gitclub.repository(repository_id),
-	CONSTRAINT issue_creator_id_fkey 
-		FOREIGN KEY (creator_id)
+	CONSTRAINT issue_created_by_fkey 
+		FOREIGN KEY (created_by)
 		REFERENCES gitclub.user(user_id),
 	CONSTRAINT issue_last_edited_by_fkey 
 		FOREIGN KEY (last_edited_by)
