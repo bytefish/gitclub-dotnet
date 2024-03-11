@@ -1,8 +1,8 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using RebacExperiments.Server.Api.Infrastructure.Errors;
+using GitClub.Infrastructure.Errors;
 
-namespace RebacExperiments.Server.Api.Infrastructure.Exceptions
+namespace GitClub.Infrastructure.Exceptions
 {
     public class EntityUnauthorizedAccessException : ApplicationErrorException
     {

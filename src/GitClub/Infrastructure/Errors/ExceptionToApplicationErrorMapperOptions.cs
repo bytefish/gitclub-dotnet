@@ -1,6 +1,6 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace RebacExperiments.Server.Api.Infrastructure.Errors
+namespace GitClub.Infrastructure.Errors
 {
     /// <summary>
     /// Options for the <see cref="ExceptionToODataErrorMapper"/>.

@@ -8,6 +8,10 @@ using Microsoft.EntityFrameworkCore;
 using Npgsql;
 using RebacExperiments.Server.Api.Infrastructure.Errors.Translators;
 using RebacExperiments.Server.Api.Infrastructure.Errors;
+using GitClub.Infrastructure.Constants;
+using System.Security.Claims;
+using System.Threading.RateLimiting;
+using RebacExperiments.Server.Api.Infrastructure.Constants;
 
 // We will log to %LocalAppData%/RebacExperiments to store the Logs, so it doesn't need to be configured 
 // to a different path, when you run it on your machine.
@@ -119,6 +123,41 @@ try
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
+    // Add Policies
+    builder.Services.AddAuthorization(options =>
+    {
+        options.AddPolicy(Policies.RequireUserRole, policy => policy.RequireRole(Roles.User));
+        options.AddPolicy(Policies.RequireAdminRole, policy => policy.RequireRole(Roles.Administrator));
+    });
+
+    // Add the Rate Limiting
+    builder.Services.AddRateLimiter(options =>
+    {
+        options.OnRejected = (context, cancellationToken) =>
+        {
+            context.HttpContext.Response.StatusCode = StatusCodes.Status429TooManyRequests;
+
+            return ValueTask.CompletedTask;
+        };
+
+        options.AddPolicy(Policies.PerUserRatelimit, context =>
+        {
+            var username = context.User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            return RateLimitPartition.GetTokenBucketLimiter(username, key =>
+            {
+                return new()
+                {
+                    ReplenishmentPeriod = TimeSpan.FromSeconds(10),
+                    AutoReplenishment = true,
+                    TokenLimit = 100,
+                    TokensPerPeriod = 100,
+                    QueueLimit = 100,
+                };
+            });
+        });
+    });
+
     var app = builder.Build();
 
     // Use a Controller for handling the ASP.NET Core lower-level errors.
@@ -132,10 +171,15 @@ try
         app.UseSwaggerUI();
     }
 
+    // CORS
+    app.UseCors("CorsPolicy");
+
+    app.UseRateLimiter();
+
     app.UseHttpsRedirection();
 
     app.UseAuthorization();
-
+    app.UseRateLimiter();
     app.MapControllers();
 
     app.Run();
