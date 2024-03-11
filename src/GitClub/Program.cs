@@ -123,6 +123,7 @@ try
 
     // Use a Controller for handling the ASP.NET Core lower-level errors.
     app.UseExceptionHandler("/error");
+    app.UseStatusCodePagesWithReExecute("/error/{0}");
 
     // Configure the HTTP request pipeline.
     if (app.Environment.IsDevelopment())
