@@ -4,9 +4,9 @@ using OpenFga.Sdk.Client.Model;
 using OpenFga.Sdk.Client;
 using GitClub.Database;
 using GitClub.Database.Models;
-using GitClub.Extensions;
 using Microsoft.EntityFrameworkCore;
 using GitClub.Models;
+using GitClub.Infrastructure.Logging;
 
 namespace GitClub.Services
 {

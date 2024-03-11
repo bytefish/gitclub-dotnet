@@ -6,6 +6,8 @@ using GitClub.Services;
 using GitClub.Database;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using RebacExperiments.Server.Api.Infrastructure.Errors.Translators;
+using RebacExperiments.Server.Api.Infrastructure.Errors;
 
 // We will log to %LocalAppData%/RebacExperiments to store the Logs, so it doesn't need to be configured 
 // to a different path, when you run it on your machine.
@@ -79,7 +81,38 @@ try
 
     builder.Services.AddScoped<AclService>();
 
+    // CORS
+    builder.Services.AddCors(options =>
+    {
+        var allowedOrigins = builder.Configuration
+            .GetSection("AllowedOrigins")
+            .Get<string[]>();
 
+        if (allowedOrigins == null)
+        {
+            throw new InvalidOperationException("AllowedOrigins is missing in the appsettings.json");
+        }
+
+        options.AddPolicy("CorsPolicy", builder => builder
+            .WithOrigins(allowedOrigins)
+            .AllowAnyHeader()
+            .AllowAnyMethod()
+            .AllowCredentials());
+    });
+
+    // Add Exception Handling
+    builder.Services.AddSingleton<IExceptionTranslator, DefaultErrorExceptionTranslator>();
+    builder.Services.AddSingleton<IExceptionTranslator, ApplicationErrorExceptionTranslator>();
+    builder.Services.AddSingleton<IExceptionTranslator, InvalidModelStateExceptionTranslator>();
+
+    builder.Services.Configure<ExceptionToApplicationErrorMapperOptions>(o =>
+    {
+        o.IncludeExceptionDetails = builder.Environment.IsDevelopment() || builder.Environment.IsStaging();
+    });
+
+    builder.Services.AddSingleton<ExceptionToApplicationErrorMapper>();
+
+    // Controllers
     builder.Services.AddControllers();
 
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

@@ -2,7 +2,7 @@
 
 using System.Runtime.CompilerServices;
 
-namespace GitClub.Extensions
+namespace GitClub.Infrastructure.Logging
 {
     public static class LoggerExtensions
     {
@@ -79,7 +79,7 @@ namespace GitClub.Extensions
         {
             if (logger.IsTraceEnabled())
             {
-                logger.LogTrace("Method Entry (CallerFilePath = {CallerFilePath}, CallerLineNumber = {CallerLineNumber}, CallerMemberName = {CallerMemberName})", 
+                logger.LogTrace("Method Entry (CallerFilePath = {CallerFilePath}, CallerLineNumber = {CallerLineNumber}, CallerMemberName = {CallerMemberName})",
                     callerFilePath, callerLineNumber, callerMemberName);
             }
         }
