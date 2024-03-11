@@ -1,12 +1,11 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using GitClub.Infrastructure.Errors;
+using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
 using GitClub.Models;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
-using RebacExperiments.Server.Api.Infrastructure.Exceptions;
 
-namespace RebacExperiments.Server.Api.Infrastructure.Errors.Translators
+namespace GitClub.Infrastructure.Errors.Translators
 {
     public class InvalidModelStateExceptionTranslator : IExceptionTranslator
     {
@@ -20,7 +19,7 @@ namespace RebacExperiments.Server.Api.Infrastructure.Errors.Translators
         /// <inheritdoc/>
         public ApplicationErrorResult GetApplicationErrorResult(Exception exception, bool includeExceptionDetails)
         {
-            var invalidModelStateException = (InvalidModelStateException) exception;
+            var invalidModelStateException = (InvalidModelStateException)exception;
 
             return InternalGetODataErrorResult(invalidModelStateException, includeExceptionDetails);
         }

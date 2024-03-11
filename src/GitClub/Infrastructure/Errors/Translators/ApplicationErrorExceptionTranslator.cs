@@ -1,11 +1,10 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using GitClub.Infrastructure.Errors;
+using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
 using GitClub.Models;
-using RebacExperiments.Server.Api.Infrastructure.Exceptions;
 
-namespace RebacExperiments.Server.Api.Infrastructure.Errors.Translators
+namespace GitClub.Infrastructure.Errors.Translators
 {
     public class ApplicationErrorExceptionTranslator : IExceptionTranslator
     {

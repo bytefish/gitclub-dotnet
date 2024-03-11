@@ -1,12 +1,12 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using GitClub.Infrastructure.Errors;
 using GitClub.Infrastructure.Logging;
 using GitClub.Models;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
-using RebacExperiments.Server.Api.Infrastructure.Errors;
 
-namespace RebacExperiments.Server.Api.Controllers
+namespace GitClub.Controllers
 {
     public class ErrorController : ControllerBase
     {
@@ -52,7 +52,7 @@ namespace RebacExperiments.Server.Api.Controllers
 
             error.InnerError.AdditionalProperties["trace-id"] = HttpContext.TraceIdentifier;
 
-     
+
             return new ContentResult
             {
                 Content = error.ToString(),
@@ -71,15 +71,15 @@ namespace RebacExperiments.Server.Api.Controllers
                 Code = ErrorCodes.ResourceNotFound,
                 Message = "ResourceNotFound"
             };
-            
+
             error.InnerError = new ApplicationInnerError();
             error.InnerError.AdditionalProperties["trace-id"] = HttpContext.TraceIdentifier;
 
-            return new ContentResult 
-            { 
-                Content = error.ToString(), 
-                ContentType = "application/json", 
-                StatusCode = StatusCodes.Status404NotFound 
+            return new ContentResult
+            {
+                Content = error.ToString(),
+                ContentType = "application/json",
+                StatusCode = StatusCodes.Status404NotFound
             };
         }
 
@@ -97,9 +97,9 @@ namespace RebacExperiments.Server.Api.Controllers
             error.InnerError = new ApplicationInnerError();
             error.InnerError.AdditionalProperties["trace-id"] = HttpContext.TraceIdentifier;
 
-            return new ContentResult 
-            { 
-                Content = error.ToString(), 
+            return new ContentResult
+            {
+                Content = error.ToString(),
                 ContentType = "application/json",
                 StatusCode = StatusCodes.Status405MethodNotAllowed
             };

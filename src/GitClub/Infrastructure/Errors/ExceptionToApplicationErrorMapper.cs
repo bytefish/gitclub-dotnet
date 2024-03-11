@@ -1,12 +1,11 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using GitClub.Infrastructure.Errors;
+using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
 using GitClub.Models;
 using Microsoft.Extensions.Options;
-using RebacExperiments.Server.Api.Infrastructure.Exceptions;
 
-namespace RebacExperiments.Server.Api.Infrastructure.Errors
+namespace GitClub.Infrastructure.Errors
 {
     /// <summary>
     /// Handles errors returned by the application.
@@ -46,7 +45,7 @@ namespace RebacExperiments.Server.Api.Infrastructure.Errors
 
         private void AddMetadata(HttpContext httpContext, ApplicationErrorResult result)
         {
-            if(result.Error.InnerError == null)
+            if (result.Error.InnerError == null)
             {
                 result.Error.InnerError = new ApplicationInnerError();
             }

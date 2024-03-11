@@ -11,6 +11,11 @@
         public required string Email { get; set; }
 
         /// <summary>
+        /// Gets or sets the RememberMe flag.
+        /// </summary>
+        public bool RememberMe { get; set; } = true;
+
+        /// <summary>
         /// Gets or sets the list of roles for the user.
         /// </summary>
         public string[] Roles { get; set; } = [];

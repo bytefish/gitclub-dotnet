@@ -6,12 +6,11 @@ using GitClub.Services;
 using GitClub.Database;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
-using RebacExperiments.Server.Api.Infrastructure.Errors.Translators;
-using RebacExperiments.Server.Api.Infrastructure.Errors;
 using GitClub.Infrastructure.Constants;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
-using RebacExperiments.Server.Api.Infrastructure.Constants;
+using GitClub.Infrastructure.Errors.Translators;
+using GitClub.Infrastructure.Errors;
 
 // We will log to %LocalAppData%/RebacExperiments to store the Logs, so it doesn't need to be configured 
 // to a different path, when you run it on your machine.
@@ -115,6 +114,10 @@ try
     });
 
     builder.Services.AddSingleton<ExceptionToApplicationErrorMapper>();
+
+    // Application Services
+    builder.Services.AddScoped<UserService>();
+    builder.Services.AddScoped<OrganizationService>();
 
     // Controllers
     builder.Services.AddControllers();

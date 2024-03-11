@@ -1,8 +1,6 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using GitClub.Infrastructure.Errors;
-
-namespace RebacExperiments.Server.Api.Infrastructure.Errors
+namespace GitClub.Infrastructure.Errors
 {
     /// <summary>
     /// A Translator to convert from an <see cref="Exception"/> to an <see cref="ApplicationErrorResult"/>.
