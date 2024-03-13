@@ -2,7 +2,7 @@
 
 namespace GitClub.Database.Models
 {
-    public class TeamRole : Entity
+    public class UserRepositoryRole : Entity
     {
         /// <summary>
         /// Gets or sets the UserId.
@@ -10,9 +10,9 @@ namespace GitClub.Database.Models
         public int UserId { get; set; }
 
         /// <summary>
-        /// Gets or sets the TeamId.
+        /// Gets or sets the RepositoryId.
         /// </summary>
-        public int TeamId { get; set; }
+        public int RepositoryId { get; set; }
 
         /// <summary>
         /// Gets or sets the Name.

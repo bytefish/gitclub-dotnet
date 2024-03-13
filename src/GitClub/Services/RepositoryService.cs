@@ -222,7 +222,7 @@ namespace GitClub.Services
             // TODO Delete all Tuples for the Repository
         }
 
-        public async Task<RepositoryRole> AddUserToRepositoryAsync(int repositoryId, int userId, int currentUserId, CancellationToken cancellationToken)
+        public async Task<UserRepositoryRole> AddUserToRepositoryAsync(int repositoryId, int userId, int currentUserId, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -240,7 +240,7 @@ namespace GitClub.Services
                 };
             }
 
-            var repositoryRole = new RepositoryRole
+            var repositoryRole = new UserRepositoryRole
             {
                 RepositoryId = repositoryId,
                 UserId = userId,

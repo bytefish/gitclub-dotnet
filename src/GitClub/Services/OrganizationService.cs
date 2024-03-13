@@ -197,7 +197,7 @@ namespace GitClub.Services
             // TODO Delete all Tuples for the Organization
         }
 
-        public async Task<OrganizationRole> AddUserToOrganizationAsync(int organizationId, int userId, int currentUserId, CancellationToken cancellationToken)
+        public async Task<UserOrganizationRole> AddUserToOrganizationAsync(int organizationId, int userId, int currentUserId, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -215,7 +215,7 @@ namespace GitClub.Services
                 };
             }
 
-            var organizationRole = new OrganizationRole
+            var organizationRole = new UserOrganizationRole
             {
                 OrganizationId = organizationId,
                 UserId = userId,

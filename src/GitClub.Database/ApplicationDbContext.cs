@@ -37,7 +37,7 @@ namespace GitClub.Database
         /// <summary>
         /// Gets or sets the OrganizationRoles.
         /// </summary>
-        public DbSet<OrganizationRole> OrganizationRoles { get; set; } = null!;
+        public DbSet<UserOrganizationRole> OrganizationRoles { get; set; } = null!;
 
         /// <summary>
         /// Gets or sets the Repositories.
@@ -47,7 +47,7 @@ namespace GitClub.Database
         /// <summary>
         /// Gets or sets the RepositoryRoles.
         /// </summary>
-        public DbSet<RepositoryRole> RepositoryRoles { get; set; } = null!;
+        public DbSet<UserRepositoryRole> RepositoryRoles { get; set; } = null!;
 
         /// <summary>
         /// Gets or sets the Teams.
@@ -57,7 +57,7 @@ namespace GitClub.Database
         /// <summary>
         /// Gets or sets the TeamRoles.
         /// </summary>
-        public DbSet<TeamRole> TeamRoles { get; set; } = null!;
+        public DbSet<UserTeamRole> TeamRoles { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -78,11 +78,11 @@ namespace GitClub.Database
                 .StartsAt(1)
                 .IncrementsBy(1);
 
-            modelBuilder.HasSequence<int>("organization_role_seq", schema: "gitclub")
+            modelBuilder.HasSequence<int>("user_organization_role_seq", schema: "gitclub")
                 .StartsAt(1)
                 .IncrementsBy(1);
 
-            modelBuilder.HasSequence<int>("repository_role_seq", schema: "gitclub")
+            modelBuilder.HasSequence<int>("user_repository_role_seq", schema: "gitclub")
                 .StartsAt(1)
                 .IncrementsBy(1);
 
@@ -210,7 +210,7 @@ namespace GitClub.Database
 
                 entity.Property(e => e.BaseRepositoryRole)
                     .HasColumnType("varchar(255)")
-                    .HasColumnName("base_repository_role")
+                    .HasColumnName("base_user_repository_role")
                     .IsRequired(true);
                 
                 entity.Property(e => e.BillingAddress)
@@ -238,16 +238,16 @@ namespace GitClub.Database
                     .ValueGeneratedOnAddOrUpdate();
             });
 
-            modelBuilder.Entity<OrganizationRole>(entity =>
+            modelBuilder.Entity<UserOrganizationRole>(entity =>
             {
-                entity.ToTable("organization_role", "gitclub");
+                entity.ToTable("user_organization_role", "gitclub");
 
                 entity.HasKey(e => e.Id);
 
                 entity.Property(e => e.Id)
                     .HasColumnType("integer")
-                    .HasColumnName("organization_role_id")
-                    .UseHiLo("organization_role_seq", "gitclub")
+                    .HasColumnName("user_organization_role_id")
+                    .UseHiLo("user_organization_role_seq", "gitclub")
                     .ValueGeneratedOnAdd();
 
                 entity.Property(e => e.UserId)
@@ -327,16 +327,16 @@ namespace GitClub.Database
                     .ValueGeneratedOnAddOrUpdate();
             });
 
-            modelBuilder.Entity<RepositoryRole>(entity =>
+            modelBuilder.Entity<UserRepositoryRole>(entity =>
             {
-                entity.ToTable("repository_role", "gitclub");
+                entity.ToTable("user_repository_role", "gitclub");
 
                 entity.HasKey(e => e.Id);
 
                 entity.Property(e => e.Id)
                     .HasColumnType("integer")
-                    .HasColumnName("repository_role_id")
-                    .UseHiLo("repository_role_seq", "gitclub")
+                    .HasColumnName("user_repository_role_id")
+                    .UseHiLo("user_repository_role_seq", "gitclub")
                     .ValueGeneratedOnAdd();
 
                 entity.Property(e => e.UserId)
@@ -416,16 +416,64 @@ namespace GitClub.Database
                     .ValueGeneratedOnAddOrUpdate();
             });
 
-            modelBuilder.Entity<TeamRole>(entity =>
+
+            modelBuilder.Entity<TeamRepositoryRole>(entity =>
             {
-                entity.ToTable("team_role", "gitclub");
+                entity.ToTable("team_repository_role", "gitclub");
 
                 entity.HasKey(e => e.Id);
 
                 entity.Property(e => e.Id)
                     .HasColumnType("integer")
-                    .HasColumnName("team_role_id")
-                    .UseHiLo("team_role_seq", "gitclub")
+                    .HasColumnName("team_repository_role_id")
+                    .UseHiLo("team_repository_role_seq", "gitclub")
+                    .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.TeamId)
+                    .HasColumnType("integer")
+                    .HasColumnName("team_id")
+                    .IsRequired(true);
+
+                entity.Property(e => e.TeamId)
+                    .HasColumnType("integer")
+                    .HasColumnName("team_id")
+                    .IsRequired(true);
+
+                entity.Property(e => e.Name)
+                    .HasColumnType("varchar(255)")
+                    .HasColumnName("name")
+                    .IsRequired(true);
+
+                entity.Property(e => e.RowVersion)
+                    .HasColumnType("xid")
+                    .HasColumnName("xmin")
+                    .IsRowVersion()
+                    .IsConcurrencyToken()
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+
+                entity.Property(e => e.LastEditedBy)
+                    .HasColumnType("integer")
+                    .HasColumnName("last_edited_by")
+                    .IsRequired(true);
+
+                entity.Property(e => e.SysPeriod)
+                    .HasColumnType("tstzrange")
+                    .HasColumnName("sys_period")
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+            });
+
+            modelBuilder.Entity<UserTeamRole>(entity =>
+            {
+                entity.ToTable("user_team_role", "gitclub");
+
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Id)
+                    .HasColumnType("integer")
+                    .HasColumnName("user_team_role_id")
+                    .UseHiLo("user_team_role_seq", "gitclub")
                     .ValueGeneratedOnAdd();
 
                 entity.Property(e => e.UserId)

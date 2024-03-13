@@ -5,7 +5,7 @@ type user
 
 type team
   relations
-    define member: [user, team#member]
+    define member: [user]
 
 type repo
   relations
