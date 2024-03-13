@@ -13,6 +13,7 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace GitClub.Controllers
 {
+    [Route("[controller]")]
     public class OrganizationsController : ControllerBase
     {
         private readonly ILogger<OrganizationsController> _logger;
@@ -105,7 +106,6 @@ namespace GitClub.Controllers
                 return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
             }
         }
-
 
         [HttpGet]
         [Authorize(Policy = Policies.RequireUserRole)]

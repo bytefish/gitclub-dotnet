@@ -13,7 +13,7 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace GitClub.Controllers
 {
-    [Route("issues")]
+    [Route("[controller]")]
     public class IssuesController : ControllerBase
     {
         private readonly ILogger<IssuesController> _logger;
