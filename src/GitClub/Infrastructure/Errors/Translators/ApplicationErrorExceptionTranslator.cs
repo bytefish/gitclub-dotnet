@@ -22,10 +22,10 @@ namespace GitClub.Infrastructure.Errors.Translators
 
             var applicationErrorException = (ApplicationErrorException)exception;
 
-            return InternalGetODataErrorResult(applicationErrorException, includeExceptionDetails);
+            return InternalGetApplicationErrorResult(applicationErrorException, includeExceptionDetails);
         }
 
-        private ApplicationErrorResult InternalGetODataErrorResult(ApplicationErrorException exception, bool includeExceptionDetails)
+        private ApplicationErrorResult InternalGetApplicationErrorResult(ApplicationErrorException exception, bool includeExceptionDetails)
         {
             var error = new ApplicationError
             {
