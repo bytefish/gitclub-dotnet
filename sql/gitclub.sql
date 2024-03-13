@@ -18,6 +18,12 @@ CREATE SEQUENCE IF NOT EXISTS gitclub.user_seq
     NO MAXVALUE
     CACHE 1;
 	
+CREATE SEQUENCE IF NOT EXISTS gitclub.team_seq
+	start 1
+    increment 1
+    NO MAXVALUE
+    CACHE 1;
+	
 CREATE SEQUENCE IF NOT EXISTS gitclub.issue_seq
 	start 1
     increment 1
@@ -31,6 +37,12 @@ CREATE SEQUENCE IF NOT EXISTS gitclub.repository_seq
     CACHE 1;
 
 CREATE SEQUENCE IF NOT EXISTS gitclub.organization_role_seq
+	start 1
+    increment 1
+    NO MAXVALUE
+    CACHE 1;
+	
+CREATE SEQUENCE IF NOT EXISTS gitclub.team_role_seq
 	start 1
     increment 1
     NO MAXVALUE
@@ -52,6 +64,22 @@ CREATE TABLE IF NOT EXISTS gitclub.user (
 	CONSTRAINT user_pkey
 		PRIMARY KEY (user_id),
 	CONSTRAINT user_last_edited_by_fkey 
+		FOREIGN KEY (last_edited_by)
+		REFERENCES gitclub.user(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS gitclub.team (
+	team_id integer default nextval('gitclub.team_seq'),
+	organization_id integer not null,	
+	name varchar(2000) not null,
+	last_edited_by integer not null,
+	sys_period tstzrange not null default tstzrange(current_timestamp, null),
+	CONSTRAINT team_pkey
+		PRIMARY KEY (team_id),
+	CONSTRAINT team_organization_id_fkey 
+		FOREIGN KEY (organization_id)
+		REFERENCES gitclub.organization(organization_id),
+	CONSTRAINT team_last_edited_by_fkey 
 		FOREIGN KEY (last_edited_by)
 		REFERENCES gitclub.user(user_id)
 );
@@ -124,6 +152,26 @@ CREATE TABLE IF NOT EXISTS gitclub.organization_role (
 		FOREIGN KEY (organization_id)
 		REFERENCES gitclub.organization(organization_id),
 	CONSTRAINT organization_role_last_edited_by_fkey 
+		FOREIGN KEY (last_edited_by)
+		REFERENCES gitclub.user(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS gitclub.team_role (
+	team_role_id integer default nextval('gitclub.team_role_seq'),
+	user_id integer not null,
+	team_id integer not null,
+	name varchar(255) not null,
+	last_edited_by integer not null,
+	sys_period tstzrange not null default tstzrange(current_timestamp, null),
+	CONSTRAINT team_role_pkey
+		PRIMARY KEY (team_role_id),
+	CONSTRAINT team_role_user_id_fkey 
+		FOREIGN KEY (user_id)
+		REFERENCES gitclub.user(user_id),
+	CONSTRAINT team_role_team_id_fkey 
+		FOREIGN KEY (team_id)
+		REFERENCES gitclub.team(team_id),
+	CONSTRAINT team_role_last_edited_by_fkey 
 		FOREIGN KEY (last_edited_by)
 		REFERENCES gitclub.user(user_id)
 );

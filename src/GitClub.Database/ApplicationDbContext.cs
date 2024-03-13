@@ -49,6 +49,16 @@ namespace GitClub.Database
         /// </summary>
         public DbSet<RepositoryRole> RepositoryRoles { get; set; } = null!;
 
+        /// <summary>
+        /// Gets or sets the Teams.
+        /// </summary>
+        public DbSet<Team> Teams { get; set; } = null!;
+
+        /// <summary>
+        /// Gets or sets the TeamRoles.
+        /// </summary>
+        public DbSet<TeamRole> TeamRoles { get; set; } = null!;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Sequences
@@ -337,6 +347,95 @@ namespace GitClub.Database
                 entity.Property(e => e.RepositoryId)
                     .HasColumnType("integer")
                     .HasColumnName("repository_id")
+                    .IsRequired(true);
+
+                entity.Property(e => e.Name)
+                    .HasColumnType("varchar(255)")
+                    .HasColumnName("name")
+                    .IsRequired(true);
+
+                entity.Property(e => e.RowVersion)
+                    .HasColumnType("xid")
+                    .HasColumnName("xmin")
+                    .IsRowVersion()
+                    .IsConcurrencyToken()
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+
+                entity.Property(e => e.LastEditedBy)
+                    .HasColumnType("integer")
+                    .HasColumnName("last_edited_by")
+                    .IsRequired(true);
+
+                entity.Property(e => e.SysPeriod)
+                    .HasColumnType("tstzrange")
+                    .HasColumnName("sys_period")
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+            });
+            
+            modelBuilder.Entity<Team>(entity =>
+            {
+                entity.ToTable("team", "gitclub");
+
+                entity.HasKey(e => e.Id);
+
+                entity.Property(x => x.Id)
+                    .HasColumnType("integer")
+                    .HasColumnName("team_id")
+                    .UseHiLo("team_seq", "gitclub")
+                    .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.Name)
+                    .HasColumnType("varchar(255)")
+                    .HasColumnName("name")
+                    .IsRequired(true);
+
+                entity.Property(e => e.OrganizationId)
+                    .HasColumnType("integer")
+                    .HasColumnName("organization_id")
+                    .IsRequired(true);
+
+                entity.Property(e => e.RowVersion)
+                    .HasColumnType("xid")
+                    .HasColumnName("xmin")
+                    .IsRowVersion()
+                    .IsConcurrencyToken()
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+
+                entity.Property(e => e.LastEditedBy)
+                    .HasColumnType("integer")
+                    .HasColumnName("last_edited_by")
+                    .IsRequired(true);
+
+                entity.Property(e => e.SysPeriod)
+                    .HasColumnType("tstzrange")
+                    .HasColumnName("sys_period")
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+            });
+
+            modelBuilder.Entity<TeamRole>(entity =>
+            {
+                entity.ToTable("team_role", "gitclub");
+
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Id)
+                    .HasColumnType("integer")
+                    .HasColumnName("team_role_id")
+                    .UseHiLo("team_role_seq", "gitclub")
+                    .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.UserId)
+                    .HasColumnType("integer")
+                    .HasColumnName("user_id")
+                    .IsRequired(true);
+
+                entity.Property(e => e.TeamId)
+                    .HasColumnType("integer")
+                    .HasColumnName("team_id")
                     .IsRequired(true);
 
                 entity.Property(e => e.Name)

@@ -14,13 +14,13 @@ using Microsoft.AspNetCore.RateLimiting;
 namespace GitClub.Controllers
 {
     [Route("[controller]")]
-    public class RepositoriesController : ControllerBase
+    public class TeamsController : ControllerBase
     {
-        private readonly ILogger<RepositoriesController> _logger;
+        private readonly ILogger<TeamsController> _logger;
 
         private readonly ExceptionToApplicationErrorMapper _exceptionToApplicationErrorMapper;
 
-        public RepositoriesController(ILogger<RepositoriesController> logger, ExceptionToApplicationErrorMapper exceptionToApplicationErrorMapper)
+        public TeamsController(ILogger<TeamsController> logger, ExceptionToApplicationErrorMapper exceptionToApplicationErrorMapper)
         {
             _logger = logger;
             _exceptionToApplicationErrorMapper = exceptionToApplicationErrorMapper;
@@ -29,7 +29,7 @@ namespace GitClub.Controllers
         [HttpGet("{id}")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> GetRepository([FromServices] RepositoryService repositoryService, [FromRoute(Name = "id")] int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetTeam([FromServices] TeamService teamService, [FromRoute(Name = "id")] int id, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -43,9 +43,9 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var repository = await repositoryService.GetRepositoryByIdAsync(id, User.GetUserId(), cancellationToken);
+                var team = await teamService.GetTeamByIdAsync(id, User.GetUserId(), cancellationToken);
 
-                return Ok(repository);
+                return Ok(team);
             }
             catch (Exception exception)
             {
@@ -56,7 +56,7 @@ namespace GitClub.Controllers
         [HttpGet]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> GetRepositories([FromServices] RepositoryService repositoryService, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetTeams([FromServices] TeamService teamService, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -70,36 +70,9 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var repositories = await repositoryService.GetRepositorysByUserIdAsync(User.GetUserId(), cancellationToken);
+                var teams = await teamService.GetTeamsByUserIdAsync(User.GetUserId(), cancellationToken);
 
-                return Ok(repositories);
-            }
-            catch (Exception exception)
-            {
-                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
-            }
-        }
-
-        [HttpGet("{id}/issues")]
-        [Authorize(Policy = Policies.RequireUserRole)]
-        [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> GetRepositoryIssues([FromServices] IssueService issueService, [FromRoute(Name = "id")] int id, CancellationToken cancellationToken)
-        {
-            _logger.TraceMethodEntry();
-
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    throw new InvalidModelStateException
-                    {
-                        ModelStateDictionary = ModelState
-                    };
-                }
-
-                var organizations = await issueService.GetIssuesByRepositoryIdAsync(id, User.GetUserId(), cancellationToken);
-
-                return Ok(organizations);
+                return Ok(teams);
             }
             catch (Exception exception)
             {
@@ -110,7 +83,7 @@ namespace GitClub.Controllers
         [HttpPost]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> PostRepository([FromServices] RepositoryService repositoryService, [FromBody] Repository Repository, CancellationToken cancellationToken)
+        public async Task<IActionResult> PostTeam([FromServices] TeamService teamService, [FromBody] Team team, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -124,9 +97,9 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var organization = await repositoryService.CreateRepositoryAsync(Repository, User.GetUserId(), cancellationToken);
+                var createdTeam = await teamService.CreateTeamAsync(team, User.GetUserId(), cancellationToken);
 
-                return Ok(organization);
+                return Ok(createdTeam);
             }
             catch (Exception exception)
             {
@@ -137,7 +110,7 @@ namespace GitClub.Controllers
         [HttpPut("{id}")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> PutRepository([FromServices] RepositoryService repositoryService, [FromRoute(Name = "id")] int id, [FromBody] Repository Repository, CancellationToken cancellationToken)
+        public async Task<IActionResult> PutTeam([FromServices] TeamService teamService, [FromRoute(Name = "id")] int id, [FromBody] Team team, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -151,9 +124,9 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var organization = await repositoryService.UpdateRepositoryAsync(id, Repository, User.GetUserId(), cancellationToken);
+                var updatedTeam = await teamService.UpdateTeamAsync(id, team, User.GetUserId(), cancellationToken);
 
-                return Ok(organization);
+                return Ok(updatedTeam);
             }
             catch (Exception exception)
             {
@@ -164,7 +137,7 @@ namespace GitClub.Controllers
         [HttpDelete("{id}")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> DeleteRepository([FromServices] RepositoryService repositoryService, [FromRoute(Name = "id")] int key, CancellationToken cancellationToken)
+        public async Task<IActionResult> DeleteTeam([FromServices] TeamService teamService, [FromRoute(Name = "id")] int key, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -178,7 +151,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                await repositoryService.DeleteRepositoryAsync(key, User.GetUserId(), cancellationToken);
+                await teamService.DeleteTeamAsync(key, User.GetUserId(), cancellationToken);
 
                 return StatusCode(StatusCodes.Status204NoContent);
             }
