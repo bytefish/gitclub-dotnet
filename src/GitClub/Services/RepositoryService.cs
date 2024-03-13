@@ -81,15 +81,41 @@ namespace GitClub.Services
             return repository;
         }
 
+        public async Task<List<Repository>> GetRepositoriesByOrganizationIdAsync(int organizationId, int userId, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            bool isReadAuthorized = await _aclService
+                .CheckUserObjectAsync<Organization>(userId, organizationId, Actions.CanRead, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isReadAuthorized)
+            {
+                throw new EntityNotFoundException()
+                {
+                    EntityName = nameof(Organization),
+                    EntityId = organizationId,
+                };
+            }
+
+            var repositories = await _applicationDbContext.Repositories
+                .AsNoTracking()
+                .Where(x => x.OrganizationId == organizationId)
+                .ToListAsync()
+                .ConfigureAwait(false);
+
+            return repositories;
+        }
+
         public async Task<List<Repository>> GetRepositorysByUserIdAsync(int userId, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
-            var repositorys = await _aclService
+            var repositories = await _aclService
                 .ListUserObjectsAsync<Repository>(userId, Actions.CanRead, cancellationToken)
                 .ConfigureAwait(false);
 
-            return repositorys;
+            return repositories;
         }
 
         public async Task<Repository> UpdateRepositoryAsync(int repositoryId, Repository repository, int currentUserId, CancellationToken cancellationToken)
@@ -109,7 +135,9 @@ namespace GitClub.Services
                 };
             }
 
-            bool isUpdateAuthorized = await _aclService.CheckUserObjectAsync(currentUserId, repository, Actions.CanWrite, cancellationToken);
+            bool isUpdateAuthorized = await _aclService
+                .CheckUserObjectAsync(currentUserId, repository, Actions.CanWrite, cancellationToken)
+                .ConfigureAwait(false);
 
             if (!isReadAuthorized)
             {

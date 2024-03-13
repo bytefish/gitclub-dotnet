@@ -6,6 +6,7 @@ using GitClub.Infrastructure.Constants;
 using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
 using Microsoft.EntityFrameworkCore;
+using OpenFga.Sdk.Model;
 
 namespace GitClub.Services
 {
@@ -79,6 +80,63 @@ namespace GitClub.Services
             }
 
             return issue;
+        }
+
+        public async Task<List<Issue>> GetIssuesByRepositoryIdAsync(int repositoryId, int userId, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            bool isReadAuthorized = await _aclService
+                .CheckUserObjectAsync<Repository>(userId, repositoryId, Actions.CanRead, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isReadAuthorized)
+            {
+                throw new EntityNotFoundException()
+                {
+                    EntityName = nameof(Repository),
+                    EntityId = repositoryId,
+                };
+            }
+
+            var issues = await _applicationDbContext.Issues
+                .AsNoTracking()
+                .Where(x => x.RepositoryId == repositoryId)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            return issues;
+        }
+
+        public async Task<List<Issue>> GetIssuesByOrganizationIdAsync(int organizationId, int userId, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            bool isReadAuthorized = await _aclService
+                .CheckUserObjectAsync<Organization>(userId, organizationId, Actions.CanRead, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isReadAuthorized)
+            {
+                throw new EntityNotFoundException()
+                {
+                    EntityName = nameof(Organization),
+                    EntityId = organizationId,
+                };
+            }
+
+            var query = from organization in _applicationDbContext.Organizations
+                            join repository in _applicationDbContext.Repositories on organization.Id equals repository.OrganizationId
+                            join issue in _applicationDbContext.Issues on repository.Id equals issue.RepositoryId
+                        where organization.Id.Equals(organizationId)
+                        select issue;
+
+            var issues = await query
+                .AsNoTracking()
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            return issues;
         }
 
         public async Task<List<Issue>> GetIssuesByUserIdAsync(int userId, CancellationToken cancellationToken)

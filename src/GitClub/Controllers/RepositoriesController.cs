@@ -13,22 +13,22 @@ using Microsoft.AspNetCore.RateLimiting;
 
 namespace GitClub.Controllers
 {
-    public class OrganizationsController : ControllerBase
+    public class RepositoriesController : ControllerBase
     {
-        private readonly ILogger<OrganizationsController> _logger;
+        private readonly ILogger<RepositoriesController> _logger;
 
         private readonly ExceptionToApplicationErrorMapper _exceptionToApplicationErrorMapper;
 
-        public OrganizationsController(ILogger<OrganizationsController> logger, ExceptionToApplicationErrorMapper exceptionToApplicationErrorMapper)
+        public RepositoriesController(ILogger<RepositoriesController> logger, ExceptionToApplicationErrorMapper exceptionToApplicationErrorMapper)
         {
             _logger = logger;
             _exceptionToApplicationErrorMapper = exceptionToApplicationErrorMapper;
         }
 
-        [HttpGet("{id}")]
+        [HttpGet]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> GetOrganization([FromServices] OrganizationService organizationService, [FromRoute(Name = "id")] int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetRepository([FromServices] RepositoryService repositoryService, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -42,9 +42,9 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var organization = await organizationService.GetOrganizationByIdAsync(id, User.GetUserId(), cancellationToken);
+                var organizations = await repositoryService.GetRepositorysByUserIdAsync(User.GetUserId(), cancellationToken);
 
-                return Ok(organization);
+                return Ok(organizations);
             }
             catch (Exception exception)
             {
@@ -52,37 +52,11 @@ namespace GitClub.Controllers
             }
         }
 
-        [HttpGet("{id}/repositories")]
-        [Authorize(Policy = Policies.RequireUserRole)]
-        [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> GetOrganizationRepositories([FromServices] RepositoryService repositoryService, [FromRoute(Name = "id")] int id, CancellationToken cancellationToken)
-        {
-            _logger.TraceMethodEntry();
-
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    throw new InvalidModelStateException
-                    {
-                        ModelStateDictionary = ModelState
-                    };
-                }
-
-                var repositories = await repositoryService.GetRepositoriesByOrganizationIdAsync(id, User.GetUserId(), cancellationToken);
-
-                return Ok(repositories);
-            }
-            catch (Exception exception)
-            {
-                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
-            }
-        }
 
         [HttpGet("{id}/issues")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> GetOrganizationIssues([FromServices] IssueService issueService, [FromRoute(Name = "id")] int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetRepositoryIssues([FromServices] IssueService issueService, [FromRoute(Name = "id")] int id, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -96,35 +70,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var issues = await issueService.GetIssuesByOrganizationIdAsync(id, User.GetUserId(), cancellationToken);
-
-                return Ok(issues);
-            }
-            catch (Exception exception)
-            {
-                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
-            }
-        }
-
-
-        [HttpGet]
-        [Authorize(Policy = Policies.RequireUserRole)]
-        [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> GetOrganizations([FromServices] OrganizationService organizationService, CancellationToken cancellationToken)
-        {
-            _logger.TraceMethodEntry();
-
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    throw new InvalidModelStateException
-                    {
-                        ModelStateDictionary = ModelState
-                    };
-                }
-
-                var organizations = await organizationService.GetOrganizationsByUserIdAsync(User.GetUserId(), cancellationToken);
+                var organizations = await issueService.GetIssuesByRepositoryIdAsync(id, User.GetUserId(), cancellationToken);
 
                 return Ok(organizations);
             }
@@ -137,7 +83,7 @@ namespace GitClub.Controllers
         [HttpPost]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> PostOrganization([FromServices] OrganizationService organizationService, [FromBody] Organization Organization, CancellationToken cancellationToken)
+        public async Task<IActionResult> PostRepository([FromServices] RepositoryService repositoryService, [FromBody] Repository Repository, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -151,7 +97,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var organization = await organizationService.CreateOrganizationAsync(Organization, User.GetUserId(), cancellationToken);
+                var organization = await repositoryService.CreateRepositoryAsync(Repository, User.GetUserId(), cancellationToken);
 
                 return Ok(organization);
             }
@@ -164,7 +110,7 @@ namespace GitClub.Controllers
         [HttpPut("{id}")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> PutOrganization([FromServices] OrganizationService organizationService, [FromRoute(Name = "id")] int id, [FromBody] Organization Organization, CancellationToken cancellationToken)
+        public async Task<IActionResult> PutRepository([FromServices] RepositoryService repositoryService, [FromRoute(Name = "id")] int id, [FromBody] Repository Repository, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -178,7 +124,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var organization = await organizationService.UpdateOrganizationAsync(id, Organization, User.GetUserId(), cancellationToken);
+                var organization = await repositoryService.UpdateRepositoryAsync(id, Repository, User.GetUserId(), cancellationToken);
 
                 return Ok(organization);
             }
@@ -191,7 +137,7 @@ namespace GitClub.Controllers
         [HttpDelete("{id}")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> DeleteOrganization([FromServices] OrganizationService organizationService, [FromRoute(Name = "id")] int key, CancellationToken cancellationToken)
+        public async Task<IActionResult> DeleteRepository([FromServices] RepositoryService repositoryService, [FromRoute(Name = "id")] int key, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -205,7 +151,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                await organizationService.DeleteOrganizationAsync(key, User.GetUserId(), cancellationToken);
+                await repositoryService.DeleteRepositoryAsync(key, User.GetUserId(), cancellationToken);
 
                 return StatusCode(StatusCodes.Status204NoContent);
             }
