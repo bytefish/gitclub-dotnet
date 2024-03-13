@@ -52,7 +52,8 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanRead, cancellationToken);
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanRead, cancellationToken)
+                .ConfigureAwait(false);
 
             if (!isReadAuthorized)
             {
@@ -65,7 +66,8 @@ namespace GitClub.Services
 
             var repository = await _applicationDbContext.Repositories
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == repositoryId, cancellationToken);
+                .FirstOrDefaultAsync(x => x.Id == repositoryId, cancellationToken)
+                .ConfigureAwait(false);
 
             if (repository == null)
             {
@@ -94,7 +96,9 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            bool isReadAuthorized = await _aclService.CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanRead, cancellationToken);
+            bool isReadAuthorized = await _aclService
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanRead, cancellationToken)
+                .ConfigureAwait(false);
 
             if (!isReadAuthorized)
             {
@@ -122,7 +126,8 @@ namespace GitClub.Services
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(x => x.Name, repository.Name)
                     .SetProperty(x => x.OrganizationId, repository.OrganizationId)
-                    .SetProperty(x => x.LastEditedBy, currentUserId), cancellationToken);
+                    .SetProperty(x => x.LastEditedBy, currentUserId), cancellationToken)
+                .ConfigureAwait(false);
 
             if (rowsAffected == 0)
             {
@@ -141,7 +146,8 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanRead, cancellationToken);
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanRead, cancellationToken)
+                .ConfigureAwait(false);
 
             if (!isReadAuthorized)
             {
@@ -154,7 +160,8 @@ namespace GitClub.Services
 
             var repository = await _applicationDbContext.Repositories
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == repositoryId, cancellationToken);
+                .FirstOrDefaultAsync(x => x.Id == repositoryId, cancellationToken)
+                .ConfigureAwait(false);
 
             if (repository == null)
             {
@@ -166,7 +173,8 @@ namespace GitClub.Services
             }
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanWrite, cancellationToken);
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanWrite, cancellationToken)
+                .ConfigureAwait(false);
 
             if (!isAuthorized)
             {
@@ -190,7 +198,9 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            bool isAuthorized = await _aclService.CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanWrite, cancellationToken);
+            bool isAuthorized = await _aclService
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanWrite, cancellationToken)
+                .ConfigureAwait(false);
 
             if (!isAuthorized)
             {
@@ -229,7 +239,9 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            bool isAuthorized = await _aclService.CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanWrite, cancellationToken);
+            bool isAuthorized = await _aclService
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanWrite, cancellationToken)
+                .ConfigureAwait(false);
 
             if (!isAuthorized)
             {

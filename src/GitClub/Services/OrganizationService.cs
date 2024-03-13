@@ -52,7 +52,8 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanRead, cancellationToken);
+                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanRead, cancellationToken)
+                .ConfigureAwait(false);
 
             if (!isReadAuthorized)
             {
@@ -65,7 +66,8 @@ namespace GitClub.Services
 
             var organization = await _applicationDbContext.Organizations
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == organizationId, cancellationToken);
+                .FirstOrDefaultAsync(x => x.Id == organizationId, cancellationToken)
+                .ConfigureAwait(false);
 
             if (organization == null)
             {
@@ -94,7 +96,9 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            bool isReadAuthorized = await _aclService.CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanRead, cancellationToken);
+            bool isReadAuthorized = await _aclService
+                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanRead, cancellationToken)
+                .ConfigureAwait(false);
 
             if (!isReadAuthorized)
             {
@@ -105,7 +109,9 @@ namespace GitClub.Services
                 };
             }
 
-            bool isUpdateAuthorized = await _aclService.CheckUserObjectAsync(currentUserId, organization, Actions.CanWrite, cancellationToken);
+            bool isUpdateAuthorized = await _aclService
+                .CheckUserObjectAsync(currentUserId, organization, Actions.CanWrite, cancellationToken)
+                .ConfigureAwait(false);
 
             if (!isReadAuthorized)
             {
@@ -123,7 +129,8 @@ namespace GitClub.Services
                     .SetProperty(x => x.Name, organization.Name)
                     .SetProperty(x => x.BaseRepositoryRole, organization.BaseRepositoryRole)
                     .SetProperty(x => x.BillingAddress, organization.BillingAddress)
-                    .SetProperty(x => x.LastEditedBy, currentUserId), cancellationToken);
+                    .SetProperty(x => x.LastEditedBy, currentUserId), cancellationToken)
+                .ConfigureAwait(false);
 
             if (rowsAffected == 0)
             {
@@ -142,7 +149,8 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanRead, cancellationToken);
+                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanRead, cancellationToken)
+                .ConfigureAwait(false);
 
             if (!isReadAuthorized)
             {
@@ -155,7 +163,8 @@ namespace GitClub.Services
 
             var organization = await _applicationDbContext.Organizations
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == organizationId, cancellationToken);
+                .FirstOrDefaultAsync(x => x.Id == organizationId, cancellationToken)
+                .ConfigureAwait(false);
 
             if (organization == null)
             {
@@ -167,7 +176,8 @@ namespace GitClub.Services
             }
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanWrite, cancellationToken);
+                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanWrite, cancellationToken)
+                .ConfigureAwait(false);
 
             if (!isAuthorized)
             {
@@ -191,7 +201,9 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            bool isAuthorized = await _aclService.CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanWrite, cancellationToken);
+            bool isAuthorized = await _aclService
+                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanWrite, cancellationToken)
+                .ConfigureAwait(false);
 
             if (!isAuthorized)
             {
@@ -230,7 +242,9 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            bool isAuthorized = await _aclService.CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanWrite, cancellationToken);
+            bool isAuthorized = await _aclService
+                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanWrite, cancellationToken)
+                .ConfigureAwait(false);
 
             if (!isAuthorized)
             {

@@ -117,7 +117,7 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            var entities = await ListObjectsAsync<TEntityType, User>(userId, relation, cancellationToken);
+            var entities = await ListObjectsAsync<TEntityType, User>(userId, relation, cancellationToken).ConfigureAwait(false);
 
             return entities;
         }

@@ -26,7 +26,8 @@ namespace GitClub.Services
 
             var user = await _applicationDbContext.Users
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Email == email, cancellationToken);
+                .FirstOrDefaultAsync(x => x.Email == email, cancellationToken)
+                .ConfigureAwait(false);
 
             if (user == null)
             {
