@@ -58,6 +58,8 @@ namespace GitClub.Services
         public async Task<bool> CheckUserObjectAsync<TObjectType>(int userId, int objectId, string relation, CancellationToken cancellationToken)
             where TObjectType : Entity
         {
+            _logger.TraceMethodEntry();
+
             var allowed = await CheckObjectAsync<TObjectType, User>(objectId, relation, userId, cancellationToken).ConfigureAwait(false);
 
             return allowed;
@@ -66,6 +68,8 @@ namespace GitClub.Services
         public async Task<bool> CheckUserObjectAsync<TObjectType>(int userId, TObjectType @object, string relation, CancellationToken cancellationToken)
             where TObjectType : Entity
         {
+            _logger.TraceMethodEntry();
+
             var allowed = await CheckObjectAsync<TObjectType, User>(@object.Id, relation, userId, cancellationToken).ConfigureAwait(false);
 
             return allowed;
@@ -289,6 +293,8 @@ namespace GitClub.Services
 
         public async Task AddRelationshipsAsync(ICollection<RelationTuple> relationTuples, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
+
             var clientTupleKeys = relationTuples
                 .Select(x => new ClientTupleKey
                 {
@@ -305,6 +311,8 @@ namespace GitClub.Services
 
         public async Task DeleteRelationshipsAsync(ICollection<RelationTuple> relationTuples, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
+
             var clientTupleKeys = relationTuples
                 .Select(x => new ClientTupleKeyWithoutCondition
                 {
@@ -319,14 +327,18 @@ namespace GitClub.Services
                 .ConfigureAwait(false);
         }
 
-        private static string ToZanzibarNotation<TEntity>(int? id, string? relation = null)
+        private string ToZanzibarNotation<TEntity>(int? id, string? relation = null)
             where TEntity : Entity
         {
+            _logger.TraceMethodEntry();
+
             return ToZanzibarNotation(typeof(TEntity).Name, id, relation);
         }
 
-        private static string ToZanzibarNotation(string type, int? id, string? relation = null)
+        private string ToZanzibarNotation(string type, int? id, string? relation = null)
         {
+            _logger.TraceMethodEntry();
+
             var strId = id == null ? "" : id.ToString();
 
             if (string.IsNullOrWhiteSpace(relation))
@@ -337,8 +349,10 @@ namespace GitClub.Services
             return $"{type}:{strId}#{relation}";
         }
 
-        private static (string Type, int Id, string? relation) FromZanzibarNotation(string s)
+        private (string Type, int Id, string? relation) FromZanzibarNotation(string s)
         {
+            _logger.TraceMethodEntry();
+
             if (s.Contains('#'))
             {
                 return FromZanzibarNotationWithRelation(s);
@@ -347,8 +361,10 @@ namespace GitClub.Services
             return FromZanzibarNotationWithoutRelation(s);
         }
 
-        private static (string Type, int Id, string? relation) FromZanzibarNotationWithoutRelation(string s)
+        private (string Type, int Id, string? relation) FromZanzibarNotationWithoutRelation(string s)
         {
+            _logger.TraceMethodEntry();
+
             var parts = s.Split(':');
 
             if (parts.Length != 2)
@@ -366,8 +382,10 @@ namespace GitClub.Services
             return (type, id, null);
         }
 
-        private static (string Type, int Id, string? relation) FromZanzibarNotationWithRelation(string s)
+        private (string Type, int Id, string? relation) FromZanzibarNotationWithRelation(string s)
         {
+            _logger.TraceMethodEntry();
+
             var parts = s.Split("#");
 
             if (parts.Length != 2)
