@@ -507,6 +507,18 @@ FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
   'sys_period', 'gitclub.issue_history', true
 );
 
+CREATE OR REPLACE TRIGGER team_versioning_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON gitclub.team
+FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
+  'sys_period', 'gitclub.team_history', true
+);
+
+CREATE OR REPLACE TRIGGER team_repository_role_versioning_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON gitclub.user_organization_role
+FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
+  'sys_period', 'gitclub.team_repository_role_history', true
+);
+
 CREATE OR REPLACE TRIGGER user_organization_role_versioning_trigger
 BEFORE INSERT OR UPDATE OR DELETE ON gitclub.user_organization_role
 FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(

@@ -153,10 +153,7 @@ namespace GitClub.Services
             int rowsAffected = await _applicationDbContext.Teams
                 .Where(t => t.Id == teamId && t.RowVersion == team.RowVersion)
                 .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(x => x.Title, team.Title)
-                    .SetProperty(x => x.Content, team.Content)
-                    .SetProperty(x => x.Closed, team.Closed)
-                    .SetProperty(x => x.RepositoryId, team.RepositoryId)
+                    .SetProperty(x => x.Name, team.Name)
                     .SetProperty(x => x.LastEditedBy, currentUserId), cancellationToken)
                 .ConfigureAwait(false);
 
