@@ -618,7 +618,12 @@ FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
 -- Initial data
 INSERT INTO gitclub.user(email, preferred_name, last_edited_by) 
 	VALUES 
-		(1, 'philipp@bytefish.de', 'Data Conversion User', 1)
+		(1, 'philipp@bytefish.de', 'Data Conversion User', 1),
+		(2, 'anne@git.local', 'Anne', 1),
+		(3, 'beth@git.local', 'Beth', 1),
+		(4, 'charles@git.local', 'Charles', 1),
+		(5, 'diane@git.local', 'Diane', 1),
+		(6, 'erik@git.local', 'Eril', 1)		
 	ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.repository_role(repository_role_id, name, description, last_edited_by) 
@@ -643,5 +648,43 @@ INSERT INTO gitclub.team_role(team_role_id, name, description, last_edited_by)
 		(2, 'Maintainer', 'Maintainer Role on Team', 1) 
 	ON CONFLICT DO NOTHING;
 
+INSERT INTO gitclub.organization(organization_id, name, base_user_repository_role, billing_address, last_edited_by) 
+	VALUES 
+		(1, 'Contoso', 5, 'ACME Street. 93', 1) 
+	ON CONFLICT DO NOTHING;
+
+INSERT INTO gitclub.team(team_id, organization_id, name, last_edited_by) 
+	VALUES 
+		(1, 1, 'Engineering', 'ACME Street. 93', 1) 
+		(2, 1, 'Protocols', 'ACME Street. 93', 1) 
+	ON CONFLICT DO NOTHING;
+
+INSERT INTO gitclub.repository(repository_id, organization_id, name, last_edited_by)
+	VALUES
+		(1, 1, 'tooling', 1)
+	ON CONFLICT DO NOTHING;
+
+INSERT INTO gitclub.user_team_role(user_team_role_id, user_id, team_id, team_role_id, last_edited_by)
+	VALUES
+		(1, 4, 1, 2, 1), -- Charles (4) is a Member (2) or Team contoso/engineering (1)
+		(1, 5, 2, 2, 1) -- Diane (5) is a Member (2) or Team contoso/protocols (2)
+	ON CONFLICT DO NOTHING;
+
+INSERT INTO gitclub.user_organization_role(user_organization_role_id, user_id, organization_id, organization_role_id, last_edited_by)
+	VALUES
+		(1, 6, 1, 1, 1) -- Erik (6) is a Member (1) of contoso (1)User 
+	ON CONFLICT DO NOTHING;
+
+INSERT INTO gitclub.user_repository_role(repository_role_id, user_id, repository_id, repository_role_id, last_edited_by)
+	VALUES
+		(1, 6, 1, 1, 1) -- User "anne" (2) is a Reader (1) of the Repository "tooling" (1)
+		(1, 6, 1, 3, 1) -- User "beth" (2) is a Writer (3) of the Repository "tooling" (1)
+	ON CONFLICT DO NOTHING;
+
+INSERT INTO gitclub.team_repository_role(team_repository_role_id, team_id, repository_id, repository_role_id, last_edited_by)
+	VALUES
+		(1, 6, 1, 1, 1) -- Team "anne" (2) is a Reader (1) of the Repository "tooling" (1)
+	ON CONFLICT DO NOTHING;
+		
 END;
-$$ LANGUAGE plpgsql;
+$$ LANGUAGE plpgsql;repository
