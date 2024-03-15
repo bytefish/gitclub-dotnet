@@ -17,6 +17,6 @@ namespace GitClub.Database.Models
         /// <summary>
         /// Gets or sets the Name. 
         /// </summary>
-        public required string Name { get; set; }
+        public required OrganizationRoleEnum Role { get; set; }
     }
 }

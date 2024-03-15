@@ -2,21 +2,21 @@
 
 namespace GitClub.Database.Models
 {
-    public class UserTeamRole : Entity
+    public enum TeamRoleEnum
     {
         /// <summary>
-        /// Gets or sets the UserId.
+        /// None.
         /// </summary>
-        public int UserId { get; set; }
+        None = 0,
 
         /// <summary>
-        /// Gets or sets the TeamId.
+        /// Member.
         /// </summary>
-        public int TeamId { get; set; }
+        Member = 1,
 
         /// <summary>
-        /// Gets or sets the Name.
+        /// Maintainer.
         /// </summary>
-        public required TeamRoleEnum Role { get; set; }
+        Maintainer = 2,
     }
 }

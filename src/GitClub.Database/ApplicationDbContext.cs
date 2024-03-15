@@ -57,7 +57,7 @@ namespace GitClub.Database
         /// <summary>
         /// Gets or sets the TeamRoles.
         /// </summary>
-        public DbSet<UserTeamRole> TeamRoles { get; set; } = null!;
+        public DbSet<UserTeamRole> UserTeamRoles { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -211,6 +211,7 @@ namespace GitClub.Database
                 entity.Property(e => e.BaseRepositoryRole)
                     .HasColumnType("varchar(255)")
                     .HasColumnName("base_user_repository_role")
+                    .HasConversion<int>()
                     .IsRequired(true);
                 
                 entity.Property(e => e.BillingAddress)
@@ -260,9 +261,10 @@ namespace GitClub.Database
                     .HasColumnName("organization_id")
                     .IsRequired(true);
 
-                entity.Property(e => e.Name)
-                    .HasColumnType("varchar(255)")
-                    .HasColumnName("name")
+                entity.Property(e => e.Role)
+                    .HasColumnType("integer")
+                    .HasColumnName("organization_role_id")
+                    .HasConversion<int>()
                     .IsRequired(true);
 
                 entity.Property(e => e.RowVersion)
@@ -349,9 +351,10 @@ namespace GitClub.Database
                     .HasColumnName("repository_id")
                     .IsRequired(true);
 
-                entity.Property(e => e.Name)
-                    .HasColumnType("varchar(255)")
-                    .HasColumnName("name")
+                entity.Property(e => e.Role)
+                    .HasColumnType("integer")
+                    .HasColumnName("repository_role_id")
+                    .HasConversion<int>()
                     .IsRequired(true);
 
                 entity.Property(e => e.RowVersion)
@@ -439,9 +442,10 @@ namespace GitClub.Database
                     .HasColumnName("team_id")
                     .IsRequired(true);
 
-                entity.Property(e => e.Name)
-                    .HasColumnType("varchar(255)")
-                    .HasColumnName("name")
+                entity.Property(e => e.Role)
+                    .HasColumnType("integer")
+                    .HasColumnName("repository_role_id")
+                    .HasConversion<int>()
                     .IsRequired(true);
 
                 entity.Property(e => e.RowVersion)
@@ -486,9 +490,10 @@ namespace GitClub.Database
                     .HasColumnName("team_id")
                     .IsRequired(true);
 
-                entity.Property(e => e.Name)
-                    .HasColumnType("varchar(255)")
-                    .HasColumnName("name")
+                entity.Property(e => e.Role)
+                    .HasColumnType("integer")
+                    .HasColumnName("team_role_id")
+                    .HasConversion<int>()
                     .IsRequired(true);
 
                 entity.Property(e => e.RowVersion)

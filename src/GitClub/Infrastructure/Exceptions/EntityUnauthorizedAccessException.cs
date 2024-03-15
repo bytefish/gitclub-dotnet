@@ -30,7 +30,6 @@ namespace GitClub.Infrastructure.Exceptions
         /// </summary>
         public required int EntityId { get; set; }
 
-
         /// <summary>
         /// Creates a new <see cref="EntityUnauthorizedAccessException"/>.
         /// </summary>

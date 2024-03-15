@@ -244,7 +244,7 @@ namespace GitClub.Services
             {
                 RepositoryId = repositoryId,
                 UserId = userId,
-                Name = Relations.Member,
+                Role = Relations.Member,
                 LastEditedBy = currentUserId,
             };
 

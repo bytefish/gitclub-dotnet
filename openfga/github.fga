@@ -16,6 +16,12 @@ type repo
     define triager: [user, team#member] or writer
     define writer: [user, team#member] or maintainer or repo_writer from owner
 
+type issue
+  relations
+	define owner: [repo]
+	define creator: [user]
+	define reader: reader from owner
+	
 type organization
   relations
     define member: [user] or owner

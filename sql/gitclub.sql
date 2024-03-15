@@ -7,55 +7,55 @@ CREATE SCHEMA IF NOT EXISTS gitclub;
 
 -- Sequences
 CREATE SEQUENCE IF NOT EXISTS gitclub.organization_seq
-	start 1
+	start 38187
     increment 1
     NO MAXVALUE
     CACHE 1;
 
 CREATE SEQUENCE IF NOT EXISTS gitclub.user_seq
-	start 1
+	start 38187
     increment 1
     NO MAXVALUE
     CACHE 1;
 	
 CREATE SEQUENCE IF NOT EXISTS gitclub.team_seq
-	start 1
+	start 38187
     increment 1
     NO MAXVALUE
     CACHE 1;
 	
 CREATE SEQUENCE IF NOT EXISTS gitclub.issue_seq
-	start 1
+	start 38187
     increment 1
     NO MAXVALUE
     CACHE 1;
 	
 CREATE SEQUENCE IF NOT EXISTS gitclub.repository_seq
-	start 1
+	start 38187
     increment 1
     NO MAXVALUE
     CACHE 1;
 
 CREATE SEQUENCE IF NOT EXISTS gitclub.user_organization_role_seq
-	start 1
+	start 38187
     increment 1
     NO MAXVALUE
     CACHE 1;
 	
 CREATE SEQUENCE IF NOT EXISTS gitclub.user_team_role_seq
-	start 1
+	start 38187
     increment 1
     NO MAXVALUE
     CACHE 1;
 	
 CREATE SEQUENCE IF NOT EXISTS gitclub.user_repository_role_seq
-	start 1
+	start 38187
     increment 1
     NO MAXVALUE
     CACHE 1;	
 
 CREATE SEQUENCE IF NOT EXISTS gitclub.team_repository_role_seq
-	start 1
+	start 38187
     increment 1
     NO MAXVALUE
     CACHE 1;
@@ -70,6 +70,45 @@ CREATE TABLE IF NOT EXISTS gitclub.user (
 	CONSTRAINT user_pkey
 		PRIMARY KEY (user_id),
 	CONSTRAINT user_last_edited_by_fkey 
+		FOREIGN KEY (last_edited_by)
+		REFERENCES gitclub.user(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS gitclub.organization_role (
+	organization_role_id integer integer,
+	name varchar(255) not null,
+	description varchar(2000) not null,
+	last_edited_by integer not null,
+	sys_period tstzrange not null default tstzrange(current_timestamp, null),
+	CONSTRAINT organization_role_pkey
+		PRIMARY KEY (team_role_id),
+	CONSTRAINT organization_role_last_edited_by_fkey 
+		FOREIGN KEY (last_edited_by)
+		REFERENCES gitclub.user(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS gitclub.repository_role (
+	repository_role_id integer integer,
+	name varchar(255) not null,
+	description varchar(2000) not null,
+	last_edited_by integer not null,
+	sys_period tstzrange not null default tstzrange(current_timestamp, null),
+	CONSTRAINT user_repository_role_pkey
+		PRIMARY KEY (repository_role_id),
+	CONSTRAINT repository_role_last_edited_by_fkey 
+		FOREIGN KEY (last_edited_by)
+		REFERENCES gitclub.user(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS gitclub.team_role (
+	team_role_id integer integer,
+	name varchar(255) not null,
+	description varchar(2000) not null,
+	last_edited_by integer not null,
+	sys_period tstzrange not null default tstzrange(current_timestamp, null),
+	CONSTRAINT team_role_pkey
+		PRIMARY KEY (team_role_id),
+	CONSTRAINT team_role_last_edited_by_fkey 
 		FOREIGN KEY (last_edited_by)
 		REFERENCES gitclub.user(user_id)
 );
@@ -93,12 +132,15 @@ CREATE TABLE IF NOT EXISTS gitclub.team (
 CREATE TABLE IF NOT EXISTS gitclub.organization (
 	organization_id integer default nextval('gitclub.organization_seq'),
 	name varchar(255) not null,
-	base_user_repository_role varchar(255) not null,
+	base_user_repository_role integer not null,
 	billing_address text null,
 	last_edited_by integer not null,
 	sys_period tstzrange not null default tstzrange(current_timestamp, null),
 	CONSTRAINT organization_pkey
 		PRIMARY KEY (organization_id),
+	CONSTRAINT organization_base_user_repository_role_fkey 
+		FOREIGN KEY (repository_role_id)
+		REFERENCES gitclub.repository_role(repository_role_id),
 	CONSTRAINT organization_last_edited_by_fkey 
 		FOREIGN KEY (last_edited_by)
 		REFERENCES gitclub.user(user_id)
@@ -146,7 +188,7 @@ CREATE TABLE IF NOT EXISTS gitclub.user_organization_role (
 	user_organization_role_id integer default nextval('gitclub.user_organization_role_seq'),
 	user_id integer not null,
 	organization_id integer not null,
-	name varchar(255) not null,
+	organization_role_id integer not null,
 	last_edited_by integer not null,
 	sys_period tstzrange not null default tstzrange(current_timestamp, null),
 	CONSTRAINT user_organization_role_pkey
@@ -154,6 +196,9 @@ CREATE TABLE IF NOT EXISTS gitclub.user_organization_role (
 	CONSTRAINT user_organization_role_user_id_fkey 
 		FOREIGN KEY (user_id)
 		REFERENCES gitclub.user(user_id),
+	CONSTRAINT user_organization_role_organization_role_id_fkey 
+		FOREIGN KEY (organization_role_id)
+		REFERENCES gitclub.organization_role(organization_role_id),
 	CONSTRAINT user_organization_role_organization_id_fkey 
 		FOREIGN KEY (organization_id)
 		REFERENCES gitclub.organization(organization_id),
@@ -166,7 +211,7 @@ CREATE TABLE IF NOT EXISTS gitclub.user_team_role (
 	user_team_role_id integer default nextval('gitclub.user_team_role_seq'),
 	user_id integer not null,
 	team_id integer not null,
-	name varchar(255) not null,
+	team_role_id integer not null,
 	last_edited_by integer not null,
 	sys_period tstzrange not null default tstzrange(current_timestamp, null),
 	CONSTRAINT user_team_role_pkey
@@ -174,6 +219,9 @@ CREATE TABLE IF NOT EXISTS gitclub.user_team_role (
 	CONSTRAINT user_team_role_user_id_fkey 
 		FOREIGN KEY (user_id)
 		REFERENCES gitclub.user(user_id),
+	CONSTRAINT user_team_role_team_role_id_fkey 
+		FOREIGN KEY (team_role_id)
+		REFERENCES gitclub.team_role(team_role_id),
 	CONSTRAINT user_team_role_team_id_fkey 
 		FOREIGN KEY (team_id)
 		REFERENCES gitclub.team(team_id),
@@ -186,7 +234,7 @@ CREATE TABLE IF NOT EXISTS gitclub.user_repository_role (
 	user_repository_role_id integer default nextval('gitclub.user_repository_role_seq'),
 	user_id integer not null,
 	repository_id integer not null,
-	name varchar(255) not null,
+	repository_role_id integer not null,
 	last_edited_by integer not null,
 	sys_period tstzrange not null default tstzrange(current_timestamp, null),
 	CONSTRAINT user_repository_role_pkey
@@ -194,6 +242,9 @@ CREATE TABLE IF NOT EXISTS gitclub.user_repository_role (
 	CONSTRAINT user_repository_role_user_id_fkey 
 		FOREIGN KEY (user_id)
 		REFERENCES gitclub.user(user_id),
+	CONSTRAINT user_repository_role_repository_role_id_fkey 
+		FOREIGN KEY (repository_role_id)
+		REFERENCES gitclub.repository_role(repository_role_id),
 	CONSTRAINT user_repository_role_repository_id_fkey 
 		FOREIGN KEY (repository_id)
 		REFERENCES gitclub.repository(repository_id),
@@ -206,7 +257,7 @@ CREATE TABLE IF NOT EXISTS gitclub.team_repository_role (
 	user_repository_role_id integer default nextval('gitclub.team_repository_role_seq'),
 	team_id integer not null,
 	repository_id integer not null,
-	name varchar(255) not null,
+	team_role_id integer not null,
 	last_edited_by integer not null,
 	sys_period tstzrange not null default tstzrange(current_timestamp, null),
 	CONSTRAINT team_repository_role_pkey
@@ -214,6 +265,9 @@ CREATE TABLE IF NOT EXISTS gitclub.team_repository_role (
 	CONSTRAINT team_repository_role_team_id_fkey 
 		FOREIGN KEY (team_id)
 		REFERENCES gitclub.team(team_id),
+	CONSTRAINT team_repository_role_team_role_id_fkey 
+		FOREIGN KEY (team_role_id)
+		REFERENCES gitclub.team_role(team_role_id),
 	CONSTRAINT team_repository_role_repository_id_fkey 
 		FOREIGN KEY (repository_id)
 		REFERENCES gitclub.repository(repository_id),
@@ -245,6 +299,18 @@ CREATE TABLE IF NOT EXISTS gitclub.organization_history (
 
 CREATE TABLE IF NOT EXISTS gitclub.user_history (
 	LIKE gitclub.user
+);
+
+CREATE TABLE IF NOT EXISTS gitclub.organization_role_history (
+	LIKE gitclub.organization_role
+);
+
+CREATE TABLE IF NOT EXISTS gitclub.repository_role_history (
+	LIKE gitclub.repository_role
+);
+
+CREATE TABLE IF NOT EXISTS gitclub.team_role_history (
+	LIKE gitclub.team_role
 );
 
 CREATE TABLE IF NOT EXISTS gitclub.repository_history (
@@ -489,6 +555,24 @@ FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
   'sys_period', 'gitclub.organization_history', true
 );
 
+CREATE OR REPLACE TRIGGER organization_role_versioning_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON gitclub.organization_role
+FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
+  'sys_period', 'gitclub.organization_role_history', true
+);
+
+CREATE OR REPLACE TRIGGER repository_role_versioning_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON gitclub.repository_role
+FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
+  'sys_period', 'gitclub.repository_role_history', true
+);
+
+CREATE OR REPLACE TRIGGER team_role_versioning_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON gitclub.team_role
+FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
+  'sys_period', 'gitclub.team_role_history', true
+);
+
 CREATE OR REPLACE TRIGGER user_versioning_trigger
 BEFORE INSERT OR UPDATE OR DELETE ON gitclub.user
 FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
@@ -530,6 +614,34 @@ BEFORE INSERT OR UPDATE OR DELETE ON gitclub.user_repository_role
 FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
   'sys_period', 'gitclub.user_repository_role_history', true
 );
+
+-- Initial data
+INSERT INTO gitclub.user(email, preferred_name, last_edited_by) 
+	VALUES 
+		(1, 'philipp@bytefish.de', 'Data Conversion User', 1)
+	ON CONFLICT DO NOTHING;
+
+INSERT INTO gitclub.repository_role(repository_role_id, name, description, last_edited_by) 
+	VALUES 
+		(1, 'Reader', 'Reader Role on Repository', 1), 
+		(2, 'Triager', 'Triager Role on Repository', 1),
+		(3, 'Writer', 'Writer Role on Repository', 1), 
+		(4, 'Maintainer', 'Maintainer Role on Repository', 1),
+		(5, 'Administrator', 'Administrator Role on Repository', 1)
+	ON CONFLICT DO NOTHING;
+
+INSERT INTO gitclub.organization_role(organization_role_id, name, description, last_edited_by) 
+	VALUES 
+		(1, 'Member', 'Member Role on Organization', 1), 
+		(2, 'BillingManager', 'BillingManager Role on Organization', 1),
+		(3, 'Owner', 'Reader Role on Organization', 1) 
+	ON CONFLICT DO NOTHING;
+
+INSERT INTO gitclub.team_role(team_role_id, name, description, last_edited_by) 
+	VALUES 
+		(1, 'Member', 'Member Role on Team', 1),
+		(2, 'Maintainer', 'Maintainer Role on Team', 1) 
+	ON CONFLICT DO NOTHING;
 
 END;
 $$ LANGUAGE plpgsql;

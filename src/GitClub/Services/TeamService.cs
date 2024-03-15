@@ -3,6 +3,7 @@
 using GitClub.Database;
 using GitClub.Database.Models;
 using GitClub.Infrastructure.Constants;
+using GitClub.Infrastructure.Errors;
 using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
 using Microsoft.EntityFrameworkCore;
@@ -221,6 +222,86 @@ namespace GitClub.Services
 
             // TODO Delete all Tuples for the Team
         }
+
+        public async Task<UserTeamRole> CreateUserTeamRoleAsync(UserTeamRole userTeamRole, int currentUserId, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            bool isAuthorized = await _aclService
+                .CheckUserObjectAsync<Team>(currentUserId, userTeamRole.TeamId, Relations.Writer, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isAuthorized)
+            {
+                throw new EntityUnauthorizedAccessException()
+                {
+                    EntityName = nameof(Team),
+                    EntityId = userTeamRole.TeamId,
+                    UserId = currentUserId,
+                };
+            }
+
+            var userTeamRoleExists = await _applicationDbContext.UserTeamRoles
+                .AnyAsync(x => x.UserId == userTeamRole.UserId && x.TeamId == userTeamRole.TeamId, cancellationToken)
+                .ConfigureAwait(false);
+
+            if(userTeamRoleExists)
+            {
+
+            }
+
+            await _applicationDbContext
+                .AddAsync(userTeamRole)
+                .ConfigureAwait(false);
+
+            await _applicationDbContext
+                .SaveChangesAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            await _aclService
+                .AddRelationshipAsync<Team, User>(userTeamRole.TeamId, userTeamRole.Name, userTeamRole.UserId, null)
+                .ConfigureAwait(false);
+
+            return userTeamRole;
+        }
+
+        public async Task DeleteUserTeamRoleAsync(int teamId, int userId, int currentUserId, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            bool isAuthorized = await _aclService
+                .CheckUserObjectAsync<Team>(currentUserId, teamId, Relations.Writer, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isAuthorized)
+            {
+                throw new EntityUnauthorizedAccessException()
+                {
+                    EntityName = nameof(Team),
+                    EntityId = teamId,
+                    UserId = currentUserId,
+                };
+            }
+
+            var userTeamRole = await _applicationDbContext.UserTeamRoles
+                .Where(x => x.TeamId == teamId && x.UserId == userId)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            if(userTeamRole == null)
+            {
+                throw new UserNotAssignedToTeamException
+                {
+                    TeamId = teamId,
+                    UserId = userId
+                };
+            }
+
+            await _aclService
+                .DeleteRelationshipAsync<Team, User>(teamId, userTeamRole.Name, userId, null, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
 
     }
 }

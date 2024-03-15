@@ -53,6 +53,11 @@ namespace GitClub.Infrastructure.Errors
         public const string EntityConcurrencyFailure = "ApiError_Entity_000003";
 
         /// <summary>
+        /// Invalid Data has been requested.
+        /// </summary>
+        public const string UserNotAssignedToTeam = "ApiError_Team_000001";
+
+        /// <summary>
         /// Resource has not been found.
         /// </summary>
         public const string ResourceNotFound = "ApiError_Routing_000001";

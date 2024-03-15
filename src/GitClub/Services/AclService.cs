@@ -7,6 +7,7 @@ using GitClub.Database.Models;
 using Microsoft.EntityFrameworkCore;
 using GitClub.Models;
 using GitClub.Infrastructure.Logging;
+using OpenFga.Sdk.Model;
 
 namespace GitClub.Services
 {
@@ -325,6 +326,45 @@ namespace GitClub.Services
             await _openFgaClient
                 .DeleteTuples(clientTupleKeys, null, cancellationToken)
                 .ConfigureAwait(false);
+        }
+
+        public async Task WriteAsync(ICollection<RelationTuple> writes, ICollection<RelationTuple> deletes, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            var body = new ClientWriteRequest()
+            {
+                Writes = writes
+                    .Select(x => ToClientTupleKey(x))
+                    .ToList(),
+                Deletes = deletes
+                    .Select(x => ToClientTupleKeyWithoutCondition(x))
+                    .ToList()
+            };
+
+            await _openFgaClient
+                .Write(body, null, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        private ClientTupleKey ToClientTupleKey(RelationTuple source)
+        {
+            return new ClientTupleKey
+            {
+                Object = source.Object,
+                Relation = source.Relation,
+                User = source.Subject
+            };
+        }
+
+        private ClientTupleKeyWithoutCondition ToClientTupleKeyWithoutCondition(RelationTuple source)
+        {
+            return new ClientTupleKeyWithoutCondition
+            {
+                Object = source.Object,
+                Relation = source.Relation,
+                User = source.Subject
+            };
         }
 
         private string ToZanzibarNotation<TEntity>(int? id, string? relation = null)
