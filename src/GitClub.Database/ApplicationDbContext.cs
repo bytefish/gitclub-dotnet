@@ -87,7 +87,6 @@ namespace GitClub.Database
                 .IncrementsBy(1);
 
             // Tables
-
             modelBuilder.Entity<User>(entity =>
             {
                 entity.ToTable("user", "gitclub");
@@ -109,6 +108,132 @@ namespace GitClub.Database
                 entity.Property(e => e.PreferredName)
                     .HasColumnType("varchar(2000)")
                     .HasColumnName("preferred_name")
+                    .HasMaxLength(2000)
+                    .IsRequired(true);
+
+                entity.Property(e => e.RowVersion)
+                    .HasColumnType("xid")
+                    .HasColumnName("xmin")
+                    .IsRowVersion()
+                    .IsConcurrencyToken()
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+
+                entity.Property(e => e.LastEditedBy)
+                    .HasColumnType("integer")
+                    .HasColumnName("last_edited_by")
+                    .IsRequired(true);
+
+                entity.Property(e => e.SysPeriod)
+                    .HasColumnType("tstzrange")
+                    .HasColumnName("sys_period")
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+            });
+
+            modelBuilder.Entity<RepositoryRole>(entity =>
+            {
+                entity.ToTable("repository_role", "gitclub");
+
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Id)
+                    .HasColumnType("integer")
+                    .HasColumnName("repository_role_id");
+
+                entity.Property(e => e.Name)
+                    .HasColumnType("varchar(255)")
+                    .HasColumnName("name")
+                    .HasMaxLength(255)
+                    .IsRequired(true);
+                
+                entity.Property(e => e.Description)
+                    .HasColumnType("varchar(2000)")
+                    .HasColumnName("description")
+                    .HasMaxLength(2000)
+                    .IsRequired(true);
+
+                entity.Property(e => e.RowVersion)
+                    .HasColumnType("xid")
+                    .HasColumnName("xmin")
+                    .IsRowVersion()
+                    .IsConcurrencyToken()
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+
+                entity.Property(e => e.LastEditedBy)
+                    .HasColumnType("integer")
+                    .HasColumnName("last_edited_by")
+                    .IsRequired(true);
+
+                entity.Property(e => e.SysPeriod)
+                    .HasColumnType("tstzrange")
+                    .HasColumnName("sys_period")
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+            });
+
+            modelBuilder.Entity<OrganizationRole>(entity =>
+            {
+                entity.ToTable("organization_role", "gitclub");
+
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Id)
+                    .HasColumnType("integer")
+                    .HasColumnName("organization_role_id");
+
+                entity.Property(e => e.Name)
+                    .HasColumnType("varchar(255)")
+                    .HasColumnName("name")
+                    .HasMaxLength(255)
+                    .IsRequired(true);
+
+                entity.Property(e => e.Description)
+                    .HasColumnType("varchar(2000)")
+                    .HasColumnName("description")
+                    .HasMaxLength(2000)
+                    .IsRequired(true);
+
+                entity.Property(e => e.RowVersion)
+                    .HasColumnType("xid")
+                    .HasColumnName("xmin")
+                    .IsRowVersion()
+                    .IsConcurrencyToken()
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+
+                entity.Property(e => e.LastEditedBy)
+                    .HasColumnType("integer")
+                    .HasColumnName("last_edited_by")
+                    .IsRequired(true);
+
+                entity.Property(e => e.SysPeriod)
+                    .HasColumnType("tstzrange")
+                    .HasColumnName("sys_period")
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+            });
+
+            modelBuilder.Entity<TeamRole>(entity =>
+            {
+                entity.ToTable("team_role", "gitclub");
+
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Id)
+                    .HasColumnType("integer")
+                    .HasColumnName("team_role_id");
+
+                entity.Property(e => e.Name)
+                    .HasColumnType("varchar(255)")
+                    .HasColumnName("name")
+                    .HasMaxLength(255)
+                    .IsRequired(true);
+
+                entity.Property(e => e.Description)
+                    .HasColumnType("varchar(2000)")
+                    .HasColumnName("description")
                     .HasMaxLength(2000)
                     .IsRequired(true);
 
