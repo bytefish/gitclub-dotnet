@@ -53,9 +53,14 @@ namespace GitClub.Infrastructure.Errors
         public const string EntityConcurrencyFailure = "ApiError_Entity_000003";
 
         /// <summary>
-        /// Invalid Data has been requested.
+        /// User has not been assigned to the Team.
         /// </summary>
         public const string UserNotAssignedToTeam = "ApiError_Team_000001";
+        
+        /// <summary>
+        /// User has not been assigned to the Organization.
+        /// </summary>
+        public const string UserNotAssignedToOrganization = "ApiError_Organization_000001";
 
         /// <summary>
         /// Resource has not been found.

@@ -37,7 +37,7 @@ namespace GitClub.Database
         /// <summary>
         /// Gets or sets the OrganizationRoles.
         /// </summary>
-        public DbSet<UserOrganizationRole> OrganizationRoles { get; set; } = null!;
+        public DbSet<UserOrganizationRole> UserOrganizationRoles { get; set; } = null!;
 
         /// <summary>
         /// Gets or sets the Repositories.

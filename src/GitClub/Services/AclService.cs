@@ -8,6 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using GitClub.Models;
 using GitClub.Infrastructure.Logging;
 using OpenFga.Sdk.Model;
+using GitClub.Infrastructure.OpenFga;
 
 namespace GitClub.Services
 {
@@ -34,8 +35,8 @@ namespace GitClub.Services
 
             var body = new ClientCheckRequest
             {
-                Object = ToZanzibarNotation<TObjectType>(objectId),
-                User = ToZanzibarNotation<TSubjectType>(subjectId),
+                Object = ZanzibarFormatters.ToZanzibarNotation<TObjectType>(objectId),
+                User = ZanzibarFormatters.ToZanzibarNotation<TSubjectType>(subjectId),
                 Relation = relation,
             };
 
@@ -85,7 +86,7 @@ namespace GitClub.Services
             var body = new ClientListObjectsRequest
             {
                 Type = typeof(TObjectType).Name,
-                User = ToZanzibarNotation<TSubjectType>(subjectId),
+                User = ZanzibarFormatters.ToZanzibarNotation<TSubjectType>(subjectId),
                 Relation = relation
             };
 
@@ -104,7 +105,7 @@ namespace GitClub.Services
             }
 
             var objectIds = response.Objects
-                .Select(x => FromZanzibarNotation(x))
+                .Select(x => ZanzibarFormatters.FromZanzibarNotation(x))
                 .Select(x => x.Id)
                 .ToArray();
 
@@ -137,9 +138,9 @@ namespace GitClub.Services
             {
                 new ClientTupleKey
                 {
-                    Object = ToZanzibarNotation<TObjectType>(objectId),
+                    Object = ZanzibarFormatters.ToZanzibarNotation<TObjectType>(objectId),
                     Relation = relation,
-                    User = ToZanzibarNotation<TSubjectType>(subjectId, subjectRelation)
+                    User = ZanzibarFormatters.ToZanzibarNotation<TSubjectType>(subjectId, subjectRelation)
                 }
             };
 
@@ -157,9 +158,9 @@ namespace GitClub.Services
             {
                 new ClientTupleKeyWithoutCondition
                 {
-                    Object = ToZanzibarNotation<TObjectType>(objectId),
+                    Object = ZanzibarFormatters.ToZanzibarNotation<TObjectType>(objectId),
                     Relation = relation,
-                    User = ToZanzibarNotation<TSubjectType>(subjectId, subjectRelation)
+                    User = ZanzibarFormatters.ToZanzibarNotation<TSubjectType>(subjectId, subjectRelation)
                 }
             };
 
@@ -229,9 +230,9 @@ namespace GitClub.Services
 
             var body = new ClientReadRequest
             {
-                Object = ToZanzibarNotation<TObjectType>(objectId),
+                Object = ZanzibarFormatters.ToZanzibarNotation<TObjectType>(objectId),
                 Relation = relation,
-                User = ToZanzibarNotation<TSubjectType>(subjectId, subjectRelation),
+                User = ZanzibarFormatters.ToZanzibarNotation<TSubjectType>(subjectId, subjectRelation),
             };
 
             var readResult = new List<RelationTuple>();
@@ -286,9 +287,9 @@ namespace GitClub.Services
 
             return new RelationTuple
             {
-                Object = ToZanzibarNotation<TObjectType>(objectId),
+                Object = ZanzibarFormatters.ToZanzibarNotation<TObjectType>(objectId),
                 Relation = relation,
-                Subject = ToZanzibarNotation<TSubjectType>(subjectId, subjectRelation)
+                Subject = ZanzibarFormatters.ToZanzibarNotation<TSubjectType>(subjectId, subjectRelation)
             };
         }
 
@@ -367,88 +368,5 @@ namespace GitClub.Services
             };
         }
 
-        private string ToZanzibarNotation<TEntity>(int? id, string? relation = null)
-            where TEntity : Entity
-        {
-            _logger.TraceMethodEntry();
-
-            return ToZanzibarNotation(typeof(TEntity).Name, id, relation);
-        }
-
-        private string ToZanzibarNotation(string type, int? id, string? relation = null)
-        {
-            _logger.TraceMethodEntry();
-
-            var strId = id == null ? "" : id.ToString();
-
-            if (string.IsNullOrWhiteSpace(relation))
-            {
-                return $"{type}:{strId}";
-            }
-
-            return $"{type}:{strId}#{relation}";
-        }
-
-        private (string Type, int Id, string? relation) FromZanzibarNotation(string s)
-        {
-            _logger.TraceMethodEntry();
-
-            if (s.Contains('#'))
-            {
-                return FromZanzibarNotationWithRelation(s);
-            }
-
-            return FromZanzibarNotationWithoutRelation(s);
-        }
-
-        private (string Type, int Id, string? relation) FromZanzibarNotationWithoutRelation(string s)
-        {
-            _logger.TraceMethodEntry();
-
-            var parts = s.Split(':');
-
-            if (parts.Length != 2)
-            {
-                throw new InvalidOperationException($"'{s}' is not a valid string. Expected a Type and Id, such as 'User:1'");
-            }
-
-            var type = parts[0];
-
-            if (!int.TryParse(parts[1], out var id))
-            {
-                throw new InvalidOperationException($"'{s}' is not a valid string. The Id '{parts[1]}' is not a valid integer");
-            }
-
-            return (type, id, null);
-        }
-
-        private (string Type, int Id, string? relation) FromZanzibarNotationWithRelation(string s)
-        {
-            _logger.TraceMethodEntry();
-
-            var parts = s.Split("#");
-
-            if (parts.Length != 2)
-            {
-                throw new InvalidOperationException("Invalid Userset String, expected format 'Type:Id#Relation''");
-            }
-
-            var innerParts = parts[0].Split(":");
-
-            if (innerParts.Length != 2)
-            {
-                throw new InvalidOperationException("Invalid Userset String, expected format 'Type:Id#Relation'");
-            }
-
-            var type = innerParts[0];
-            var relation = parts[1];
-
-            if (!int.TryParse(innerParts[1], out var id))
-            {
-                throw new InvalidOperationException($"Invalid Userset String, the Id '{innerParts[1]}' is not a valid integer");
-            }
-
-            return (type, id, relation);
-        }
     }
 }

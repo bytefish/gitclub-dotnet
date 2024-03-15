@@ -1,4 +1,8 @@
-﻿namespace GitClub.Models
+﻿using GitClub.Database.Models;
+using GitClub.Infrastructure.OpenFga;
+using OpenFga.Sdk.Model;
+
+namespace GitClub.Models
 {
     public record RelationTuple
     {
@@ -16,5 +20,29 @@
         /// Gets or sets the Subject.
         /// </summary>
         public required string Subject { get; set; }
+
+        public static RelationTuple Create<TObjectType, TSubjectType>(TObjectType @object, TSubjectType subject, string relation, string? subjectRelation = null)
+            where TObjectType : Entity
+            where TSubjectType : Entity
+        {
+            return new RelationTuple
+            {
+                Object = ZanzibarFormatters.ToZanzibarNotation(@object),
+                Relation = relation,
+                Subject = ZanzibarFormatters.ToZanzibarNotation(subject, subjectRelation)
+            };
+        }
+        public static RelationTuple Create<TObjectType, TSubjectType>(int objectId, int subjectId, string relation, string? subjectRelation = null)
+            where TObjectType : Entity
+            where TSubjectType : Entity
+        {
+            return new RelationTuple
+            {
+                Object = ZanzibarFormatters.ToZanzibarNotation<TObjectType>(objectId),
+                Relation = relation,
+                Subject = ZanzibarFormatters.ToZanzibarNotation<TSubjectType>(subjectId, subjectRelation)
+            };
+        }
+
     }
 }
