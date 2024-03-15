@@ -47,7 +47,7 @@ namespace GitClub.Database
         /// <summary>
         /// Gets or sets the RepositoryRoles.
         /// </summary>
-        public DbSet<UserRepositoryRole> RepositoryRoles { get; set; } = null!;
+        public DbSet<UserRepositoryRole> UserRepositoryRoles { get; set; } = null!;
 
         /// <summary>
         /// Gets or sets the Teams.
