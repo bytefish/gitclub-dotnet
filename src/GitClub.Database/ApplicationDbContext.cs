@@ -59,6 +59,11 @@ namespace GitClub.Database
         /// </summary>
         public DbSet<UserTeamRole> UserTeamRoles { get; set; } = null!;
 
+        /// <summary>
+        /// Gets or sets the TeamRepositoryRole.
+        /// </summary>
+        public DbSet<TeamRepositoryRole> TeamRepositoryRoles { get; set; } = null!;
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Sequences

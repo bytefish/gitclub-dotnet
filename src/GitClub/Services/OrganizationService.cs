@@ -5,6 +5,7 @@ using GitClub.Database.Models;
 using GitClub.Infrastructure.Constants;
 using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
+using GitClub.Infrastructure.OpenFga;
 using GitClub.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
@@ -29,10 +30,8 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            // Make sure the Current User is the last editor:
             organization.LastEditedBy = currentUserId;
 
-            // Add the new Task, the HiLo Pattern automatically assigns a new Id using the HiLo Pattern
             await _applicationDbContext
                 .AddAsync(organization, cancellationToken)
                 .ConfigureAwait(false);
@@ -42,14 +41,14 @@ namespace GitClub.Services
                 .ConfigureAwait(false);
 
             // Write Tuples to Zanzibar
-            var relationsToWrite = new[]
+            var tuplesToWrite = new[]
             {
-                RelationTuple.Create<Organization, Organization>(organization, organization, organization.BaseRepositoryRole.ToString(), Relations.Member),
-                RelationTuple.Create<Organization, User>(organization.Id, currentUserId, OrganizationRoleEnum.Owner.ToString()),
+                RelationTuples.Create<Organization, Organization>(organization, organization, organization.BaseRepositoryRole, Relations.Member),
+                RelationTuples.Create<Organization, User>(organization.Id, currentUserId, OrganizationRoleEnum.Owner),
             };
 
             await _aclService
-                .AddRelationshipsAsync(relationsToWrite, cancellationToken)
+                .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
                 .ConfigureAwait(false);
 
             return organization;
@@ -60,7 +59,7 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanRead, cancellationToken)
+                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, OrganizationRoleEnum.Member, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -94,7 +93,7 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             var organizations = await _aclService
-                .ListUserObjectsAsync<Organization>(userId, Actions.CanRead, cancellationToken)
+                .ListUserObjectsAsync<Organization>(userId, OrganizationRoleEnum.Member.AsRelation(), cancellationToken)
                 .ConfigureAwait(false);
 
             return organizations;
@@ -105,7 +104,7 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanRead, cancellationToken)
+                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, OrganizationRoleEnum.Owner, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -118,7 +117,7 @@ namespace GitClub.Services
             }
 
             bool isUpdateAuthorized = await _aclService
-                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanWrite, cancellationToken)
+                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, OrganizationRoleEnum.Owner, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -131,11 +130,12 @@ namespace GitClub.Services
                 };
             }
 
-            var organization = await _applicationDbContext.Organizations
+            var original = await _applicationDbContext.Organizations
                 .Where(x => x.Id == organizationId)
-                .FirstAsync(cancellationToken);
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
 
-            if (organization == null)
+            if (original == null)
             {
                 throw new EntityNotFoundException()
                 {
@@ -145,11 +145,11 @@ namespace GitClub.Services
             }
 
             int rowsAffected = await _applicationDbContext.Organizations
-                .Where(t => t.Id == organization.Id && t.RowVersion == organization.RowVersion)
+                .Where(t => t.Id == organizationId && t.RowVersion == values.RowVersion)
                 .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(x => x.Name, organization.Name)
-                    .SetProperty(x => x.BaseRepositoryRole, organization.BaseRepositoryRole)
-                    .SetProperty(x => x.BillingAddress, organization.BillingAddress)
+                    .SetProperty(x => x.Name, values.Name)
+                    .SetProperty(x => x.BaseRepositoryRole, values.BaseRepositoryRole)
+                    .SetProperty(x => x.BillingAddress, values.BillingAddress)
                     .SetProperty(x => x.LastEditedBy, currentUserId), cancellationToken)
                 .ConfigureAwait(false);
 
@@ -158,31 +158,39 @@ namespace GitClub.Services
                 throw new EntityConcurrencyException()
                 {
                     EntityName = nameof(Organization),
-                    EntityId = organization.Id,
+                    EntityId = original.Id,
                 };
             }
 
-            var relationsToWrite = new RelationTuple
+            var tuplesToWrite = new[] 
             {
-                Object = $"Organization:{organizationId}",
-                Relation = baseRepositoryRole,
-                Subject = $"Organization:{organizationId}#member"
+                RelationTuples.Create<Organization, Organization>(organizationId, organizationId, values.BaseRepositoryRole, Relations.Member)
             };
 
-            var relationsToDelete = new RelationTuple
+            var tuplesToDelete = new []
             {
-                Object = $"Organization:{organizationId}",
-                Relation = organization.BaseRepositoryRole,
-                Subject = $"Organization:{organizationId}#member"
+                RelationTuples.Create<Organization, Organization>(organizationId, organizationId, original.BaseRepositoryRole, Relations.Member)
             };
 
             await _aclService
-                .WriteAsync([relationsToWrite], [relationsToDelete], cancellationToken)
+                .WriteAsync(tuplesToWrite, tuplesToDelete, cancellationToken)
                 .ConfigureAwait(false);
 
+            var updated = await _applicationDbContext.Organizations
+                .Where(x => x.Id == organizationId)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
 
+            if (updated == null)
+            {
+                throw new EntityNotFoundException()
+                {
+                    EntityName = nameof(Organization),
+                    EntityId = organizationId,
+                };
+            }
 
-            return organization;
+            return updated;
         }
 
         public async Task DeleteOrganizationAsync(int organizationId, int currentUserId, CancellationToken cancellationToken)
@@ -190,7 +198,7 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanRead, cancellationToken)
+                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, OrganizationRoleEnum.Owner, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -202,8 +210,7 @@ namespace GitClub.Services
                 };
             }
 
-            var organization = await _applicationDbContext.Organizations
-                .AsNoTracking()
+            var organization = await _applicationDbContext.Organizations.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == organizationId, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -217,7 +224,7 @@ namespace GitClub.Services
             }
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanWrite, cancellationToken)
+                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, OrganizationRoleEnum.Owner, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isAuthorized)
@@ -230,13 +237,44 @@ namespace GitClub.Services
                 };
             }
 
-            await _applicationDbContext.Organizations
-                    .Where(t => t.Id == organization.Id)
+            using (var transaction = await _applicationDbContext.Database
+                .BeginTransactionAsync(cancellationToken)
+                .ConfigureAwait(false))
+            {                
+                var userOrganizationRoles = await _applicationDbContext.UserOrganizationRoles.AsNoTracking()
+                    .Where(x => x.OrganizationId == organizationId)
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                await _applicationDbContext.UserOrganizationRoles
+                    .Where(x => x.OrganizationId == organization.Id)
                     .ExecuteDeleteAsync(cancellationToken)
                     .ConfigureAwait(false);
 
-            // TODO Delete all Tuples for the Organization
+                await _applicationDbContext.Organizations
+                        .Where(t => t.Id == organization.Id)
+                        .ExecuteDeleteAsync(cancellationToken)
+                        .ConfigureAwait(false);
 
+                await transaction
+                    .CommitAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                // Delete Relations from Zanzibar
+                List<RelationTuple> tuplesToDelete =
+                [
+                    RelationTuples.Create<Organization, Organization>(organizationId, organizationId, organization.BaseRepositoryRole, Relations.Member)
+                ];
+
+                foreach(var userOrganizationRole in userOrganizationRoles)
+                {
+                    var tuple = RelationTuples.Create<Organization, User>(userOrganizationRole.OrganizationId, userOrganizationRole.UserId, userOrganizationRole.Role);
+
+                    tuplesToDelete.Add(tuple);
+                }
+
+                await _aclService.DeleteRelationshipsAsync(tuplesToDelete, cancellationToken);
+            }
         }
 
         public async Task<UserOrganizationRole> AddUserToOrganizationAsync(int organizationId, int userId, OrganizationRoleEnum role, int currentUserId, CancellationToken cancellationToken)
@@ -244,7 +282,7 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanWrite, cancellationToken)
+                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, OrganizationRoleEnum.Owner, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isAuthorized)
@@ -276,7 +314,7 @@ namespace GitClub.Services
             // Write Tuples to Zanzibar
             var relationsToWrite = new[]
             {
-                RelationTuple.Create<Organization, User>(organizationId, currentUserId, role.ToString()),
+                RelationTuples.Create<Organization, User>(organizationId, currentUserId, role),
             };
 
             await _aclService
@@ -291,7 +329,7 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, Actions.CanWrite, cancellationToken)
+                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, OrganizationRoleEnum.Owner, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isAuthorized)
@@ -324,15 +362,14 @@ namespace GitClub.Services
                 .ConfigureAwait(false);
 
             // Delete Tuple from Zanzibar
-            var relationsToWrite = new[]
+            var relationsToDelete = new[]
             {
-                RelationTuple.Create<Organization, User>(organizationId, currentUserId, organizationRole.Role.ToString()),
+                RelationTuples.Create<Organization, User>(organizationId, userId, organizationRole.Role),
             };
 
             await _aclService
-                .DeleteRelationshipAsync<Organization, User>(organizationId, Relations.Member, userId, null, cancellationToken)
+                .DeleteRelationshipsAsync(relationsToDelete, cancellationToken)
                 .ConfigureAwait(false);
         }
-
     }
 }

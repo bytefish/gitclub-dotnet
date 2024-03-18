@@ -26,7 +26,7 @@ namespace GitClub.Infrastructure.Exceptions
         public required int OrganizationId { get; set; }
 
         /// <summary>
-        /// Creates a new <see cref="EntityNotFoundException"/>.
+        /// Creates a new <see cref="UserNotAssignedToOrganizationException"/>.
         /// </summary>
         /// <param name="message">Error Message</param>
         /// <param name="innerException">Reference to the Inner Exception</param>

@@ -55,12 +55,52 @@ namespace GitClub.Infrastructure.Errors
         /// <summary>
         /// User has not been assigned to the Team.
         /// </summary>
-        public const string UserNotAssignedToTeam = "ApiError_Team_000001";
-        
+        public const string UserNotAssignedToTeam = "ApiError_Team_000002";
+
+        /// <summary>
+        /// User has already been assigned to the Team.
+        /// </summary>
+        public const string UserAlreadyAssignedToTeam = "ApiError_Team_000001";
+
         /// <summary>
         /// User has not been assigned to the Organization.
         /// </summary>
         public const string UserNotAssignedToOrganization = "ApiError_Organization_000001";
+        
+        /// <summary>
+        /// User has already been assigned to the Organization.
+        /// </summary>
+        public const string UserAlreadyAssignedToOrganization = "ApiError_Organization_000002";
+
+        /// <summary>
+        /// Team has not been assigned to the Organization.
+        /// </summary>
+        public const string TeamNotAssignedToOrganization = "ApiError_Organization_000003";
+        
+        /// <summary>
+        /// Team has already been assigned to the Organization.
+        /// </summary>
+        public const string TeamAlreadyAssignedToOrganization = "ApiError_Organization_000004";
+
+        /// <summary>
+        /// User has not been assigned to the Repo.
+        /// </summary>
+        public const string UserNotAssignedToRepository = "ApiError_Repository_000001";
+        
+        /// <summary>
+        /// User has already been assigned to the Repo.
+        /// </summary>
+        public const string UserAlreadyAssignedToRepository = "ApiError_Repository_000002";
+        
+        /// <summary>
+        /// User has not been assigned to the Repo.
+        /// </summary>
+        public const string TeamNotAssignedToRepository = "ApiError_Repository_000003";
+        
+        /// <summary>
+        /// User has already been assigned to the Repo.
+        /// </summary>
+        public const string TeamAlreadyAssignedToRepository = "ApiError_Repository_000004";
 
         /// <summary>
         /// Resource has not been found.

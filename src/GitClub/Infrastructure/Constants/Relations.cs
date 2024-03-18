@@ -8,9 +8,14 @@ namespace GitClub.Infrastructure.Constants
     public static class Relations
     {
         /// <summary>
+        /// Reader.
+        /// </summary>
+        public static readonly string Reader = "reader";
+
+        /// <summary>
         /// Admin.
         /// </summary>
-        public static readonly string Admin = "admin";
+        public static readonly string Administrator = "administrator";
         
         /// <summary>
         /// Admin.
@@ -41,6 +46,11 @@ namespace GitClub.Infrastructure.Constants
         /// Creator.
         /// </summary>
         public static readonly string Creator = "creator";
+        
+        /// <summary>
+        /// Billing Manager.
+        /// </summary>
+        public static readonly string BillingManager = "billing_manager";
 
         /// <summary>
         /// RepoAdmin.

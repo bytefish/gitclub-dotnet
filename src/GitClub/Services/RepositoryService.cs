@@ -5,6 +5,8 @@ using GitClub.Database.Models;
 using GitClub.Infrastructure.Constants;
 using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
+using GitClub.Infrastructure.OpenFga;
+using GitClub.Models;
 using Microsoft.EntityFrameworkCore;
 
 namespace GitClub.Services
@@ -29,7 +31,7 @@ namespace GitClub.Services
 
             // Make sure the Current User is the last editor:
             repository.LastEditedBy = currentUserId;
-
+            
             // Add the new Task, the HiLo Pattern automatically assigns a new Id using the HiLo Pattern
             await _applicationDbContext
                 .AddAsync(repository, cancellationToken)
@@ -39,9 +41,14 @@ namespace GitClub.Services
                 .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            // Add to ACL Store
+            // Write tuples to Zanzibar
+            var tuplesToWrite = new[]
+            {
+                RelationTuple.Create<Repository, Organization>(repository.Id, repository.OrganizationId, Relations.Owner)
+            };
+
             await _aclService
-                .AddRelationshipAsync<Repository, User>(repository.Id, Relations.Owner, currentUserId, null)
+                .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
                 .ConfigureAwait(false);
 
             return repository;
@@ -52,7 +59,7 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanRead, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Reader, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -64,8 +71,7 @@ namespace GitClub.Services
                 };
             }
 
-            var repository = await _applicationDbContext.Repositories
-                .AsNoTracking()
+            var repository = await _applicationDbContext.Repositories.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == repositoryId, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -86,7 +92,7 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Organization>(userId, organizationId, Actions.CanRead, cancellationToken)
+                .CheckUserObjectAsync<Organization>(userId, organizationId, OrganizationRoleEnum.Member, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -98,8 +104,7 @@ namespace GitClub.Services
                 };
             }
 
-            var repositories = await _applicationDbContext.Repositories
-                .AsNoTracking()
+            var repositories = await _applicationDbContext.Repositories.AsNoTracking()
                 .Where(x => x.OrganizationId == organizationId)
                 .ToListAsync()
                 .ConfigureAwait(false);
@@ -107,23 +112,23 @@ namespace GitClub.Services
             return repositories;
         }
 
-        public async Task<List<Repository>> GetRepositorysByUserIdAsync(int userId, CancellationToken cancellationToken)
+        public async Task<List<Repository>> GetRepositoriesByUserIdAsync(int userId, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             var repositories = await _aclService
-                .ListUserObjectsAsync<Repository>(userId, Actions.CanRead, cancellationToken)
+                .ListUserObjectsAsync<Repository>(userId, RepositoryRoleEnum.Reader.AsRelation(), cancellationToken)
                 .ConfigureAwait(false);
 
             return repositories;
         }
 
-        public async Task<Repository> UpdateRepositoryAsync(int repositoryId, Repository repository, int currentUserId, CancellationToken cancellationToken)
+        public async Task<Repository> UpdateRepositoryAsync(int repositoryId, Repository values, int currentUserId, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanRead, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Reader, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -131,29 +136,29 @@ namespace GitClub.Services
                 throw new EntityNotFoundException()
                 {
                     EntityName = nameof(Repository),
-                    EntityId = repository.Id,
+                    EntityId = values.Id,
                 };
             }
 
             bool isUpdateAuthorized = await _aclService
-                .CheckUserObjectAsync(currentUserId, repository, Actions.CanWrite, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Writer, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (!isReadAuthorized)
+            if (!isUpdateAuthorized)
             {
                 throw new EntityUnauthorizedAccessException()
                 {
                     EntityName = nameof(Repository),
-                    EntityId = repository.Id,
+                    EntityId = values.Id,
                     UserId = currentUserId,
                 };
             }
 
             int rowsAffected = await _applicationDbContext.Repositories
-                .Where(t => t.Id == repositoryId && t.RowVersion == repository.RowVersion)
+                .Where(t => t.Id == repositoryId && t.RowVersion == values.RowVersion)
                 .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(x => x.Name, repository.Name)
-                    .SetProperty(x => x.OrganizationId, repository.OrganizationId)
+                    .SetProperty(x => x.Name, values.Name)
+                    .SetProperty(x => x.OrganizationId, values.OrganizationId)
                     .SetProperty(x => x.LastEditedBy, currentUserId), cancellationToken)
                 .ConfigureAwait(false);
 
@@ -162,11 +167,25 @@ namespace GitClub.Services
                 throw new EntityConcurrencyException()
                 {
                     EntityName = nameof(Repository),
-                    EntityId = repository.Id,
+                    EntityId = values.Id,
                 };
             }
 
-            return repository;
+            var updated = await _applicationDbContext.Repositories
+                .Where(x => x.Id == repositoryId)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            if (updated == null)
+            {
+                throw new EntityNotFoundException()
+                {
+                    EntityName = nameof(Repository),
+                    EntityId = repositoryId,
+                };
+            }
+
+            return updated;
         }
 
         public async Task DeleteRepositoryAsync(int repositoryId, int currentUserId, CancellationToken cancellationToken)
@@ -174,7 +193,7 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanRead, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Maintainer, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -186,8 +205,7 @@ namespace GitClub.Services
                 };
             }
 
-            var repository = await _applicationDbContext.Repositories
-                .AsNoTracking()
+            var repository = await _applicationDbContext.Repositories.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == repositoryId, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -200,11 +218,11 @@ namespace GitClub.Services
                 };
             }
 
-            bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanWrite, cancellationToken)
+            bool isUpdateAuthorized = await _aclService
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Writer, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (!isAuthorized)
+            if (!isUpdateAuthorized)
             {
                 throw new EntityUnauthorizedAccessException()
                 {
@@ -214,12 +232,61 @@ namespace GitClub.Services
                 };
             }
 
-            await _applicationDbContext.Repositories
+            using (var transaction = await _applicationDbContext.Database
+                    .BeginTransactionAsync(cancellationToken)
+                    .ConfigureAwait(false))
+            {
+
+                var userRepositoryRoles = await _applicationDbContext.UserRepositoryRoles.AsNoTracking()
                     .Where(t => t.Id == repository.Id)
-                    .ExecuteDeleteAsync(cancellationToken)
+                    .ToListAsync(cancellationToken)
                     .ConfigureAwait(false);
 
-            // TODO Delete all Tuples for the Repository
+                var teamRepositoryRoles = await _applicationDbContext.TeamRepositoryRoles.AsNoTracking()
+                    .Where(t => t.Id == repository.Id)
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                await _applicationDbContext.UserRepositoryRoles
+                        .Where(t => t.Id == repository.Id)
+                        .ExecuteDeleteAsync(cancellationToken)
+                        .ConfigureAwait(false);
+
+                await _applicationDbContext.TeamRepositoryRoles
+                        .Where(t => t.Id == repository.Id)
+                        .ExecuteDeleteAsync(cancellationToken)
+                        .ConfigureAwait(false);
+
+                await _applicationDbContext.Repositories
+                        .Where(t => t.Id == repository.Id)
+                        .ExecuteDeleteAsync(cancellationToken)
+                        .ConfigureAwait(false);
+
+                await transaction
+                    .CommitAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                // Delete tuples in Zanzibar
+                List<RelationTuple> tuplesToDelete = [];
+
+                foreach (var userRepositoryRole in userRepositoryRoles)
+                {
+                    var tuple = RelationTuples.Create<Repository, User>(userRepositoryRole.RepositoryId, userRepositoryRole.UserId, userRepositoryRole.Role);
+
+                    tuplesToDelete.Add(tuple);
+                }
+
+                foreach (var teamRepositoryRole in teamRepositoryRoles)
+                {
+                    var tuple = RelationTuples.Create<Repository, Team>(teamRepositoryRole.RepositoryId, teamRepositoryRole.TeamId, teamRepositoryRole.Role);
+
+                    tuplesToDelete.Add(tuple);
+                }
+
+                await _aclService
+                    .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
+                    .ConfigureAwait(false);
+            }
         }
 
         public async Task<UserRepositoryRole> AddUserToRepositoryAsync(int repositoryId, int userId, RepositoryRoleEnum role, int currentUserId, CancellationToken cancellationToken)
@@ -227,7 +294,7 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanWrite, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Maintainer, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isAuthorized)
@@ -256,8 +323,14 @@ namespace GitClub.Services
                 .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
 
+            // Write Tuples to Zanzibar
+            var tuplesToWrite = new[]
+            {
+                RelationTuples.Create<Repository, User>(repositoryRole.RepositoryId, repositoryRole.UserId, repositoryRole.Role)
+            };
+
             await _aclService
-                .AddRelationshipAsync<Repository, User>(repositoryId, Relations.Member, userId, null)
+                .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
                 .ConfigureAwait(false);
 
             return repositoryRole;
@@ -268,7 +341,7 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, Actions.CanWrite, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Maintainer, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isAuthorized)
@@ -281,14 +354,143 @@ namespace GitClub.Services
                 };
             }
 
-            await _applicationDbContext
-                .RepositoryRoles
-                .Where(x => x.Id == repositoryId)
+            var userRepositoryRole = await _applicationDbContext.UserRepositoryRoles.AsNoTracking()
+                .Where(x => x.UserId == userId && x.RepositoryId == repositoryId)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            if(userRepositoryRole == null)
+            {
+                throw new UserNotAssignedToRepositoryException
+                {
+                    RepositoryId = repositoryId,
+                    UserId = userId
+                };
+            }
+
+            await _applicationDbContext.UserRepositoryRoles
+                .Where(x => x.Id == userRepositoryRole.Id)
                 .ExecuteDeleteAsync(cancellationToken)
                 .ConfigureAwait(false);
 
+            // Delete Tuples from Zanzibar
+            var tuplesToDelete = new[]
+            {
+                RelationTuples.Create<Repository, User>(userRepositoryRole.RepositoryId, userRepositoryRole.UserId, userRepositoryRole.Role)
+            };
+
             await _aclService
-                .DeleteRelationshipAsync<Repository, User>(repositoryId, Relations.Member, userId, null, cancellationToken)
+                .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        public async Task<TeamRepositoryRole> AddTeamToRepositoryAsync(int repositoryId, int teamId, RepositoryRoleEnum role, int currentUserId, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            bool isAuthorized = await _aclService
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Maintainer, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isAuthorized)
+            {
+                throw new EntityUnauthorizedAccessException()
+                {
+                    EntityName = nameof(Repository),
+                    EntityId = repositoryId,
+                    UserId = currentUserId,
+                };
+            }
+
+
+            var teamIsAlreadyAssignedToRepository = await _applicationDbContext.TeamRepositoryRoles.AsNoTracking()
+                .Where(x => x.TeamId == teamId && x.RepositoryId == repositoryId)
+                .AnyAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            if (teamIsAlreadyAssignedToRepository)
+            {
+                throw new TeamAlreadyAssignedToRepositoryException
+                {
+                    RepositoryId = repositoryId,
+                    TeamId = teamId
+                };
+            }
+
+            var teamRepositoryRole = new TeamRepositoryRole
+            {
+                RepositoryId = repositoryId,
+                TeamId = teamId,
+                Role = role,
+                LastEditedBy = currentUserId,
+            };
+
+            await _applicationDbContext
+                .AddAsync(teamRepositoryRole)
+                .ConfigureAwait(false);
+
+            await _applicationDbContext
+                .SaveChangesAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            // Write Tuples to Zanzibar
+            var tuplesToWrite = new[]
+            {
+                RelationTuples.Create<Repository, Team>(teamRepositoryRole.RepositoryId, teamRepositoryRole.TeamId, teamRepositoryRole.Role)
+            };
+
+            await _aclService
+                .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
+                .ConfigureAwait(false);
+
+            return teamRepositoryRole;
+        }
+
+        public async Task RemoveTeamFromRepositoryAsync(int repositoryId, int teamId, int currentUserId, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            bool isAuthorized = await _aclService
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Maintainer, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isAuthorized)
+            {
+                throw new EntityUnauthorizedAccessException()
+                {
+                    EntityName = nameof(Repository),
+                    EntityId = repositoryId,
+                    UserId = currentUserId,
+                };
+            }
+
+            var teamRepositoryRole = await _applicationDbContext.TeamRepositoryRoles.AsNoTracking()
+                .Where(x => x.TeamId == teamId && x.RepositoryId == repositoryId)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            if (teamRepositoryRole == null)
+            {
+                throw new TeamNotAssignedToRepositoryException
+                {
+                    RepositoryId = repositoryId,
+                    TeamId = teamId
+                };
+            }
+
+            await _applicationDbContext.UserRepositoryRoles
+                .Where(x => x.Id == teamRepositoryRole.Id)
+                .ExecuteDeleteAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            // Delete Tuples from Zanzibar
+            var tuplesToDelete = new[]
+            {
+                RelationTuples.Create<Repository, Team>(teamRepositoryRole.RepositoryId, teamRepositoryRole.TeamId, teamRepositoryRole.Role)
+            };
+
+            await _aclService
+                .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
                 .ConfigureAwait(false);
         }
     }

@@ -1,6 +1,5 @@
 ﻿using GitClub.Database.Models;
 using GitClub.Infrastructure.OpenFga;
-using OpenFga.Sdk.Model;
 
 namespace GitClub.Models
 {
@@ -43,6 +42,5 @@ namespace GitClub.Models
                 Subject = ZanzibarFormatters.ToZanzibarNotation<TSubjectType>(subjectId, subjectRelation)
             };
         }
-
     }
 }

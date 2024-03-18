@@ -70,7 +70,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var repositories = await repositoryService.GetRepositorysByUserIdAsync(User.GetUserId(), cancellationToken);
+                var repositories = await repositoryService.GetRepositoriesByUserIdAsync(User.GetUserId(), cancellationToken);
 
                 return Ok(repositories);
             }

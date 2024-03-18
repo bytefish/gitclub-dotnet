@@ -20,7 +20,8 @@ type issue
   relations
 	define owner: [repo]
 	define creator: [user]
-	define reader: reader from owner
+	define reader: creator or reader from owner
+	define writer: creator or writer from owner
 	
 type organization
   relations

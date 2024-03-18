@@ -4,13 +4,13 @@ using GitClub.Infrastructure.Errors;
 
 namespace GitClub.Infrastructure.Exceptions
 {
-    public class UserNotAssignedToTeamException : ApplicationErrorException
+    public class TeamNotAssignedToRepositoryException : ApplicationErrorException
     {
         /// <inheritdoc/>
-        public override string ErrorCode => ErrorCodes.UserNotAssignedToTeam;
+        public override string ErrorCode => ErrorCodes.TeamNotAssignedToRepository;
 
         /// <inheritdoc/>
-        public override string ErrorMessage => $"UserNotAssignedToTeam (UserId = {UserId}, TeamId = {TeamId})";
+        public override string ErrorMessage => $"TeamNotAssignedToRepository (TeamId = {TeamId}, RepositoryId = {RepositoryId})";
 
         /// <inheritdoc/>
         public override int HttpStatusCode => StatusCodes.Status428PreconditionRequired;
@@ -18,19 +18,19 @@ namespace GitClub.Infrastructure.Exceptions
         /// <summary>
         /// Gets or sets the EntityId.
         /// </summary>
-        public required int UserId { get; set; }
+        public required int TeamId { get; set; }
         
         /// <summary>
         /// Gets or sets the EntityId.
         /// </summary>
-        public required int TeamId { get; set; }
+        public required int RepositoryId { get; set; }
 
         /// <summary>
-        /// Creates a new <see cref="UserNotAssignedToTeamException"/>.
+        /// Creates a new <see cref="TeamNotAssignedToRepositoryException"/>.
         /// </summary>
         /// <param name="message">Error Message</param>
         /// <param name="innerException">Reference to the Inner Exception</param>
-        public UserNotAssignedToTeamException(string? message = null, Exception? innerException = null)
+        public TeamNotAssignedToRepositoryException(string? message = null, Exception? innerException = null)
             : base(message, innerException)
         {
         }

@@ -6,7 +6,8 @@ using GitClub.Infrastructure.Constants;
 using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
 using Microsoft.EntityFrameworkCore;
-using OpenFga.Sdk.Model;
+using GitClub.Infrastructure.OpenFga;
+using GitClub.Models;
 
 namespace GitClub.Services
 {
@@ -28,8 +29,11 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            // Make sure the Current User is the last editor:
+            // Make sure the current user is the last editor:
             issue.LastEditedBy = currentUserId;
+
+            // Make sure the current user is the creator:
+            issue.CreatedBy = currentUserId;
 
             // Add the new Task, the HiLo Pattern automatically assigns a new Id using the HiLo Pattern
             await _applicationDbContext
@@ -40,9 +44,15 @@ namespace GitClub.Services
                 .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            // Add to ACL Store
+            // Write tuples to Zanzibar
+            var tuplesToWrite = new[]
+            {
+                RelationTuple.Create<Issue, User>(issue.Id, currentUserId, Relations.Creator),
+                RelationTuple.Create<Issue, Repository>(issue.Id, issue.RepositoryId, Relations.Owner)
+            };
+
             await _aclService
-                .AddRelationshipAsync<Issue, User>(issue.Id, Relations.Owner, currentUserId, null)
+                .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
                 .ConfigureAwait(false);
 
             return issue;
@@ -52,11 +62,11 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Issue>(currentUserId, issueId, Actions.CanRead, cancellationToken)
+            var issue = await _applicationDbContext.Issues.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Id == issueId, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (!isReadAuthorized)
+            if (issue == null)
             {
                 throw new EntityNotFoundException()
                 {
@@ -65,12 +75,11 @@ namespace GitClub.Services
                 };
             }
 
-            var issue = await _applicationDbContext.Issues
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == issueId, cancellationToken)
+            bool isReadAuthorized = await _aclService
+                .CheckUserObjectAsync<Repository>(currentUserId, issue.RepositoryId, RepositoryRoleEnum.Reader, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (issue == null)
+            if (!isReadAuthorized)
             {
                 throw new EntityNotFoundException()
                 {
@@ -87,14 +96,14 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(userId, repositoryId, Actions.CanRead, cancellationToken)
+                .CheckUserObjectAsync<Repository>(userId, repositoryId, RepositoryRoleEnum.Reader, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
             {
                 throw new EntityNotFoundException()
                 {
-                    EntityName = nameof(Repository),
+                    EntityName = nameof(Issue),
                     EntityId = repositoryId,
                 };
             }
@@ -113,7 +122,7 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Organization>(userId, organizationId, Actions.CanRead, cancellationToken)
+                .CheckUserObjectAsync<Organization>(userId, organizationId, OrganizationRoleEnum.Member, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -131,8 +140,7 @@ namespace GitClub.Services
                         where organization.Id.Equals(organizationId)
                         select issue;
 
-            var issues = await query
-                .AsNoTracking()
+            var issues = await query.AsNoTracking()
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
 
@@ -143,72 +151,42 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            var issues = await _aclService
-                .ListUserObjectsAsync<Issue>(userId, Actions.CanRead, cancellationToken)
+            var repositories = await _aclService
+                .ListUserObjectsAsync<Repository>(userId, RepositoryRoleEnum.Reader.AsRelation(), cancellationToken)
+                .ConfigureAwait(false);
+
+            var repositoryIds = repositories
+                .Select(x => x.Id)
+                .ToList();
+
+            var issues = await _applicationDbContext.Issues.AsNoTracking()
+                .Where(x => repositoryIds.Contains(x.Id))
+                .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
 
             return issues;
         }
 
-        public async Task<Issue> UpdateIssueAsync(int issueId, Issue issue, int currentUserId, CancellationToken cancellationToken)
+        public async Task<Issue> UpdateIssueAsync(int issueId, Issue values, int currentUserId, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
-            bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Issue>(currentUserId, issueId, Actions.CanRead, cancellationToken)
+            var original = await _applicationDbContext.Issues.AsNoTracking()
+                .Where(x => x.Id == issueId)
+                .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            if (!isReadAuthorized)
+            if(original == null)
             {
-                throw new EntityNotFoundException()
+                throw new EntityNotFoundException
                 {
                     EntityName = nameof(Issue),
-                    EntityId = issue.Id,
+                    EntityId = issueId,
                 };
             }
-
-            bool isUpdateAuthorized = await _aclService
-                .CheckUserObjectAsync(currentUserId, issue, Actions.CanWrite, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (!isReadAuthorized)
-            {
-                throw new EntityUnauthorizedAccessException()
-                {
-                    EntityName = nameof(Issue),
-                    EntityId = issue.Id,
-                    UserId = currentUserId,
-                };
-            }
-
-            int rowsAffected = await _applicationDbContext.Issues
-                .Where(t => t.Id == issueId && t.RowVersion == issue.RowVersion)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(x => x.Title, issue.Title)
-                    .SetProperty(x => x.Content, issue.Content)
-                    .SetProperty(x => x.Closed, issue.Closed)
-                    .SetProperty(x => x.RepositoryId, issue.RepositoryId)
-                    .SetProperty(x => x.LastEditedBy, currentUserId), cancellationToken)
-                .ConfigureAwait(false);
-
-            if (rowsAffected == 0)
-            {
-                throw new EntityConcurrencyException()
-                {
-                    EntityName = nameof(Issue),
-                    EntityId = issue.Id,
-                };
-            }
-
-            return issue;
-        }
-
-        public async Task DeleteIssueAsync(int issueId, int currentUserId, CancellationToken cancellationToken)
-        {
-            _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Issue>(currentUserId, issueId, Actions.CanRead, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUserId, original.RepositoryId, RepositoryRoleEnum.Reader, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -220,8 +198,59 @@ namespace GitClub.Services
                 };
             }
 
-            var issue = await _applicationDbContext.Issues
-                .AsNoTracking()
+            int rowsAffected = await _applicationDbContext.Issues
+                .Where(t => t.Id == issueId && t.RowVersion == values.RowVersion)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(x => x.Title, values.Title)
+                    .SetProperty(x => x.Content, values.Content)
+                    .SetProperty(x => x.Closed, values.Closed)
+                    .SetProperty(x => x.LastEditedBy, currentUserId), cancellationToken)
+                .ConfigureAwait(false);
+
+            if (rowsAffected == 0)
+            {
+                throw new EntityConcurrencyException()
+                {
+                    EntityName = nameof(Issue),
+                    EntityId = values.Id,
+                };
+            }
+
+            var updated = await _applicationDbContext.Issues.AsNoTracking()
+                .Where(x => x.Id == issueId)
+                .FirstOrDefaultAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            if (updated == null)
+            {
+                throw new EntityNotFoundException
+                {
+                    EntityName = nameof(Issue),
+                    EntityId = issueId,
+                };
+            }
+
+            return updated;
+        }
+
+        public async Task DeleteIssueAsync(int issueId, int currentUserId, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            bool isReadAuthorized = await _aclService
+                .CheckUserObjectAsync<Issue>(currentUserId, issueId, Relations.Reader, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isReadAuthorized)
+            {
+                throw new EntityNotFoundException()
+                {
+                    EntityName = nameof(Issue),
+                    EntityId = issueId,
+                };
+            }
+
+            var issue = await _applicationDbContext.Issues.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == issueId, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -234,11 +263,11 @@ namespace GitClub.Services
                 };
             }
 
-            bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Issue>(currentUserId, issueId, Actions.CanWrite, cancellationToken)
+            bool isDeleteAuthorized = await _aclService
+                .CheckUserObjectAsync<Issue>(currentUserId, issueId, Relations.Writer, cancellationToken)
                 .ConfigureAwait(false);
 
-            if (!isAuthorized)
+            if (!isDeleteAuthorized)
             {
                 throw new EntityUnauthorizedAccessException()
                 {
@@ -253,8 +282,16 @@ namespace GitClub.Services
                     .ExecuteDeleteAsync(cancellationToken)
                     .ConfigureAwait(false);
 
-            // TODO Delete all Tuples for the Issue
-        }
+            // Delete tuples from Zanzibar
+            var tuplesToDelete = new[]
+            {
+                RelationTuple.Create<Issue, User>(issue.Id, currentUserId, Relations.Creator),
+                RelationTuple.Create<Issue, Repository>(issue.Id, issue.RepositoryId, Relations.Owner)
+            };
 
+            await _aclService
+                .AddRelationshipsAsync(tuplesToDelete, cancellationToken)
+                .ConfigureAwait(false);
+        }
     }
 }
