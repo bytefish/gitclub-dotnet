@@ -4,7 +4,7 @@
 $fgaCliExecutable = "${PSScriptRoot}\..\tools\fga.exe"
 
 # CLI Command to execute.
-$fgaCliCmd = "${fgaCliExecutable} tuple write --store-id=${env:OpenFGA__StoreId} --file tuples.json"
+$fgaCliCmd = "${fgaCliExecutable} tuple write --store-id=${env:OpenFGA__StoreId} --file ${PSScriptRoot}\gitclub-tuples.json"
 
 # Invoke the CLI Command.
 $fgaCliCmdResponse = Invoke-Expression $fgaCliCmd

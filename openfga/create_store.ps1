@@ -22,8 +22,8 @@ $fgaStoreId = $fgaStore.store.id
 $fgaAuthorizationModelId = $fgaStore.model.authorization_model_id
 
 # ... write them to the "OpenFGA__..." environment variables
-$env:OpenFGA__StoreId=$fgaStoreId
-$env:OpenFGA__AuthorizationModelId=$fgaAuthorizationModelId
+[Environment]::SetEnvironmentVariable('OpenFGA__StoreId', $fgaStoreId, 'User')
+[Environment]::SetEnvironmentVariable('OpenFGA__AuthorizationModelId', $fgaAuthorizationModelId, 'User')
 
 # ... and output the StoreID for copy and pasting it somewhere else
 Write-Output "OpenFGA StoreId:                  ${fgaStoreId}"

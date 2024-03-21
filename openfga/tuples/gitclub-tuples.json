@@ -55,13 +55,13 @@
         "object": "Organization:1"
     },
     {
-        "user": "organization:1",
+        "user": "Organization:1",
         "relation": "owner",
         "object": "Repository:1"
     },
     {
         "user": "Organization:1#member",
-        "relation": "repo_admin",
+        "relation": "repository_administrator",
         "object": "Organization:1"
     },
 ]
