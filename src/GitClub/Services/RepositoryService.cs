@@ -2,7 +2,6 @@
 
 using GitClub.Database;
 using GitClub.Database.Models;
-using GitClub.Infrastructure.Constants;
 using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.OpenFga;

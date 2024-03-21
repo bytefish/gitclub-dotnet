@@ -8,6 +8,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GitClub.Controllers
 {
+    
     public class ErrorController : ControllerBase
     {
         private readonly ILogger<ErrorController> _logger;
@@ -20,6 +21,7 @@ namespace GitClub.Controllers
             _exceptionToApplicationErrorMapper = exceptionToODataErrorMapper;
         }
 
+        [HttpGet]
         [Route("/error")]
         public IActionResult HandleError()
         {
@@ -37,6 +39,7 @@ namespace GitClub.Controllers
             };
         }
 
+        [HttpGet]
         [Route("/error/401")]
         public IActionResult HandleHttpStatus401()
         {
@@ -61,6 +64,7 @@ namespace GitClub.Controllers
             };
         }
 
+        [HttpGet]
         [Route("/error/404")]
         public IActionResult HandleHttpStatus404()
         {
@@ -83,6 +87,7 @@ namespace GitClub.Controllers
             };
         }
 
+        [HttpGet]
         [Route("/error/405")]
         public IActionResult HandleHttpStatus405()
         {
@@ -105,6 +110,7 @@ namespace GitClub.Controllers
             };
         }
 
+        [HttpGet]
         [Route("/error/429")]
         public IActionResult HandleHttpStatus429()
         {

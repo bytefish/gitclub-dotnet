@@ -21,7 +21,7 @@ namespace GitClub.Controllers
             _exceptionToApplicationErrorMapper = exceptionToODataErrorMapper;
         }
 
-        [HttpPost]
+        [HttpPost("login")]
         public async Task<IActionResult> Login([FromServices] UserService userService, [FromBody] Credentials credentials, CancellationToken cancellationToken)
         {
             try
@@ -46,7 +46,7 @@ namespace GitClub.Controllers
             }
         }
 
-        [HttpPost]
+        [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);

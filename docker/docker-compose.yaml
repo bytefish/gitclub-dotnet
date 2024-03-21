@@ -5,12 +5,12 @@ networks:
 
 services:
   postgres:
-    image: postgres:14
+    image: postgres:16
     container_name: postgres
     networks:
       - openfga
     ports:
-      - "5431:5432"
+      - "5432:5432"
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password

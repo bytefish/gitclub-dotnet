@@ -14,7 +14,7 @@ namespace GitClub.Database.Models
         /// <summary>
         /// Gets or sets the user the entity row version.
         /// </summary>
-        public uint RowVersion { get; set; }
+        public uint? RowVersion { get; set; }
 
         /// <summary>
         /// Gets or sets the user, that made the latest modifications.
