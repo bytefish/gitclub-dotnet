@@ -23,5 +23,10 @@ namespace GitClub.Database.Models
         /// Owner.
         /// </summary>
         Owner = 3,
+
+        /// <summary>
+        /// Administrator.
+        /// </summary>
+        Administrator = 4,
     }
 }

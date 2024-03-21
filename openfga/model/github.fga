@@ -29,8 +29,9 @@ type Issue
 	
 type Organization
   relations
-    define member: [User] or owner
     define owner: [User]
+    define administrator: [User] or owner
+    define member: [User] or administrator
     define repository_administrator: [User, Organization#member]
     define repository_reader: [User, Organization#member]
     define repository_writer: [User, Organization#member]

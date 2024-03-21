@@ -669,7 +669,8 @@ INSERT INTO gitclub.organization_role(organization_role_id, name, description, l
     VALUES 
         (1, 'Member', 'Member Role on Organization', 1), 
         (2, 'BillingManager', 'BillingManager Role on Organization', 1),
-        (3, 'Owner', 'Owner Role on Organization', 1) 
+        (3, 'Owner', 'Owner Role on Organization', 1),
+        (4, 'Administrator', 'Administrator Role on Organization', 1),
     ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.team_role(team_role_id, name, description, last_edited_by) 
