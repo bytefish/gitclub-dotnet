@@ -1,4 +1,6 @@
-﻿namespace GitClub.Models
+﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace GitClub.Models
 {
     /// <summary>
     /// Fake "Credentials".

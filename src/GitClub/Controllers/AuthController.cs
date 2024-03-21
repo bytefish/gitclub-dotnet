@@ -38,7 +38,7 @@ namespace GitClub.Controllers
                 var claimsPrincipal = new ClaimsPrincipal(claimsIdentity);
 
                 // It's a valid ClaimsPrincipal, sign in
-                await HttpContext.SignInAsync(claimsPrincipal, new AuthenticationProperties { IsPersistent = credentials.RememberMe });
+                await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, claimsPrincipal, new AuthenticationProperties { IsPersistent = credentials.RememberMe });
 
                 return Ok();
             }

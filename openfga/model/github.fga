@@ -9,13 +9,13 @@ type Team
 	define creator: [User]
     define member: [User]
 	define reader: creator or member
-	define writer: creator or administrator from owner
+	define writer: creator
 
 type Repository
   relations
     define owner: [Organization]
-    define administrator: [User, Team#member] or repository_admin from owner
-    define maintainer: [User, Team#member] or admin
+    define administrator: [User, Team#member] or repository_administrator from owner
+    define maintainer: [User, Team#member] or administrator
     define reader: [User, Team#member] or triager or repository_reader from owner
     define triager: [User, Team#member] or writer
     define writer: [User, Team#member] or maintainer or repository_writer from owner
@@ -31,6 +31,6 @@ type Organization
   relations
     define member: [User] or owner
     define owner: [User]
-    define repository_admin: [User, Organization#member]
+    define repository_administrator: [User, Organization#member]
     define repository_reader: [User, Organization#member]
     define repository_writer: [User, Organization#member]

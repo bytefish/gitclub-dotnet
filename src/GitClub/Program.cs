@@ -11,6 +11,7 @@ using System.Security.Claims;
 using System.Threading.RateLimiting;
 using GitClub.Infrastructure.Errors.Translators;
 using GitClub.Infrastructure.Errors;
+using Microsoft.AspNetCore.Authentication.Cookies;
 
 // We will log to %LocalAppData%/RebacExperiments to store the Logs, so it doesn't need to be configured 
 // to a different path, when you run it on your machine.
@@ -127,6 +128,32 @@ try
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
+
+
+    // Cookie Authentication
+    builder.Services
+        // Using Cookie Authentication between Frontend and Backend
+        .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
+        // We are going to use Cookies for ...
+        .AddCookie(options =>
+        {
+            options.Cookie.HttpOnly = true;
+            options.Cookie.SameSite = SameSiteMode.Lax; // We don't want to deal with CSRF Tokens
+
+            options.Events.OnRedirectToLogin = (context) =>
+            {
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+
+                return Task.CompletedTask;
+            };
+
+            options.Events.OnRedirectToAccessDenied = (context) =>
+            {
+                context.Response.StatusCode = StatusCodes.Status403Forbidden;
+
+                return Task.CompletedTask;
+            };
+        });
 
     // Add Policies
     builder.Services.AddAuthorization(options =>
