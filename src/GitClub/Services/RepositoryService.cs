@@ -29,13 +29,39 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            // Make sure the Current User is the last editor:
+            bool isAuthorized = await _aclService
+                .CheckUserObjectAsync<Organization>(currentUserId, repository.OrganizationId, OrganizationRoleEnum.Member, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isAuthorized)
+            {
+                throw new EntityUnauthorizedAccessException
+                {
+                    EntityName = nameof(Organization),
+                    EntityId = repository.OrganizationId,
+                    UserId = currentUserId
+                };
+            }
+
+            // Make sure the Current User is the editor:
             repository.LastEditedBy = currentUserId;
             
-            // Add the new Task, the HiLo Pattern automatically assigns a new Id using the HiLo Pattern
             await _applicationDbContext
                 .AddAsync(repository, cancellationToken)
                 .ConfigureAwait(false);
+
+            // The User, that created the Repository is initially
+            // also the Administrator of the Repository.
+            var userRepositoryRole = new UserRepositoryRole
+            {
+                RepositoryId = repository.Id,
+                UserId = currentUserId,
+                Role = RepositoryRoleEnum.Administrator,
+                LastEditedBy = currentUserId
+            };
+
+            await _applicationDbContext
+                .AddAsync(userRepositoryRole);
 
             await _applicationDbContext
                 .SaveChangesAsync(cancellationToken)
@@ -43,8 +69,11 @@ namespace GitClub.Services
 
             // Write tuples to Zanzibar
             var tuplesToWrite = new[]
-            {
-                RelationTuple.Create<Repository, Organization>(repository.Id, repository.OrganizationId, Relations.Owner)
+            {                
+                // The Organization is the Owner of the Repository 
+                RelationTuples.Create<Repository, Organization>(repository.Id, repository.OrganizationId, RepositoryRoleEnum.Owner), // The Organization becomes the Owner of the Repository
+                // The current User is the Administrator of the Repository
+                RelationTuples.Create<Repository, User>(repository.Id, currentUserId, RepositoryRoleEnum.Administrator),
             };
 
             await _aclService

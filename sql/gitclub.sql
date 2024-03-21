@@ -113,6 +113,19 @@ CREATE TABLE IF NOT EXISTS gitclub.team_role (
 		REFERENCES gitclub.user(user_id)
 );
 
+CREATE TABLE IF NOT EXISTS gitclub.base_repository_role (
+	base_repository_role_id integer integer,
+	name varchar(255) not null,
+	description varchar(2000) not null,
+	last_edited_by integer not null,
+	sys_period tstzrange not null default tstzrange(current_timestamp, null),
+	CONSTRAINT base_repository_role_pkey
+		PRIMARY KEY (base_repository_role_id),
+	CONSTRAINT base_repository_role_last_edited_by_fkey 
+		FOREIGN KEY (last_edited_by)
+		REFERENCES gitclub.user(user_id)
+);
+
 CREATE TABLE IF NOT EXISTS gitclub.team (
 	team_id integer default nextval('gitclub.team_seq'),
 	organization_id integer not null,	
@@ -132,15 +145,15 @@ CREATE TABLE IF NOT EXISTS gitclub.team (
 CREATE TABLE IF NOT EXISTS gitclub.organization (
 	organization_id integer default nextval('gitclub.organization_seq'),
 	name varchar(255) not null,
-	base_user_repository_role integer not null,
+	base_repository_role_id integer not null,
 	billing_address text null,
 	last_edited_by integer not null,
 	sys_period tstzrange not null default tstzrange(current_timestamp, null),
 	CONSTRAINT organization_pkey
 		PRIMARY KEY (organization_id),
-	CONSTRAINT organization_base_user_repository_role_fkey 
-		FOREIGN KEY (repository_role_id)
-		REFERENCES gitclub.repository_role(repository_role_id),
+	CONSTRAINT organization_base_repository_role_id_fkey 
+		FOREIGN KEY (base_repository_role_id)
+		REFERENCES gitclub.base_repository_role(base_repository_role_id),
 	CONSTRAINT organization_last_edited_by_fkey 
 		FOREIGN KEY (last_edited_by)
 		REFERENCES gitclub.user(user_id)
@@ -285,12 +298,18 @@ CREATE UNIQUE INDEX IF NOT EXISTS user_email_key
 	
 CREATE UNIQUE INDEX IF NOT EXISTS repository_name_organization_id_key 
 	ON gitclub.repository(name, organization_id);
+	
+CREATE UNIQUE INDEX IF NOT EXISTS repository_role_name_key 
+	ON gitclub.repository_role(name);
 
-CREATE INDEX user_repository_role_name_idx 
-	ON gitclub.user_repository_role USING hash(name);
+CREATE UNIQUE INDEX IF NOT EXISTS team_role_name_key 
+	ON gitclub.team_role(name);
 
-CREATE INDEX user_organization_role_name_idx 
-	ON gitclub.user_organization_role USING hash(name);
+CREATE UNIQUE INDEX IF NOT EXISTS organization_role_name_key 
+	ON gitclub.organization_role(name);
+
+CREATE UNIQUE INDEX IF NOT EXISTS base_repository_role_name_key 
+	ON gitclub.base_repository_role(name);
 
 -- History Tables
 CREATE TABLE IF NOT EXISTS gitclub.organization_history (
@@ -311,6 +330,10 @@ CREATE TABLE IF NOT EXISTS gitclub.repository_role_history (
 
 CREATE TABLE IF NOT EXISTS gitclub.team_role_history (
 	LIKE gitclub.team_role
+);
+
+CREATE TABLE IF NOT EXISTS gitclub.base_repository_role_history (
+	LIKE gitclub.base_repository_role
 );
 
 CREATE TABLE IF NOT EXISTS gitclub.repository_history (
@@ -573,6 +596,12 @@ FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
   'sys_period', 'gitclub.team_role_history', true
 );
 
+CREATE OR REPLACE TRIGGER base_repository_role_versioning_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON gitclub.base_repository_role
+FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
+  'sys_period', 'gitclub.base_repository_role_history', true
+);
+
 CREATE OR REPLACE TRIGGER user_versioning_trigger
 BEFORE INSERT OR UPDATE OR DELETE ON gitclub.user
 FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
@@ -633,13 +662,14 @@ INSERT INTO gitclub.repository_role(repository_role_id, name, description, last_
 		(3, 'Writer', 'Writer Role on Repository', 1), 
 		(4, 'Maintainer', 'Maintainer Role on Repository', 1),
 		(5, 'Administrator', 'Administrator Role on Repository', 1)
+		(5, 'Owner', 'Owner Role on Repository', 1)
 	ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.organization_role(organization_role_id, name, description, last_edited_by) 
 	VALUES 
 		(1, 'Member', 'Member Role on Organization', 1), 
 		(2, 'BillingManager', 'BillingManager Role on Organization', 1),
-		(3, 'Owner', 'Reader Role on Organization', 1) 
+		(3, 'Owner', 'Owner Role on Organization', 1) 
 	ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.team_role(team_role_id, name, description, last_edited_by) 
@@ -655,19 +685,19 @@ INSERT INTO gitclub.organization(organization_id, name, base_user_repository_rol
 
 INSERT INTO gitclub.team(team_id, organization_id, name, last_edited_by) 
 	VALUES 
-		(1, 1, 'Engineering', 'ACME Street. 93', 1) 
-		(2, 1, 'Protocols', 'ACME Street. 93', 1) 
+		(1, 1, 'Engineering', 'ACME Street. 93', 1) -- A Team "Engineering" (1), that belongs to the "contoso" Organization (1)
+		(2, 1, 'Protocols', 'ACME Street. 93', 1)   -- A Team "Protocols" (1), that belongs to the "contoso" Organization (1)
 	ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.repository(repository_id, organization_id, name, last_edited_by)
 	VALUES
-		(1, 1, 'tooling', 1)
+		(1, 1, 'tooling', 1)    -- A Repository "tooling" (1), that belongs to the "contoso" (1) organization
 	ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.user_team_role(user_team_role_id, user_id, team_id, team_role_id, last_edited_by)
 	VALUES
-		(1, 4, 1, 2, 1), -- Charles (4) is a Member (2) or Team contoso/engineering (1)
-		(1, 5, 2, 2, 1) -- Diane (5) is a Member (2) or Team contoso/protocols (2)
+		(1, 4, 1, 2, 1),    -- Charles (4) is a Member (2) or Team contoso/engineering (1)
+		(1, 5, 2, 2, 1)     -- Diane (5) is a Member (2) or Team contoso/protocols (2)
 	ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.user_organization_role(user_organization_role_id, user_id, organization_id, organization_role_id, last_edited_by)

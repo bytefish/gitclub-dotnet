@@ -7,7 +7,6 @@ using GitClub.Database.Models;
 using Microsoft.EntityFrameworkCore;
 using GitClub.Models;
 using GitClub.Infrastructure.Logging;
-using OpenFga.Sdk.Model;
 using GitClub.Infrastructure.OpenFga;
 
 namespace GitClub.Services
@@ -55,6 +54,17 @@ namespace GitClub.Services
             }
 
             return response.Allowed.Value;
+        }
+
+        public async Task<bool> CheckObjectAsync<TObjectType, TSubjectType>(TObjectType @object, string relation, TSubjectType @subject, CancellationToken cancellationToken)
+            where TSubjectType : Entity
+            where TObjectType : Entity
+        {
+            _logger.TraceMethodEntry();
+
+            var allowed = await CheckObjectAsync<TObjectType, TSubjectType>(@object.Id, relation, subject.Id, cancellationToken).ConfigureAwait(false);
+
+            return allowed;
         }
 
         public async Task<bool> CheckUserObjectAsync<TObjectType>(int userId, int objectId, string relation, CancellationToken cancellationToken)
@@ -109,8 +119,7 @@ namespace GitClub.Services
                 .Select(x => x.Id)
                 .ToArray();
 
-            var entities = await _applicationDbContext.Set<TObjectType>()
-                .AsNoTracking()
+            var entities = await _applicationDbContext.Set<TObjectType>().AsNoTracking()
                 .Where(x => objectIds.Contains(x.Id))
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
