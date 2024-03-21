@@ -10,11 +10,6 @@
         "object": "Team:1" 
     },
     {
-        "user": "User:1",
-        "relation": "creator",
-        "object": "Team:1" 
-    },
-    {
         "user": "User:2",
         "relation": "reader",
         "object": "Repository:1" 

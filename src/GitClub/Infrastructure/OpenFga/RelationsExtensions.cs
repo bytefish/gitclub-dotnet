@@ -63,6 +63,7 @@ namespace GitClub.Infrastructure.OpenFga
             {
                 TeamRoleEnum.Member => Relations.Member,
                 TeamRoleEnum.Maintainer => Relations.Maintainer,
+                TeamRoleEnum.Owner => Relations.Owner,
                 _ => throw new ArgumentException($"Could not translate '{source}'", nameof(source))
             };
         }

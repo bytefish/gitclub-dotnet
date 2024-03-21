@@ -9,6 +9,40 @@ Content-Type: application/json
     "roles": [ "Administrator", "User" ]
 }
 
+### Get all Teams
+GET {{GitClub_HostAddress}}/Teams
+Accept: application/json
+
 ### Get Organization Details
 GET {{GitClub_HostAddress}}/Organizations/1
 Accept: application/json
+
+### Create new Team "Rockstar Developers"
+POST {{GitClub_HostAddress}}/Teams
+Content-Type: application/json
+
+{
+    "name": "Rockstar Developers",
+    "organizationId": 1,
+    "lastEditedBy": 1
+}
+
+### Login as "charles"
+POST {{GitClub_HostAddress}}/Auth/login
+Content-Type: application/json
+
+{
+    "email": "charles@git.local",
+    "rememberMe": true,
+    "roles": [ "User" ]
+}
+
+### Create new Team as "amber"
+POST {{GitClub_HostAddress}}/Teams
+Content-Type: application/json
+
+{
+    "name": "My Team",
+    "organizationId": 1,
+    "lastEditedBy": 1
+}

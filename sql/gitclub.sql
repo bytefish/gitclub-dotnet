@@ -676,7 +676,8 @@ INSERT INTO gitclub.organization_role(organization_role_id, name, description, l
 INSERT INTO gitclub.team_role(team_role_id, name, description, last_edited_by) 
     VALUES 
         (1, 'Member', 'Member Role on Team', 1),
-        (2, 'Maintainer', 'Maintainer Role on Team', 1) 
+        (2, 'Maintainer', 'Maintainer Role on Team', 1), 
+        (3, 'Owner', 'Owner Role on Team', 1) 
     ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.base_repository_role(base_repository_role_id, name, description, last_edited_by) 
@@ -710,7 +711,9 @@ INSERT INTO gitclub.user_team_role(user_team_role_id, user_id, team_id, team_rol
 
 INSERT INTO gitclub.user_organization_role(user_organization_role_id, user_id, organization_id, organization_role_id, last_edited_by)
     VALUES
-        (1, 6, 1, 1, 1) -- Erik (6) is a Member (1) of contoso (1)User 
+        (1, 6, 1, 1, 1) -- Erik (6) is a Member (1) of contoso (1),
+        (1, 1, 1, 3, 1) -- Philipp (1) is the Owner (3) of contoso (1) 
+
     ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.user_repository_role(user_repository_role_id, user_id, repository_id, repository_role_id, last_edited_by)

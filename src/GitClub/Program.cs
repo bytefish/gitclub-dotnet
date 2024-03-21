@@ -120,6 +120,7 @@ try
 
     // Application Services
     builder.Services.AddScoped<UserService>();
+    builder.Services.AddScoped<TeamService>();
     builder.Services.AddScoped<OrganizationService>();
     builder.Services.AddScoped<RepositoryService>();
     builder.Services.AddScoped<IssueService>();

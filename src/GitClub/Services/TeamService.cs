@@ -70,6 +70,7 @@ namespace GitClub.Services
             // Add Relations to Zanzibar
             var tuplesToWrite = new[]
             {
+                RelationTuples.Create<Team, Organization>(team.Id, currentUserId, TeamRoleEnum.Owner),
                 RelationTuples.Create<Team, User>(team.Id, currentUserId, TeamRoleEnum.Maintainer)
             };
 
@@ -303,7 +304,7 @@ namespace GitClub.Services
                 .ConfigureAwait(false);
         }
 
-        public async Task<UserTeamRole> AssignUserToTeamAsync(int userId, int teamId, TeamRoleEnum role, int currentUserId, CancellationToken cancellationToken)
+        public async Task<UserTeamRole> AddUserToTeamAsync(int userId, int teamId, TeamRoleEnum role, int currentUserId, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 

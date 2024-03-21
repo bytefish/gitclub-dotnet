@@ -18,5 +18,10 @@ namespace GitClub.Database.Models
         /// Maintainer.
         /// </summary>
         Maintainer = 2,
+
+        /// <summary>
+        /// Member.
+        /// </summary>
+        Owner = 3,
     }
 }
