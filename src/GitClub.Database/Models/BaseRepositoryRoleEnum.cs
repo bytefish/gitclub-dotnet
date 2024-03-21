@@ -17,11 +17,11 @@ namespace GitClub.Database.Models
         /// <summary>
         /// Writer.
         /// </summary>
-        RepositoryWriter = 3,
+        RepositoryWriter = 2,
 
         /// <summary>
         /// Administrator.
         /// </summary>
-        RepositoryAdministrator = 5
+        RepositoryAdministrator = 3
     }
 }

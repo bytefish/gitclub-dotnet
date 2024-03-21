@@ -1,4 +1,6 @@
-﻿using GitClub.Infrastructure.Errors;
+﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using GitClub.Infrastructure.Errors;
 using GitClub.Models;
 using GitClub.Services;
 using Microsoft.AspNetCore.Authentication;
