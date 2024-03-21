@@ -28,6 +28,20 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
+            bool isAuthorized = await _aclService
+                .CheckUserObjectAsync<Organization>(currentUserId, team.OrganizationId, OrganizationRoleEnum.Owner, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isAuthorized)
+            {
+                throw new EntityUnauthorizedAccessException()
+                {
+                    EntityName = nameof(Organization),
+                    EntityId = team.OrganizationId,
+                    UserId = currentUserId
+                };
+            }
+
             // Make sure the Current User is the last editor:
             team.LastEditedBy = currentUserId;
 

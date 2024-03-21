@@ -11,7 +11,6 @@ namespace GitClub.Infrastructure.OpenFga
         public static async Task<bool> CheckUserObjectAsync<TObjectType>(this AclService aclService, int userId, int objectId, OrganizationRoleEnum role, CancellationToken cancellationToken)
             where TObjectType : Entity
         {
-
             var relation = role.AsRelation();
 
             var allowed = await aclService

@@ -9,4 +9,6 @@ Content-Type: application/json
     "roles": [ "Administrator", "User" ]
 }
 
-###
+### Get Organization Details
+GET {{GitClub_HostAddress}}/Organizations/1
+Accept: application/json

@@ -12,6 +12,8 @@ using System.Threading.RateLimiting;
 using GitClub.Infrastructure.Errors.Translators;
 using GitClub.Infrastructure.Errors;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using NodaTime.Serialization.SystemTextJson;
+using NodaTime;
 
 // We will log to %LocalAppData%/RebacExperiments to store the Logs, so it doesn't need to be configured 
 // to a different path, when you run it on your machine.
@@ -123,7 +125,9 @@ try
     builder.Services.AddScoped<IssueService>();
 
     // Controllers
-    builder.Services.AddControllers();
+    builder.Services
+        .AddControllers()
+        .AddJsonOptions(c => c.JsonSerializerOptions.ConfigureForNodaTime(DateTimeZoneProviders.Tzdb));
 
     // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
     builder.Services.AddEndpointsApiExplorer();

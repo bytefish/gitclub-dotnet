@@ -339,8 +339,8 @@ namespace GitClub.Database
                     .IsRequired(true);
 
                 entity.Property(e => e.BaseRepositoryRole)
-                    .HasColumnType("varchar(255)")
-                    .HasColumnName("base_user_repository_role")
+                    .HasColumnType("integer")
+                    .HasColumnName("base_repository_role_id")
                     .HasConversion<int>()
                     .IsRequired(true);
                 

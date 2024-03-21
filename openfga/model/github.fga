@@ -5,11 +5,11 @@ type User
 
 type Team
   relations
-	define owner: [Organization]
+	define owner: [User, Organization]
 	define creator: [User]
     define member: [User]
 	define reader: creator or member
-	define writer: creator
+	define writer: creator or administrator from owner
 
 type Repository
   relations
