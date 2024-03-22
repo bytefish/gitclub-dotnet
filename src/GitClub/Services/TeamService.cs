@@ -377,7 +377,7 @@ namespace GitClub.Services
             return userTeamRole;
         }
 
-        public async Task DeleteUserFromTeamAsync(int userId, int teamId, int currentUserId, CancellationToken cancellationToken)
+        public async Task RemoveUserFromTeamAsync(int userId, int teamId, int currentUserId, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 

@@ -1,6 +1,7 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 using GitClub.Infrastructure.Errors;
+using GitClub.Infrastructure.Logging;
 using GitClub.Models;
 using GitClub.Services;
 using Microsoft.AspNetCore.Authentication;
@@ -26,6 +27,8 @@ namespace GitClub.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromServices] UserService userService, [FromBody] Credentials credentials, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
+
             try
             {
                 // create a claim for each request scope
@@ -51,6 +54,8 @@ namespace GitClub.Controllers
         [HttpPost("logout")]
         public async Task<IActionResult> Logout()
         {
+            _logger.TraceMethodEntry();
+
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
 
             return Ok();

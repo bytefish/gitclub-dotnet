@@ -214,5 +214,6 @@ namespace GitClub.Controllers
                 return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
             }
         }
+
     }
 }
