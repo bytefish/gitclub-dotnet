@@ -6,7 +6,7 @@ type User
 type Team
   relations
 	define owner: [Organization]
-	define maintainer: [User]
+	define maintainer: [User] or administrator from owner
     define member: [User] or maintainer
 
 type Repository

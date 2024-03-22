@@ -408,7 +408,7 @@ namespace GitClub.Services
                 };
             }
 
-            var userTeamRole = await _applicationDbContext.UserTeamRoles
+            var userTeamRole = await _applicationDbContext.UserTeamRoles.AsNoTracking()
                 .Where(x => x.TeamId == teamId && x.UserId == userId)
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
