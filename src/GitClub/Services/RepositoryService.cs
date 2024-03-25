@@ -412,6 +412,32 @@ namespace GitClub.Services
                 .ConfigureAwait(false);
         }
 
+        public async Task<List<TeamRepositoryRole>> GetTeamRepositoryRolesByRepositoryIdAsync(int teamId, int currentUserId, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            bool isAuthorized = await _aclService
+                .CheckUserObjectAsync<Team>(currentUserId, teamId, RepositoryRoleEnum.Reader, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isAuthorized)
+            {
+                throw new EntityUnauthorizedAccessException()
+                {
+                    EntityName = nameof(Team),
+                    EntityId = teamId,
+                    UserId = currentUserId,
+                };
+            }
+
+            var teamRepositoryRoles = await _applicationDbContext.TeamRepositoryRoles.AsNoTracking()
+                .Where(x => x.TeamId == teamId)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            return teamRepositoryRoles;
+        }
+
         public async Task<TeamRepositoryRole> AddTeamToRepositoryAsync(int repositoryId, int teamId, RepositoryRoleEnum role, int currentUserId, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();

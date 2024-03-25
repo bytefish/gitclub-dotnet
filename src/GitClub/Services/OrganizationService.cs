@@ -278,6 +278,32 @@ namespace GitClub.Services
             }
         }
 
+        public async Task<List<UserOrganizationRole>> GetUserOrganizationRolesByOrganizationIdAsync(int organizationId, int currentUserId, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            bool isReadAuthorized = await _aclService
+                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, OrganizationRoleEnum.Member, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isReadAuthorized)
+            {
+                throw new EntityNotFoundException()
+                {
+                    EntityName = nameof(Organization),
+                    EntityId = organizationId,
+                };
+            }
+
+
+            var userOrganizationRoles = await _applicationDbContext.UserOrganizationRoles.AsNoTracking()
+                .Where(x => x.OrganizationId == organizationId)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            return userOrganizationRoles;
+        }
+
         public async Task<UserOrganizationRole> AddUserToOrganizationAsync(int organizationId, int userId, OrganizationRoleEnum role, int currentUserId, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();

@@ -26,6 +26,33 @@ namespace GitClub.Controllers
             _exceptionToApplicationErrorMapper = exceptionToApplicationErrorMapper;
         }
 
+        [HttpGet("repository/{teamId}")]
+        [Authorize(Policy = Policies.RequireUserRole)]
+        [EnableRateLimiting(Policies.PerUserRatelimit)]
+        public async Task<IActionResult> GetTeamRepositoryRoles([FromServices] RepositoryService repositoryService, [FromRoute(Name = "teamId")] int teamId, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    throw new InvalidModelStateException
+                    {
+                        ModelStateDictionary = ModelState
+                    };
+                }
+
+                var teamRepositoryRoles = await repositoryService.GetTeamRepositoryRolesByRepositoryIdAsync(teamId, User.GetUserId(), cancellationToken);
+
+                return Ok(teamRepositoryRoles);
+            }
+            catch (Exception exception)
+            {
+                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
+            }
+        }
+
         [HttpPost("repository")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]

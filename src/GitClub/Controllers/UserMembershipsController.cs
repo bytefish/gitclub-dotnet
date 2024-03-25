@@ -26,6 +26,33 @@ namespace GitClub.Controllers
             _exceptionToApplicationErrorMapper = exceptionToApplicationErrorMapper;
         }
 
+        [HttpGet("organization/{organizationId}")]
+        [Authorize(Policy = Policies.RequireUserRole)]
+        [EnableRateLimiting(Policies.PerUserRatelimit)]
+        public async Task<IActionResult> GetUserOrganizationRoles([FromServices] OrganizationService organizationService, [FromRoute(Name = "organizationId")] int organizationId, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    throw new InvalidModelStateException
+                    {
+                        ModelStateDictionary = ModelState
+                    };
+                }
+
+                var userOrganizationRoles = await organizationService.GetUserOrganizationRolesByOrganizationIdAsync(organizationId, User.GetUserId(), cancellationToken);
+
+                return Ok(userOrganizationRoles);
+            }
+            catch (Exception exception)
+            {
+                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
+            }
+        }
+
         [HttpPost("organization")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
@@ -73,6 +100,33 @@ namespace GitClub.Controllers
                 await organizationService.RemoveUserFromOrganizationAsync(userOrganizationRole.UserId, userOrganizationRole.OrganizationId, User.GetUserId(), cancellationToken);
 
                 return StatusCode(StatusCodes.Status204NoContent);
+            }
+            catch (Exception exception)
+            {
+                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
+            }
+        }
+
+        [HttpGet("team/{teamId}")]
+        [Authorize(Policy = Policies.RequireUserRole)]
+        [EnableRateLimiting(Policies.PerUserRatelimit)]
+        public async Task<IActionResult> PostUserTeamRole([FromServices] TeamService teamService, [FromRoute(Name = "teamId")] int teamId, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    throw new InvalidModelStateException
+                    {
+                        ModelStateDictionary = ModelState
+                    };
+                }
+
+                var userTeamRoles = await teamService.GetUserTeamRolesByTeamIdAsync(teamId, User.GetUserId(), cancellationToken);
+
+                return Ok(userTeamRoles);
             }
             catch (Exception exception)
             {
