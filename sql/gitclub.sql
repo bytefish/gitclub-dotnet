@@ -315,7 +315,7 @@ CREATE UNIQUE INDEX IF NOT EXISTS user_organization_role_user_id_organization_id
     ON gitclub.user_organization_role(user_id, organization_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS team_repository_role_team_id_repository_id_key 
-    ON gitclub.team_repository_role(user_id, team_id);
+    ON gitclub.team_repository_role(team_id, repository_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS organization_role_name_key 
     ON gitclub.organization_role(name);
@@ -707,7 +707,7 @@ INSERT INTO gitclub.base_repository_role(base_repository_role_id, name, descript
         (3, 'RepositoryAdministrator', 'Automatically Administrator on Repositories', 1) 
     ON CONFLICT DO NOTHING;
 
--- OpenFGA Documentation Example
+-- OpenFGA GitHub Permissions Example (https://openfga.dev/docs/modeling/advanced/github)
 INSERT INTO gitclub.user(user_id, email, preferred_name, last_edited_by) 
     VALUES 
         (2, 'anne@git.local', 'Anne', 1),
@@ -716,7 +716,7 @@ INSERT INTO gitclub.user(user_id, email, preferred_name, last_edited_by)
         (5, 'diane@git.local', 'Diane', 1),
         (6, 'erik@git.local', 'Eril', 1)        
     ON CONFLICT DO NOTHING;
- 
+
 INSERT INTO gitclub.organization(organization_id, name, base_repository_role_id, billing_address, last_edited_by) 
     VALUES 
         (1, 'Contoso', 3, 'ACME Street. 93', 1) 
@@ -735,14 +735,14 @@ INSERT INTO gitclub.repository(repository_id, organization_id, name, last_edited
 
 INSERT INTO gitclub.user_team_role(user_team_role_id, user_id, team_id, team_role_id, last_edited_by)
     VALUES
-        (1, 4, 1, 2, 1),    -- Charles (4) is a Member (2) or Team contoso/engineering (1)
-        (2, 5, 2, 2, 1)     -- Diane (5) is a Member (2) or Team contoso/protocols (2)
+        (1, 4, 1, 2, 1),    -- Charles (4) is a Member (2) or Team Contoso/Engineering (1)
+        (2, 5, 2, 2, 1)     -- Diane (5) is a Member (2) or Team Contoso/Protocols (2)
     ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.user_organization_role(user_organization_role_id, user_id, organization_id, organization_role_id, last_edited_by)
     VALUES
-        (1, 6, 1, 1, 1), -- Erik (6) is a Member (1) of contoso (1),
-        (1, 1, 1, 3, 1)  -- Philipp (1) is the Owner (3) of contoso (1) 
+        (1, 1, 1, 3, 1),  -- Philipp (1) is the Owner (3) of Contoso (1) 
+        (1, 6, 1, 1, 1)  -- Erik (6) is a Member (1) of Contoso (1),
     ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.user_repository_role(user_repository_role_id, user_id, repository_id, repository_role_id, last_edited_by)
