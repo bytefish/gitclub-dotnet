@@ -412,21 +412,45 @@ namespace GitClub.Services
                 .ConfigureAwait(false);
         }
 
+        public async Task<List<UserRepositoryRole>> GetUserRepositoryRolesByRepositoryIdAsync(int repositoryId, int currentUserId, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            bool isAuthorized = await _aclService
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Reader, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isAuthorized)
+            {
+                throw new EntityNotFoundException()
+                {
+                    EntityName = nameof(Repository),
+                    EntityId = repositoryId,
+                };
+            }
+
+            var userRepositoryRoles = await _applicationDbContext.UserRepositoryRoles.AsNoTracking()
+                .Where(x => x.RepositoryId == repositoryId)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            return userRepositoryRoles;
+        }
+
         public async Task<List<TeamRepositoryRole>> GetTeamRepositoryRolesByRepositoryIdAsync(int teamId, int currentUserId, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Team>(currentUserId, teamId, RepositoryRoleEnum.Reader, cancellationToken)
+                .CheckUserObjectAsync<Team>(currentUserId, teamId, TeamRoleEnum.Member, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isAuthorized)
             {
-                throw new EntityUnauthorizedAccessException()
+                throw new EntityNotFoundException()
                 {
                     EntityName = nameof(Team),
                     EntityId = teamId,
-                    UserId = currentUserId,
                 };
             }
 

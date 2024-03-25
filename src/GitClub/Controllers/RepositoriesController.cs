@@ -187,5 +187,194 @@ namespace GitClub.Controllers
                 return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
             }
         }
+
+        [HttpGet("{repositoryId}/collaborators")]
+        [Authorize(Policy = Policies.RequireUserRole)]
+        [EnableRateLimiting(Policies.PerUserRatelimit)]
+        public async Task<IActionResult> GetCollaborators(
+            [FromServices] RepositoryService repositoryService,
+            [FromRoute(Name = "repositoryId")] int repositoryId,
+            CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    throw new InvalidModelStateException
+                    {
+                        ModelStateDictionary = ModelState
+                    };
+                }
+
+                var userRepositoryRoles = await repositoryService.GetUserRepositoryRolesByRepositoryIdAsync(repositoryId, User.GetUserId(), cancellationToken);
+
+                return Ok(userRepositoryRoles);
+            }
+            catch (Exception exception)
+            {
+                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
+            }
+        }
+
+        [HttpPut("{repositoryId}/collaborators/{userId}/{role:RepositoryRoleEnum}")]
+        [Authorize(Policy = Policies.RequireUserRole)]
+        [EnableRateLimiting(Policies.PerUserRatelimit)]
+        public async Task<IActionResult> AddCollaborator(
+            [FromServices] RepositoryService repositoryService,
+            [FromRoute(Name = "repositoryId")] int repositoryId,
+            [FromRoute(Name = "userId")] int userId,
+            [FromRoute(Name = "role")] RepositoryRoleEnum role,
+            CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    throw new InvalidModelStateException
+                    {
+                        ModelStateDictionary = ModelState
+                    };
+                }
+
+                var userRepositoryRole = await repositoryService
+                    .AddUserToRepositoryAsync(repositoryId, userId, role, User.GetUserId(), cancellationToken);
+
+                return Ok(userRepositoryRole);
+            }
+            catch (Exception exception)
+            {
+                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
+            }
+        }
+
+        [HttpDelete("{repositoryId}/collaborators/{userId}")]
+        [Authorize(Policy = Policies.RequireUserRole)]
+        [EnableRateLimiting(Policies.PerUserRatelimit)]
+        public async Task<IActionResult> DeleteCollaborator(
+            [FromServices] RepositoryService repositoryService,
+            [FromRoute(Name = "repositoryId")] int repositoryId,
+            [FromRoute(Name = "userId")] int userId,
+            CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    throw new InvalidModelStateException
+                    {
+                        ModelStateDictionary = ModelState
+                    };
+                }
+
+                await repositoryService.RemoveUserFromRepositoryAsync(repositoryId, userId, User.GetUserId(), cancellationToken);
+
+                return StatusCode(StatusCodes.Status204NoContent);
+            }
+            catch (Exception exception)
+            {
+                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
+            }
+        }
+
+        [HttpGet("{repositoryId}/teams")]
+        [Authorize(Policy = Policies.RequireUserRole)]
+        [EnableRateLimiting(Policies.PerUserRatelimit)]
+        public async Task<IActionResult> GetTeams(
+            [FromServices] RepositoryService repositoryService,
+            [FromRoute(Name = "repositoryId")] int repositoryId,
+            CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    throw new InvalidModelStateException
+                    {
+                        ModelStateDictionary = ModelState
+                    };
+                }
+
+                var teamRepositoryRoles = await repositoryService.GetTeamRepositoryRolesByRepositoryIdAsync(repositoryId, User.GetUserId(), cancellationToken);
+
+                return Ok(teamRepositoryRoles);
+            }
+            catch (Exception exception)
+            {
+                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
+            }
+        }
+
+        [HttpPut("{repositoryId}/teams/{teamId}/{role:RepositoryRoleEnum}")]
+        [Authorize(Policy = Policies.RequireUserRole)]
+        [EnableRateLimiting(Policies.PerUserRatelimit)]
+        public async Task<IActionResult> AddTeam(
+            [FromServices] RepositoryService repositoryService,
+            [FromRoute(Name = "repositoryId")] int repositoryId,
+            [FromRoute(Name = "teamId")] int teamId,
+            [FromRoute(Name = "role")] RepositoryRoleEnum role,
+            CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    throw new InvalidModelStateException
+                    {
+                        ModelStateDictionary = ModelState
+                    };
+                }
+
+                var teamRepositoryRole = await repositoryService
+                    .AddTeamToRepositoryAsync(repositoryId, teamId, role, User.GetUserId(), cancellationToken);
+
+                return Ok(teamRepositoryRole);
+            }
+            catch (Exception exception)
+            {
+                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
+            }
+        }
+
+        [HttpDelete("{repositoryId}/teams/{teamId}")]
+        [Authorize(Policy = Policies.RequireUserRole)]
+        [EnableRateLimiting(Policies.PerUserRatelimit)]
+        public async Task<IActionResult> DeleteTeam(
+            [FromServices] RepositoryService repositoryService,
+            [FromRoute(Name = "repositoryId")] int repositoryId,
+            [FromRoute(Name = "teamId")] int userId,
+            CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    throw new InvalidModelStateException
+                    {
+                        ModelStateDictionary = ModelState
+                    };
+                }
+
+                await repositoryService.RemoveTeamFromRepositoryAsync(repositoryId, userId, User.GetUserId(), cancellationToken);
+
+                return StatusCode(StatusCodes.Status204NoContent);
+            }
+            catch (Exception exception)
+            {
+                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
+            }
+        }
+
     }
 }

@@ -215,5 +215,130 @@ namespace GitClub.Controllers
             }
         }
 
+        [HttpGet("{organizationId}/members")]
+        [Authorize(Policy = Policies.RequireUserRole)]
+        [EnableRateLimiting(Policies.PerUserRatelimit)]
+        public async Task<IActionResult> GetUserOrganizationRoles(
+            [FromServices] OrganizationService organizationService,
+            [FromRoute(Name = "organizationId")] int organizationId,
+            CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    throw new InvalidModelStateException
+                    {
+                        ModelStateDictionary = ModelState
+                    };
+                }
+
+                var userOrganizationRoles = await organizationService.GetUserOrganizationRolesByOrganizationIdAsync(organizationId, User.GetUserId(), cancellationToken);
+
+                return Ok(userOrganizationRoles);
+            }
+            catch (Exception exception)
+            {
+                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
+            }
+        }
+
+        [HttpGet("{organizationId}/organization-roles/{role:OrganizationRoleEnum}/users")]
+        [Authorize(Policy = Policies.RequireUserRole)]
+        [EnableRateLimiting(Policies.PerUserRatelimit)]
+        public async Task<IActionResult> GetUserOrganizationRoles(
+            [FromServices] OrganizationService organizationService, 
+            [FromRoute(Name = "organizationId")] int organizationId, 
+            [FromRoute(Name = "role")] OrganizationRoleEnum role, 
+            CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    throw new InvalidModelStateException
+                    {
+                        ModelStateDictionary = ModelState
+                    };
+                }
+
+                var userOrganizationRoles = await organizationService.GetUserOrganizationRolesByOrganizationIdAndRoleAsync(organizationId, role, User.GetUserId(), cancellationToken);
+
+                return Ok(userOrganizationRoles);
+            }
+            catch (Exception exception)
+            {
+                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
+            }
+        }
+
+        [HttpPut("{organizationId}/organization-roles/users/{userId}/{role:OrganizationRoleEnum}")]
+        [Authorize(Policy = Policies.RequireUserRole)]
+        [EnableRateLimiting(Policies.PerUserRatelimit)]
+        public async Task<IActionResult> AddUserOrganizationRole(
+            [FromServices] OrganizationService organizationService,
+            [FromRoute(Name = "organizationId")] int organizationId,
+            [FromRoute(Name = "userId")] int userId,
+            [FromRoute(Name = "role")] OrganizationRoleEnum role,
+            CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    throw new InvalidModelStateException
+                    {
+                        ModelStateDictionary = ModelState
+                    };
+                }
+
+                var userOrganizationRole = await organizationService
+                    .AddUserOrganizationRoleAsync(organizationId, userId, role, User.GetUserId(), cancellationToken);
+
+                return Ok(userOrganizationRole);
+            }
+            catch (Exception exception)
+            {
+                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
+            }
+        }
+
+        [HttpDelete("{organizationId}/organization-roles/users/{userId}/{role:OrganizationRoleEnum}")]
+        [Authorize(Policy = Policies.RequireUserRole)]
+        [EnableRateLimiting(Policies.PerUserRatelimit)]
+        public async Task<IActionResult> DeleteUserOrganizationRole(
+            [FromServices] OrganizationService organizationService,
+            [FromRoute(Name = "organizationId")] int organizationId,
+            [FromRoute(Name = "userId")] int userId,
+            [FromRoute(Name = "role")] OrganizationRoleEnum role,
+            CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    throw new InvalidModelStateException
+                    {
+                        ModelStateDictionary = ModelState
+                    };
+                }
+
+                await organizationService.RemoveUserOrganizationRoleAsync(organizationId, userId, role, User.GetUserId(), cancellationToken);
+
+                return StatusCode(StatusCodes.Status204NoContent);
+            }
+            catch (Exception exception)
+            {
+                return _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exception);
+            }
+        }
     }
 }

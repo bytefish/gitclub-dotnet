@@ -17,6 +17,16 @@ Accept: application/json
 GET {{GitClub_HostAddress}}/Organizations/1
 Accept: application/json
 
+
+### Get Team Members for a Team
+GET {{GitClub_HostAddress}}/TeamMemberships/repository/1
+Accept: application/json
+
+
+### Get Users for a Repository
+GET {{GitClub_HostAddress}}/UserMemberships/repository/3
+Accept: application/json
+
 ### Assign User "1" (Philipp) to a Team "2" (Protocols) as a Member (1)
 POST {{GitClub_HostAddress}}/UserMemberships/team
 Content-Type: application/json

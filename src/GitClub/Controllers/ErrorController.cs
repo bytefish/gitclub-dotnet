@@ -8,7 +8,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace GitClub.Controllers
 {
-    
     public class ErrorController : ControllerBase
     {
         private readonly ILogger<ErrorController> _logger;
@@ -31,10 +30,8 @@ namespace GitClub.Controllers
 
             var error = _exceptionToApplicationErrorMapper.CreateApplicationErrorResult(HttpContext, exceptionHandlerFeature.Error);
 
-            return new ContentResult
+            return new JsonResult(error)
             {
-                Content = error.ToString(),
-                ContentType = "application/json",
                 StatusCode = StatusCodes.Status400BadRequest
             };
         }
@@ -56,10 +53,8 @@ namespace GitClub.Controllers
             error.InnerError.AdditionalProperties["trace-id"] = HttpContext.TraceIdentifier;
 
 
-            return new ContentResult
+            return new JsonResult(error)
             {
-                Content = error.ToString(),
-                ContentType = "application/json",
                 StatusCode = StatusCodes.Status401Unauthorized
             };
         }
@@ -79,10 +74,8 @@ namespace GitClub.Controllers
             error.InnerError = new ApplicationInnerError();
             error.InnerError.AdditionalProperties["trace-id"] = HttpContext.TraceIdentifier;
 
-            return new ContentResult
+            return new JsonResult(error)
             {
-                Content = error.ToString(),
-                ContentType = "application/json",
                 StatusCode = StatusCodes.Status404NotFound
             };
         }
@@ -102,10 +95,8 @@ namespace GitClub.Controllers
             error.InnerError = new ApplicationInnerError();
             error.InnerError.AdditionalProperties["trace-id"] = HttpContext.TraceIdentifier;
 
-            return new ContentResult
+            return new JsonResult(error)
             {
-                Content = error.ToString(),
-                ContentType = "application/json",
                 StatusCode = StatusCodes.Status405MethodNotAllowed
             };
         }
@@ -125,10 +116,8 @@ namespace GitClub.Controllers
             error.InnerError = new ApplicationInnerError();
             error.InnerError.AdditionalProperties["trace-id"] = HttpContext.TraceIdentifier;
 
-            return new ContentResult
+            return new JsonResult(error)
             {
-                Content = error.ToString(),
-                ContentType = "application/json",
                 StatusCode = StatusCodes.Status429TooManyRequests
             };
         }

@@ -304,7 +304,32 @@ namespace GitClub.Services
             return userOrganizationRoles;
         }
 
-        public async Task<UserOrganizationRole> AddUserToOrganizationAsync(int organizationId, int userId, OrganizationRoleEnum role, int currentUserId, CancellationToken cancellationToken)
+        public async Task<List<UserOrganizationRole>> GetUserOrganizationRolesByOrganizationIdAndRoleAsync(int organizationId, OrganizationRoleEnum role, int currentUserId, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            bool isReadAuthorized = await _aclService
+                .CheckUserObjectAsync<Organization>(currentUserId, organizationId, OrganizationRoleEnum.Member, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isReadAuthorized)
+            {
+                throw new EntityNotFoundException()
+                {
+                    EntityName = nameof(Organization),
+                    EntityId = organizationId,
+                };
+            }
+
+            var userOrganizationRoles = await _applicationDbContext.UserOrganizationRoles.AsNoTracking()
+                .Where(x => x.OrganizationId == organizationId && x.Role == role)
+                .ToListAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            return userOrganizationRoles;
+        }
+
+        public async Task<UserOrganizationRole> AddUserOrganizationRoleAsync(int organizationId, int userId, OrganizationRoleEnum role, int currentUserId, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -364,7 +389,7 @@ namespace GitClub.Services
             return organizationRole;
         }
 
-        public async Task RemoveUserFromOrganizationAsync(int organizationId, int userId, int currentUserId, CancellationToken cancellationToken)
+        public async Task RemoveUserOrganizationRoleAsync(int organizationId, int userId, OrganizationRoleEnum role, int currentUserId, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -397,15 +422,16 @@ namespace GitClub.Services
 
             var organizationRole = await _applicationDbContext.UserOrganizationRoles
                 .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == organizationId && x.UserId == userId)
+                .FirstOrDefaultAsync(x => x.Id == organizationId && x.UserId == userId && x.Role == role)
                 .ConfigureAwait(false);
 
             if(organizationRole == null)
             {
-                throw new UserNotAssignedToOrganizationException
+                throw new UserNotAssignedToOrganizationInRoleException
                 {
                     OrganizationId = organizationId,
-                    UserId = userId
+                    UserId = userId,
+                    Role = role
                 };
             }
 

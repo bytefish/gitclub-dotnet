@@ -567,9 +567,9 @@ namespace GitClub.Database
                     .HasColumnName("team_id")
                     .IsRequired(true);
 
-                entity.Property(e => e.TeamId)
+                entity.Property(e => e.RepositoryId)
                     .HasColumnType("integer")
-                    .HasColumnName("team_id")
+                    .HasColumnName("repository_id")
                     .IsRequired(true);
 
                 entity.Property(e => e.Role)

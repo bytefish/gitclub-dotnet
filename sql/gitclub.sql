@@ -295,15 +295,27 @@ CREATE UNIQUE INDEX IF NOT EXISTS organization_name_key
 
 CREATE UNIQUE INDEX IF NOT EXISTS user_email_key 
     ON gitclub.user(email);
-    
-CREATE UNIQUE INDEX IF NOT EXISTS repository_name_organization_id_key 
+
+CREATE UNIQUE INDEX IF NOT EXISTS repository_organization_id_name_key 
     ON gitclub.repository(name, organization_id);
-    
+
 CREATE UNIQUE INDEX IF NOT EXISTS repository_role_name_key 
     ON gitclub.repository_role(name);
 
 CREATE UNIQUE INDEX IF NOT EXISTS team_role_name_key 
     ON gitclub.team_role(name);
+
+CREATE UNIQUE INDEX IF NOT EXISTS user_team_role_user_id_team_id_key 
+    ON gitclub.user_team_role(user_id, team_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS user_repository_role_user_id_repository_id_key 
+    ON gitclub.user_repository_role(user_id, repository_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS user_organization_role_user_id_organization_id_key 
+    ON gitclub.user_organization_role(user_id, organization_id);
+
+CREATE UNIQUE INDEX IF NOT EXISTS team_repository_role_team_id_repository_id_key 
+    ON gitclub.team_repository_role(user_id, team_id);
 
 CREATE UNIQUE INDEX IF NOT EXISTS organization_role_name_key 
     ON gitclub.organization_role(name);
@@ -311,6 +323,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS organization_role_name_key
 CREATE UNIQUE INDEX IF NOT EXISTS base_repository_role_name_key 
     ON gitclub.base_repository_role(name);
 
+CREATE UNIQUE INDEX IF NOT EXISTS team_organization_id_name_key 
+    ON gitclub.team(organization_id, name);
+	
 -- History Tables
 CREATE TABLE IF NOT EXISTS gitclub.organization_history (
     LIKE gitclub.organization
@@ -350,6 +365,10 @@ CREATE TABLE IF NOT EXISTS gitclub.user_organization_role_history (
 
 CREATE TABLE IF NOT EXISTS gitclub.user_repository_role_history (
     LIKE gitclub.user_repository_role
+);
+
+CREATE TABLE IF NOT EXISTS gitclub.user_team_role_history (
+    LIKE gitclub.user_team_role
 );
 
 CREATE TABLE IF NOT EXISTS gitclub.team_repository_role_history (
@@ -644,15 +663,16 @@ FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
   'sys_period', 'gitclub.user_repository_role_history', true
 );
 
--- Initial data
+CREATE OR REPLACE TRIGGER user_team_role_versioning_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON gitclub.user_team_role
+FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
+  'sys_period', 'gitclub.user_team_role_history', true
+);
+
+-- Initial Data
 INSERT INTO gitclub.user(user_id, email, preferred_name, last_edited_by) 
     VALUES 
-        (1, 'philipp@bytefish.de', 'Data Conversion User', 1),
-        (2, 'anne@git.local', 'Anne', 1),
-        (3, 'beth@git.local', 'Beth', 1),
-        (4, 'charles@git.local', 'Charles', 1),
-        (5, 'diane@git.local', 'Diane', 1),
-        (6, 'erik@git.local', 'Eril', 1)        
+        (1, 'philipp@bytefish.de', 'Data Conversion User', 1)        
     ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.repository_role(repository_role_id, name, description, last_edited_by) 
@@ -687,20 +707,30 @@ INSERT INTO gitclub.base_repository_role(base_repository_role_id, name, descript
         (3, 'RepositoryAdministrator', 'Automatically Administrator on Repositories', 1) 
     ON CONFLICT DO NOTHING;
 
+-- OpenFGA Documentation Example
+INSERT INTO gitclub.user(user_id, email, preferred_name, last_edited_by) 
+    VALUES 
+        (2, 'anne@git.local', 'Anne', 1),
+        (3, 'beth@git.local', 'Beth', 1),
+        (4, 'charles@git.local', 'Charles', 1),
+        (5, 'diane@git.local', 'Diane', 1),
+        (6, 'erik@git.local', 'Eril', 1)        
+    ON CONFLICT DO NOTHING;
+ 
 INSERT INTO gitclub.organization(organization_id, name, base_repository_role_id, billing_address, last_edited_by) 
     VALUES 
-        (1, 'contoso', 3, 'ACME Street. 93', 1) 
+        (1, 'Contoso', 3, 'ACME Street. 93', 1) 
     ON CONFLICT DO NOTHING; 
 
 INSERT INTO gitclub.team(team_id, organization_id, name, last_edited_by) 
     VALUES 
-        (1, 1, 'engineering', 1),    -- A Team "Engineering" (1), that belongs to the "contoso" Organization (1)
+        (1, 1, 'Engineering', 1),    -- A Team "Engineering" (1), that belongs to the "contoso" Organization (1)
         (2, 1, 'Protocols', 1)       -- A Team "Protocols" (1), that belongs to the "contoso" Organization (1)
     ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.repository(repository_id, organization_id, name, last_edited_by)
     VALUES
-        (1, 1, 'tooling', 1)    -- A Repository "tooling" (1), that belongs to the "contoso" (1) organization
+        (1, 1, 'Tooling', 1)    -- A Repository "Tooling" (1), that belongs to the "Contoso" (1) organization
     ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.user_team_role(user_team_role_id, user_id, team_id, team_role_id, last_edited_by)
@@ -711,9 +741,8 @@ INSERT INTO gitclub.user_team_role(user_team_role_id, user_id, team_id, team_rol
 
 INSERT INTO gitclub.user_organization_role(user_organization_role_id, user_id, organization_id, organization_role_id, last_edited_by)
     VALUES
-        (1, 6, 1, 1, 1) -- Erik (6) is a Member (1) of contoso (1),
-        (1, 1, 1, 3, 1) -- Philipp (1) is the Owner (3) of contoso (1) 
-
+        (1, 6, 1, 1, 1), -- Erik (6) is a Member (1) of contoso (1),
+        (1, 1, 1, 3, 1)  -- Philipp (1) is the Owner (3) of contoso (1) 
     ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.user_repository_role(user_repository_role_id, user_id, repository_id, repository_role_id, last_edited_by)
