@@ -555,7 +555,7 @@ namespace GitClub.Services
                 };
             }
 
-            await _applicationDbContext.UserRepositoryRoles
+            await _applicationDbContext.TeamRepositoryRoles
                 .Where(x => x.Id == teamRepositoryRole.Id)
                 .ExecuteDeleteAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -563,7 +563,7 @@ namespace GitClub.Services
             // Delete Tuples from Zanzibar
             var tuplesToDelete = new[]
             {
-                RelationTuples.Create<Repository, Team>(teamRepositoryRole.RepositoryId, teamRepositoryRole.TeamId, teamRepositoryRole.Role)
+                RelationTuples.Create<Repository, Team>(teamRepositoryRole.RepositoryId, teamRepositoryRole.TeamId, teamRepositoryRole.Role, TeamRoleEnum.Member.AsRelation())
             };
 
             await _aclService
