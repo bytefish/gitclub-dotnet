@@ -1,0 +1,3 @@
+name: GitClub
+model_file:  ./gitclub-model.fga
+tuple_file:  ./gitclub-tuples.yaml

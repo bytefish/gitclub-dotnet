@@ -35,7 +35,7 @@ services:
       - OPENFGA_DATASTORE_URI=postgres://postgres:password@postgres:5432/postgres?sslmode=disable&search_path=openfga
     networks:
       - openfga
-
+      
   openfga:
     depends_on:
       migrate:
@@ -56,3 +56,22 @@ services:
       - "8081:8081"
       # Needed for the playground (Do not enable in prod!)
       - "3000:3000"
+    healthcheck:
+      test: ['CMD', '/usr/local/bin/grpc_health_probe', '-addr=openfga:8081']
+      interval: 5s
+      timeout: 30s
+      retries: 3
+      
+  gitclub-fga-model-docker:
+    depends_on:
+      openfga:
+        condition: service_healthy
+    image: openfga/cli:latest
+    container_name: gitclub-fga-model
+    networks:
+      - openfga
+    volumes:
+      - ../fga/gitclub.fga.yaml:/gitclub.fga.yaml
+      - ../fga/gitclub-model.fga:/gitclub-model.fga
+      - ../fga/gitclub-tuples.yaml:/gitclub-tuples.yaml
+    command: store import --api-url http://openfga:8080 --file /gitclub.fga.yaml --store-id ${FGA_STORE_ID}

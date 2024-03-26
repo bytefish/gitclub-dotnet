@@ -9,7 +9,11 @@ Content-Type: application/json
     "roles": [ "Administrator", "User" ]
 }
 
-### Get all Teams
+### Get Organizations
+GET {{GitClub_HostAddress}}/Organizations
+Accept: application/json
+
+### Get Teams
 GET {{GitClub_HostAddress}}/Teams
 Accept: application/json
 
@@ -17,27 +21,28 @@ Accept: application/json
 GET {{GitClub_HostAddress}}/Organizations/1
 Accept: application/json
 
-
-### Get Team Members for a Team
-GET {{GitClub_HostAddress}}/TeamMemberships/repository/1
+### Get Members for the Organization
+GET {{GitClub_HostAddress}}/Organizations/1/members
 Accept: application/json
 
-
-### Get Users for a Repository
-GET {{GitClub_HostAddress}}/UserMemberships/repository/3
+### Get Members for the Organization
+GET {{GitClub_HostAddress}}/Organizations/1/organization-roles/owner/users
 Accept: application/json
 
-### Assign User "1" (Philipp) to a Team "2" (Protocols) as a Member (1)
-POST {{GitClub_HostAddress}}/UserMemberships/team
-Content-Type: application/json
+### Get Repositories
+GET {{GitClub_HostAddress}}/Repositories
+Accept: application/json
 
-{
-    "userId": 1,
-    "teamId": 2,
-    "role": 1,
-    "lastEditedBy": 1
-}
+### Get Collaborators for Repository 1
+GET {{GitClub_HostAddress}}/Repositories/1/collaborators
+Accept: application/json
 
+### Get Teams for Repository 1
+GET {{GitClub_HostAddress}}/Repositories/1/teams
+Accept: application/json
+
+### Members of Team 2 are Maintainers of Repository 1
+PUT {{GitClub_HostAddress}}/Repositories/1/teams/2/Maintainer
 
 ### Create new Team "Rockstar Developers"
 POST {{GitClub_HostAddress}}/Teams

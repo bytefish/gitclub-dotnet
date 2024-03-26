@@ -14,6 +14,8 @@ using GitClub.Infrastructure.Errors;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using NodaTime.Serialization.SystemTextJson;
 using NodaTime;
+using GitClub.Infrastructure.Mvc;
+using GitClub.Database.Models;
 
 // We will log to %LocalAppData%/RebacExperiments to store the Logs, so it doesn't need to be configured 
 // to a different path, when you run it on your machine.
@@ -40,8 +42,7 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     builder.Configuration
-        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
-        .AddEnvironmentVariables();
+        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
 
     // Logging
     builder.Services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
@@ -124,6 +125,14 @@ try
     builder.Services.AddScoped<OrganizationService>();
     builder.Services.AddScoped<RepositoryService>();
     builder.Services.AddScoped<IssueService>();
+
+    // Route Constraints
+    builder.Services.Configure<RouteOptions>(options =>
+    {
+        options.ConstraintMap.Add("TeamRoleEnum", typeof(EnumRouteConstraint<TeamRoleEnum>));
+        options.ConstraintMap.Add("OrganizationRoleEnum", typeof(EnumRouteConstraint<OrganizationRoleEnum>));
+        options.ConstraintMap.Add("RepositoryRoleEnum", typeof(EnumRouteConstraint<RepositoryRoleEnum>));
+    });
 
     // Controllers
     builder.Services

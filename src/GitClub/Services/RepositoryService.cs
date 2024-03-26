@@ -437,25 +437,25 @@ namespace GitClub.Services
             return userRepositoryRoles;
         }
 
-        public async Task<List<TeamRepositoryRole>> GetTeamRepositoryRolesByRepositoryIdAsync(int teamId, int currentUserId, CancellationToken cancellationToken)
+        public async Task<List<TeamRepositoryRole>> GetTeamRepositoryRolesByRepositoryIdAsync(int repositoryId, int currentUserId, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Team>(currentUserId, teamId, TeamRoleEnum.Member, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Reader, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isAuthorized)
             {
                 throw new EntityNotFoundException()
                 {
-                    EntityName = nameof(Team),
-                    EntityId = teamId,
+                    EntityName = nameof(Repository),
+                    EntityId = repositoryId,
                 };
             }
 
             var teamRepositoryRoles = await _applicationDbContext.TeamRepositoryRoles.AsNoTracking()
-                .Where(x => x.TeamId == teamId)
+                .Where(x => x.RepositoryId == repositoryId)
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
 
@@ -479,7 +479,6 @@ namespace GitClub.Services
                     UserId = currentUserId,
                 };
             }
-
 
             var teamIsAlreadyAssignedToRepository = await _applicationDbContext.TeamRepositoryRoles.AsNoTracking()
                 .Where(x => x.TeamId == teamId && x.RepositoryId == repositoryId)
@@ -514,7 +513,7 @@ namespace GitClub.Services
             // Write Tuples to Zanzibar
             var tuplesToWrite = new[]
             {
-                RelationTuples.Create<Repository, Team>(teamRepositoryRole.RepositoryId, teamRepositoryRole.TeamId, teamRepositoryRole.Role)
+                RelationTuples.Create<Repository, Team>(repositoryId, teamId, role, TeamRoleEnum.Member.AsRelation())
             };
 
             await _aclService
