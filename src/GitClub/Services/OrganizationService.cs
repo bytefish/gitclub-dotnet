@@ -31,6 +31,13 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
+            bool isAuthorized = currentUser.IsInRole(Roles.Administrator);
+
+            if(!isAuthorized)
+            {
+                throw new AuthorizationFailedException("Insufficient Permissions to create an Organization");
+            }
+
             organization.LastEditedBy = currentUser.UserId;
 
             await _applicationDbContext

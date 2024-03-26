@@ -730,8 +730,16 @@ INSERT INTO gitclub.team(team_id, organization_id, name, last_edited_by)
 
 INSERT INTO gitclub.repository(repository_id, organization_id, name, last_edited_by)
     VALUES
-        (1, 1, 'Tooling', 1)    -- A Repository "Tooling" (1), that belongs to the "Contoso" (1) organization
+        (1, 1, 'Tooling', 1),    		-- A Repository "Tooling" (1), that belongs to the "Contoso" (1) organization
+        (2, 1, 'Specifications', 1)		-- A Repository "Specifications" (2), that belongs to the "Contoso" (1) organization
     ON CONFLICT DO NOTHING;
+
+INSERT INTO gitclub.issue(issue_id, title, content, closed, repository_id, created_by, last_edited_by)
+    VALUES
+        (1, 'GitClub rocks!', 'Amazing Project!', false, 1, 1, 1),
+        (1, 'Hello Team Protocols!', 'You are doing a great job!', false, 2, 1, 1),
+    ON CONFLICT DO NOTHING;
+
 
 INSERT INTO gitclub.user_team_role(user_team_role_id, user_id, team_id, team_role_id, last_edited_by)
     VALUES

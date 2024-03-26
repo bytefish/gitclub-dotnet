@@ -33,6 +33,11 @@ namespace GitClub.Database
         /// Gets or sets the Organizations.
         /// </summary>
         public DbSet<Organization> Organizations { get; set; } = null!;
+        
+        /// <summary>
+        /// Gets or sets the OrganizationRoles.
+        /// </summary>
+        public DbSet<OrganizationRole> OrganizationRoles { get; set; } = null!;
 
         /// <summary>
         /// Gets or sets the OrganizationRoles.
@@ -43,6 +48,11 @@ namespace GitClub.Database
         /// Gets or sets the Repositories.
         /// </summary>
         public DbSet<Repository> Repositories { get; set; } = null!;
+        
+        /// <summary>
+        /// Gets or sets the RepositoryRoles.
+        /// </summary>
+        public DbSet<RepositoryRole> RepositoryRoles { get; set; } = null!;
 
         /// <summary>
         /// Gets or sets the RepositoryRoles.
@@ -53,6 +63,11 @@ namespace GitClub.Database
         /// Gets or sets the Teams.
         /// </summary>
         public DbSet<Team> Teams { get; set; } = null!;
+        
+        /// <summary>
+        /// Gets or sets the TeamRoles.
+        /// </summary>
+        public DbSet<Team> TeamRoles { get; set; } = null!;
 
         /// <summary>
         /// Gets or sets the TeamRoles.

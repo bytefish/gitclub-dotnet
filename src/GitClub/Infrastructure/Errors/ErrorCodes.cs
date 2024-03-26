@@ -101,6 +101,11 @@ namespace GitClub.Infrastructure.Errors
         /// User has already been assigned to the Repo.
         /// </summary>
         public const string TeamAlreadyAssignedToRepository = "ApiError_Repository_000004";
+        
+        /// <summary>
+        /// Prevent Users from deleting themselves.
+        /// </summary>
+        public const string CannotDeleteOwnUserException = "ApiError_Users_000001";
 
         /// <summary>
         /// Resource has not been found.

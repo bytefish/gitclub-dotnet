@@ -1,5 +1,6 @@
 @GitClub_HostAddress = https://localhost:5000
 
+### Login as "philipp" and pass the "Administrator" Role
 POST {{GitClub_HostAddress}}/Auth/login
 Content-Type: application/json
 
@@ -31,6 +32,10 @@ Accept: application/json
 
 ### Get Repositories
 GET {{GitClub_HostAddress}}/Repositories
+Accept: application/json
+
+### Get Issues
+GET {{GitClub_HostAddress}}/Issues
 Accept: application/json
 
 ### Get Collaborators for Repository 1

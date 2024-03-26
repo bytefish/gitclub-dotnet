@@ -1,9 +1,15 @@
 - user: User:1
   relation: owner
   object: Organization:1
+- user: Organization:1#member
+  relation: repository_administrator
+  object: Organization:1
 - user: Organization:1
   relation: owner
   object: Team:1
+- user: Organization:1
+  relation: owner
+  object: Team:2
 - user: User:2
   relation: reader
   object: Repository:1
@@ -31,6 +37,3 @@
 - user: Organization:1
   relation: owner
   object: Repository:1
-- user: Organization:1#member
-  relation: repository_administrator
-  object: Organization:1
