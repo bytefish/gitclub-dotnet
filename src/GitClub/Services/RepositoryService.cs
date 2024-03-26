@@ -2,6 +2,7 @@
 
 using GitClub.Database;
 using GitClub.Database.Models;
+using GitClub.Infrastructure.Authentication;
 using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.OpenFga;
@@ -24,12 +25,12 @@ namespace GitClub.Services
             _aclService = aclService;
         }
 
-        public async Task<Repository> CreateRepositoryAsync(Repository repository, int currentUserId, CancellationToken cancellationToken)
+        public async Task<Repository> CreateRepositoryAsync(Repository repository, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Organization>(currentUserId, repository.OrganizationId, OrganizationRoleEnum.Member, cancellationToken)
+                .CheckUserObjectAsync<Organization>(currentUser.UserId, repository.OrganizationId, OrganizationRoleEnum.Member, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isAuthorized)
@@ -38,12 +39,12 @@ namespace GitClub.Services
                 {
                     EntityName = nameof(Organization),
                     EntityId = repository.OrganizationId,
-                    UserId = currentUserId
+                    UserId = currentUser.UserId
                 };
             }
 
             // Make sure the Current User is the editor:
-            repository.LastEditedBy = currentUserId;
+            repository.LastEditedBy = currentUser.UserId;
             
             await _applicationDbContext
                 .AddAsync(repository, cancellationToken)
@@ -54,9 +55,9 @@ namespace GitClub.Services
             var userRepositoryRole = new UserRepositoryRole
             {
                 RepositoryId = repository.Id,
-                UserId = currentUserId,
+                UserId = currentUser.UserId,
                 Role = RepositoryRoleEnum.Administrator,
-                LastEditedBy = currentUserId
+                LastEditedBy = currentUser.UserId
             };
 
             await _applicationDbContext
@@ -72,7 +73,7 @@ namespace GitClub.Services
                 // The Organization is the Owner of the Repository 
                 RelationTuples.Create<Repository, Organization>(repository.Id, repository.OrganizationId, RepositoryRoleEnum.Owner), // The Organization becomes the Owner of the Repository
                 // The current User is the Administrator of the Repository
-                RelationTuples.Create<Repository, User>(repository.Id, currentUserId, RepositoryRoleEnum.Administrator),
+                RelationTuples.Create<Repository, User>(repository.Id, currentUser.UserId, RepositoryRoleEnum.Administrator),
             };
 
             await _aclService
@@ -82,12 +83,12 @@ namespace GitClub.Services
             return repository;
         }
 
-        public async Task<Repository> GetRepositoryByIdAsync(int repositoryId, int currentUserId, CancellationToken cancellationToken)
+        public async Task<Repository> GetRepositoryByIdAsync(int repositoryId, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Reader, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUser.UserId, repositoryId, RepositoryRoleEnum.Reader, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -115,12 +116,12 @@ namespace GitClub.Services
             return repository;
         }
 
-        public async Task<List<Repository>> GetRepositoriesByOrganizationIdAsync(int organizationId, int userId, CancellationToken cancellationToken)
+        public async Task<List<Repository>> GetRepositoriesByOrganizationIdAsync(int organizationId, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Organization>(userId, organizationId, OrganizationRoleEnum.Member, cancellationToken)
+                .CheckUserObjectAsync<Organization>(currentUser.UserId, organizationId, OrganizationRoleEnum.Member, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -140,23 +141,23 @@ namespace GitClub.Services
             return repositories;
         }
 
-        public async Task<List<Repository>> GetRepositoriesByUserIdAsync(int userId, CancellationToken cancellationToken)
+        public async Task<List<Repository>> GetRepositoriesAsync(CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             var repositories = await _aclService
-                .ListUserObjectsAsync<Repository>(userId, RepositoryRoleEnum.Reader.AsRelation(), cancellationToken)
+                .ListUserObjectsAsync<Repository>(currentUser.UserId, RepositoryRoleEnum.Reader.AsRelation(), cancellationToken)
                 .ConfigureAwait(false);
 
             return repositories;
         }
 
-        public async Task<Repository> UpdateRepositoryAsync(int repositoryId, Repository values, int currentUserId, CancellationToken cancellationToken)
+        public async Task<Repository> UpdateRepositoryAsync(int repositoryId, Repository values, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Reader, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUser.UserId, repositoryId, RepositoryRoleEnum.Reader, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -169,7 +170,7 @@ namespace GitClub.Services
             }
 
             bool isUpdateAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Writer, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUser.UserId, repositoryId, RepositoryRoleEnum.Writer, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isUpdateAuthorized)
@@ -178,7 +179,7 @@ namespace GitClub.Services
                 {
                     EntityName = nameof(Repository),
                     EntityId = values.Id,
-                    UserId = currentUserId,
+                    UserId = currentUser.UserId,
                 };
             }
 
@@ -187,7 +188,7 @@ namespace GitClub.Services
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(x => x.Name, values.Name)
                     .SetProperty(x => x.OrganizationId, values.OrganizationId)
-                    .SetProperty(x => x.LastEditedBy, currentUserId), cancellationToken)
+                    .SetProperty(x => x.LastEditedBy, currentUser.UserId), cancellationToken)
                 .ConfigureAwait(false);
 
             if (rowsAffected == 0)
@@ -216,12 +217,12 @@ namespace GitClub.Services
             return updated;
         }
 
-        public async Task DeleteRepositoryAsync(int repositoryId, int currentUserId, CancellationToken cancellationToken)
+        public async Task DeleteRepositoryAsync(int repositoryId, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Maintainer, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUser.UserId, repositoryId, RepositoryRoleEnum.Maintainer, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -247,7 +248,7 @@ namespace GitClub.Services
             }
 
             bool isUpdateAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Writer, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUser.UserId, repositoryId, RepositoryRoleEnum.Writer, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isUpdateAuthorized)
@@ -256,7 +257,7 @@ namespace GitClub.Services
                 {
                     EntityName = nameof(Repository),
                     EntityId = repositoryId,
-                    UserId = currentUserId,
+                    UserId = currentUser.UserId,
                 };
             }
 
@@ -317,12 +318,12 @@ namespace GitClub.Services
             }
         }
 
-        public async Task<UserRepositoryRole> AddUserToRepositoryAsync(int repositoryId, int userId, RepositoryRoleEnum role, int currentUserId, CancellationToken cancellationToken)
+        public async Task<UserRepositoryRole> AddUserToRepositoryAsync(int repositoryId, int userId, RepositoryRoleEnum role, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Maintainer, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUser.UserId, repositoryId, RepositoryRoleEnum.Maintainer, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isAuthorized)
@@ -331,7 +332,7 @@ namespace GitClub.Services
                 {
                     EntityName = nameof(Repository),
                     EntityId = repositoryId,
-                    UserId = currentUserId,
+                    UserId = currentUser.UserId,
                 };
             }
 
@@ -340,7 +341,7 @@ namespace GitClub.Services
                 RepositoryId = repositoryId,
                 UserId = userId,
                 Role = role,
-                LastEditedBy = currentUserId,
+                LastEditedBy = currentUser.UserId,
             };
 
             await _applicationDbContext
@@ -364,12 +365,12 @@ namespace GitClub.Services
             return repositoryRole;
         }
 
-        public async Task RemoveUserFromRepositoryAsync(int repositoryId, int userId, int currentUserId, CancellationToken cancellationToken)
+        public async Task RemoveUserFromRepositoryAsync(int repositoryId, int userId, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Maintainer, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUser.UserId, repositoryId, RepositoryRoleEnum.Maintainer, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isAuthorized)
@@ -378,7 +379,7 @@ namespace GitClub.Services
                 {
                     EntityName = nameof(Repository),
                     EntityId = repositoryId,
-                    UserId = currentUserId,
+                    UserId = currentUser.UserId,
                 };
             }
 
@@ -412,12 +413,12 @@ namespace GitClub.Services
                 .ConfigureAwait(false);
         }
 
-        public async Task<List<UserRepositoryRole>> GetUserRepositoryRolesByRepositoryIdAsync(int repositoryId, int currentUserId, CancellationToken cancellationToken)
+        public async Task<List<UserRepositoryRole>> GetUserRepositoryRolesByRepositoryIdAsync(int repositoryId, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Reader, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUser.UserId, repositoryId, RepositoryRoleEnum.Reader, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isAuthorized)
@@ -437,12 +438,12 @@ namespace GitClub.Services
             return userRepositoryRoles;
         }
 
-        public async Task<List<TeamRepositoryRole>> GetTeamRepositoryRolesByRepositoryIdAsync(int repositoryId, int currentUserId, CancellationToken cancellationToken)
+        public async Task<List<TeamRepositoryRole>> GetTeamRepositoryRolesByRepositoryIdAsync(int repositoryId, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Reader, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUser.UserId, repositoryId, RepositoryRoleEnum.Reader, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isAuthorized)
@@ -462,12 +463,12 @@ namespace GitClub.Services
             return teamRepositoryRoles;
         }
 
-        public async Task<TeamRepositoryRole> AddTeamToRepositoryAsync(int repositoryId, int teamId, RepositoryRoleEnum role, int currentUserId, CancellationToken cancellationToken)
+        public async Task<TeamRepositoryRole> AddTeamToRepositoryAsync(int repositoryId, int teamId, RepositoryRoleEnum role, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Maintainer, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUser.UserId, repositoryId, RepositoryRoleEnum.Maintainer, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isAuthorized)
@@ -476,7 +477,7 @@ namespace GitClub.Services
                 {
                     EntityName = nameof(Repository),
                     EntityId = repositoryId,
-                    UserId = currentUserId,
+                    UserId = currentUser.UserId,
                 };
             }
 
@@ -499,7 +500,7 @@ namespace GitClub.Services
                 RepositoryId = repositoryId,
                 TeamId = teamId,
                 Role = role,
-                LastEditedBy = currentUserId,
+                LastEditedBy = currentUser.UserId,
             };
 
             await _applicationDbContext
@@ -523,12 +524,12 @@ namespace GitClub.Services
             return teamRepositoryRole;
         }
 
-        public async Task RemoveTeamFromRepositoryAsync(int repositoryId, int teamId, int currentUserId, CancellationToken cancellationToken)
+        public async Task RemoveTeamFromRepositoryAsync(int repositoryId, int teamId, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUserId, repositoryId, RepositoryRoleEnum.Maintainer, cancellationToken)
+                .CheckUserObjectAsync<Repository>(currentUser.UserId, repositoryId, RepositoryRoleEnum.Maintainer, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isAuthorized)
@@ -537,7 +538,7 @@ namespace GitClub.Services
                 {
                     EntityName = nameof(Repository),
                     EntityId = repositoryId,
-                    UserId = currentUserId,
+                    UserId = currentUser.UserId,
                 };
             }
 

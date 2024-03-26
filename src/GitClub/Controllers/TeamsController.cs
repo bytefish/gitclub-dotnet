@@ -29,7 +29,7 @@ namespace GitClub.Controllers
         [HttpGet("{id}")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> GetTeam([FromServices] TeamService teamService, [FromRoute(Name = "id")] int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetTeam([FromServices] TeamService teamService, [FromServices] CurrentUser currentUser, [FromRoute(Name = "id")] int id, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -43,7 +43,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var team = await teamService.GetTeamByIdAsync(id, User.GetUserId(), cancellationToken);
+                var team = await teamService.GetTeamByIdAsync(id, currentUser, cancellationToken);
 
                 return Ok(team);
             }
@@ -56,7 +56,7 @@ namespace GitClub.Controllers
         [HttpGet]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> GetTeams([FromServices] TeamService teamService, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetTeams([FromServices] TeamService teamService, [FromServices] CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -70,7 +70,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var teams = await teamService.GetTeamsByUserIdAsync(User.GetUserId(), cancellationToken);
+                var teams = await teamService.GetTeamsAsync(currentUser, cancellationToken);
 
                 return Ok(teams);
             }
@@ -83,7 +83,7 @@ namespace GitClub.Controllers
         [HttpPost]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> PostTeam([FromServices] TeamService teamService, [FromBody] Team team, CancellationToken cancellationToken)
+        public async Task<IActionResult> PostTeam([FromServices] TeamService teamService, [FromServices] CurrentUser currentUser, [FromBody] Team team, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -97,7 +97,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var createdTeam = await teamService.CreateTeamAsync(team, User.GetUserId(), cancellationToken);
+                var createdTeam = await teamService.CreateTeamAsync(team, currentUser, cancellationToken);
 
                 return Ok(createdTeam);
             }
@@ -110,7 +110,7 @@ namespace GitClub.Controllers
         [HttpPut("{id}")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> PutTeam([FromServices] TeamService teamService, [FromRoute(Name = "id")] int id, [FromBody] Team team, CancellationToken cancellationToken)
+        public async Task<IActionResult> PutTeam([FromServices] TeamService teamService, [FromServices] CurrentUser currentUser, [FromRoute(Name = "id")] int id, [FromBody] Team team, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -124,7 +124,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var updatedTeam = await teamService.UpdateTeamAsync(id, team, User.GetUserId(), cancellationToken);
+                var updatedTeam = await teamService.UpdateTeamAsync(id, team, currentUser, cancellationToken);
 
                 return Ok(updatedTeam);
             }
@@ -137,7 +137,7 @@ namespace GitClub.Controllers
         [HttpDelete("{id}")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> DeleteTeam([FromServices] TeamService teamService, [FromRoute(Name = "id")] int key, CancellationToken cancellationToken)
+        public async Task<IActionResult> DeleteTeam([FromServices] TeamService teamService, [FromServices] CurrentUser currentUser, [FromRoute(Name = "id")] int key, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -151,7 +151,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                await teamService.DeleteTeamAsync(key, User.GetUserId(), cancellationToken);
+                await teamService.DeleteTeamAsync(key, currentUser, cancellationToken);
 
                 return StatusCode(StatusCodes.Status204NoContent);
             }

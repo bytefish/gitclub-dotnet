@@ -4,7 +4,6 @@ using GitClub.Database;
 using GitClub.Database.Models;
 using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
-using GitClub.Infrastructure.OpenFga;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -21,19 +20,18 @@ namespace GitClub.Services
             _applicationDbContext = applicationDbContext;
         }
 
-        public async Task<User> CreateUserAsync(User user, int currentUserId, CancellationToken cancellationToken)
+        public async Task<User> GetUserByEmailAsync(string email, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
-            user.LastEditedBy = currentUserId;
-
-            await _applicationDbContext
-                .AddAsync(user, cancellationToken)
+            var user = await _applicationDbContext.Users.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.Email == email, cancellationToken)
                 .ConfigureAwait(false);
 
-            await _applicationDbContext
-                .SaveChangesAsync(cancellationToken)
-                .ConfigureAwait(false);
+            if (user == null)
+            {
+                throw new AuthenticationFailedException();
+            }
 
             return user;
         }

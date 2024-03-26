@@ -16,6 +16,8 @@ using NodaTime.Serialization.SystemTextJson;
 using NodaTime;
 using GitClub.Infrastructure.Mvc;
 using GitClub.Database.Models;
+using GitClub.Infrastructure.Authentication;
+using Microsoft.AspNetCore.Authentication;
 
 // We will log to %LocalAppData%/RebacExperiments to store the Logs, so it doesn't need to be configured 
 // to a different path, when you run it on your machine.
@@ -87,6 +89,10 @@ try
     });
 
     builder.Services.AddScoped<AclService>();
+
+    // Authentication
+    builder.Services.AddScoped<CurrentUser>();
+    builder.Services.AddScoped<IClaimsTransformation, CurrentUserClaimsTransformation>();
 
     // CORS
     builder.Services.AddCors(options =>

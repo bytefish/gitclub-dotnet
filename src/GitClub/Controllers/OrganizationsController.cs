@@ -29,7 +29,7 @@ namespace GitClub.Controllers
         [HttpGet("{id}")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> GetOrganization([FromServices] OrganizationService organizationService, [FromRoute(Name = "id")] int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetOrganization([FromServices] OrganizationService organizationService, [FromServices] CurrentUser currentUser, [FromRoute(Name = "id")] int id, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -43,7 +43,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var organization = await organizationService.GetOrganizationByIdAsync(id, User.GetUserId(), cancellationToken);
+                var organization = await organizationService.GetOrganizationByIdAsync(id, currentUser, cancellationToken);
 
                 return Ok(organization);
             }
@@ -56,7 +56,7 @@ namespace GitClub.Controllers
         [HttpGet("{id}/repositories")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> GetOrganizationRepositories([FromServices] RepositoryService repositoryService, [FromRoute(Name = "id")] int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetOrganizationRepositories([FromServices] RepositoryService repositoryService, [FromServices] CurrentUser currentUser, [FromRoute(Name = "id")] int id, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -70,7 +70,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var repositories = await repositoryService.GetRepositoriesByOrganizationIdAsync(id, User.GetUserId(), cancellationToken);
+                var repositories = await repositoryService.GetRepositoriesByOrganizationIdAsync(id, currentUser, cancellationToken);
 
                 return Ok(repositories);
             }
@@ -83,7 +83,7 @@ namespace GitClub.Controllers
         [HttpGet("{id}/issues")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> GetOrganizationIssues([FromServices] IssueService issueService, [FromRoute(Name = "id")] int id, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetOrganizationIssues([FromServices] IssueService issueService, [FromServices] CurrentUser currentUser, [FromRoute(Name = "id")] int id, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -97,7 +97,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var issues = await issueService.GetIssuesByOrganizationIdAsync(id, User.GetUserId(), cancellationToken);
+                var issues = await issueService.GetIssuesByOrganizationIdAsync(id, currentUser, cancellationToken);
 
                 return Ok(issues);
             }
@@ -110,7 +110,7 @@ namespace GitClub.Controllers
         [HttpGet]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> GetOrganizations([FromServices] OrganizationService organizationService, CancellationToken cancellationToken)
+        public async Task<IActionResult> GetOrganizations([FromServices] OrganizationService organizationService, [FromServices] CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -124,7 +124,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var organizations = await organizationService.GetOrganizationsByUserIdAsync(User.GetUserId(), cancellationToken);
+                var organizations = await organizationService.GetOrganizationsAsync(currentUser, cancellationToken);
 
                 return Ok(organizations);
             }
@@ -137,7 +137,7 @@ namespace GitClub.Controllers
         [HttpPost]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> PostOrganization([FromServices] OrganizationService organizationService, [FromBody] Organization Organization, CancellationToken cancellationToken)
+        public async Task<IActionResult> PostOrganization([FromServices] OrganizationService organizationService, [FromServices] CurrentUser currentUser, [FromBody] Organization Organization, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -151,7 +151,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var organization = await organizationService.CreateOrganizationAsync(Organization, User.GetUserId(), cancellationToken);
+                var organization = await organizationService.CreateOrganizationAsync(Organization, currentUser, cancellationToken);
 
                 return Ok(organization);
             }
@@ -164,7 +164,7 @@ namespace GitClub.Controllers
         [HttpPut("{id}")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> PutOrganization([FromServices] OrganizationService organizationService, [FromRoute(Name = "id")] int id, [FromBody] Organization Organization, CancellationToken cancellationToken)
+        public async Task<IActionResult> PutOrganization([FromServices] OrganizationService organizationService, [FromServices] CurrentUser currentUser, [FromRoute(Name = "id")] int id, [FromBody] Organization Organization, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -178,7 +178,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var organization = await organizationService.UpdateOrganizationAsync(id, Organization, User.GetUserId(), cancellationToken);
+                var organization = await organizationService.UpdateOrganizationAsync(id, Organization, currentUser, cancellationToken);
 
                 return Ok(organization);
             }
@@ -191,7 +191,7 @@ namespace GitClub.Controllers
         [HttpDelete("{id}")]
         [Authorize(Policy = Policies.RequireUserRole)]
         [EnableRateLimiting(Policies.PerUserRatelimit)]
-        public async Task<IActionResult> DeleteOrganization([FromServices] OrganizationService organizationService, [FromRoute(Name = "id")] int key, CancellationToken cancellationToken)
+        public async Task<IActionResult> DeleteOrganization([FromServices] OrganizationService organizationService, [FromServices] CurrentUser currentUser, [FromRoute(Name = "id")] int key, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -205,7 +205,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                await organizationService.DeleteOrganizationAsync(key, User.GetUserId(), cancellationToken);
+                await organizationService.DeleteOrganizationAsync(key, currentUser, cancellationToken);
 
                 return StatusCode(StatusCodes.Status204NoContent);
             }
@@ -220,6 +220,7 @@ namespace GitClub.Controllers
         [EnableRateLimiting(Policies.PerUserRatelimit)]
         public async Task<IActionResult> GetUserOrganizationRoles(
             [FromServices] OrganizationService organizationService,
+            [FromServices] CurrentUser currentUser,
             [FromRoute(Name = "organizationId")] int organizationId,
             CancellationToken cancellationToken)
         {
@@ -235,7 +236,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var userOrganizationRoles = await organizationService.GetUserOrganizationRolesByOrganizationIdAsync(organizationId, User.GetUserId(), cancellationToken);
+                var userOrganizationRoles = await organizationService.GetUserOrganizationRolesByOrganizationIdAsync(organizationId, currentUser, cancellationToken);
 
                 return Ok(userOrganizationRoles);
             }
@@ -250,6 +251,7 @@ namespace GitClub.Controllers
         [EnableRateLimiting(Policies.PerUserRatelimit)]
         public async Task<IActionResult> GetUserOrganizationRoles(
             [FromServices] OrganizationService organizationService, 
+            [FromServices] CurrentUser currentUser, 
             [FromRoute(Name = "organizationId")] int organizationId, 
             [FromRoute(Name = "role")] OrganizationRoleEnum role, 
             CancellationToken cancellationToken)
@@ -266,7 +268,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                var userOrganizationRoles = await organizationService.GetUserOrganizationRolesByOrganizationIdAndRoleAsync(organizationId, role, User.GetUserId(), cancellationToken);
+                var userOrganizationRoles = await organizationService.GetUserOrganizationRolesByOrganizationIdAndRoleAsync(organizationId, role, currentUser, cancellationToken);
 
                 return Ok(userOrganizationRoles);
             }
@@ -281,6 +283,7 @@ namespace GitClub.Controllers
         [EnableRateLimiting(Policies.PerUserRatelimit)]
         public async Task<IActionResult> AddUserOrganizationRole(
             [FromServices] OrganizationService organizationService,
+            [FromServices] CurrentUser currentUser,
             [FromRoute(Name = "organizationId")] int organizationId,
             [FromRoute(Name = "userId")] int userId,
             [FromRoute(Name = "role")] OrganizationRoleEnum role,
@@ -299,7 +302,7 @@ namespace GitClub.Controllers
                 }
 
                 var userOrganizationRole = await organizationService
-                    .AddUserOrganizationRoleAsync(organizationId, userId, role, User.GetUserId(), cancellationToken);
+                    .AddUserOrganizationRoleAsync(organizationId, userId, role, currentUser, cancellationToken);
 
                 return Ok(userOrganizationRole);
             }
@@ -314,6 +317,7 @@ namespace GitClub.Controllers
         [EnableRateLimiting(Policies.PerUserRatelimit)]
         public async Task<IActionResult> DeleteUserOrganizationRole(
             [FromServices] OrganizationService organizationService,
+            [FromServices] CurrentUser currentUser,
             [FromRoute(Name = "organizationId")] int organizationId,
             [FromRoute(Name = "userId")] int userId,
             [FromRoute(Name = "role")] OrganizationRoleEnum role,
@@ -331,7 +335,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                await organizationService.RemoveUserOrganizationRoleAsync(organizationId, userId, role, User.GetUserId(), cancellationToken);
+                await organizationService.RemoveUserOrganizationRoleAsync(organizationId, userId, role, currentUser, cancellationToken);
 
                 return StatusCode(StatusCodes.Status204NoContent);
             }

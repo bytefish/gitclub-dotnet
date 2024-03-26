@@ -8,6 +8,9 @@ using Microsoft.EntityFrameworkCore;
 using GitClub.Models;
 using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.OpenFga;
+using OpenFga.Sdk.Model;
+using System.Collections.Concurrent;
+using System.ComponentModel.DataAnnotations;
 
 namespace GitClub.Services
 {
@@ -67,6 +70,59 @@ namespace GitClub.Services
             return allowed;
         }
 
+        public async Task<bool> CheckObjectAsync<TObjectType, TSubjectType>(TObjectType @object, string relation, int subjectId, CancellationToken cancellationToken)
+            where TSubjectType : Entity
+            where TObjectType : Entity
+        {
+            _logger.TraceMethodEntry();
+
+            var allowed = await CheckObjectAsync<TObjectType, TSubjectType>(@object.Id, relation, subjectId, cancellationToken).ConfigureAwait(false);
+
+            return allowed;
+        }
+
+        public async Task<List<(bool Allowed, TObjectType Object)>> CheckObjectsParallelAsync<TObjectType, TSubjectType>(List<TObjectType> objects, string relation, int subjectId, CancellationToken cancellationToken)
+            where TSubjectType : Entity
+            where TObjectType : Entity
+        {
+            _logger.TraceMethodEntry();
+
+            var results = new ConcurrentBag<(bool Allowed, int Index, TObjectType Object)>();
+
+            var objectsWithIndex = objects
+                .Select((o, i) => (Index: i, Object: o))
+                .ToList();
+
+            await Parallel.ForEachAsync(objectsWithIndex, async (o, ct) =>
+            {
+                bool isAuthorized = await this
+                    .CheckObjectAsync<TObjectType, TSubjectType>(o.Object, relation, subjectId, cancellationToken)
+                    .ConfigureAwait(false);
+
+                var result = (Allowed: isAuthorized, Index: o.Index, Object: o.Object);
+
+                results.Add(result);
+            });
+
+            var unorderedResults = results.ToList();
+
+            return unorderedResults
+                .OrderBy(x => x.Index)
+                .Select(x => (Allowed: x.Allowed, Object: x.Object))
+                .ToList();
+        }
+
+        public async Task<List<(bool Allowed, TObjectType Object)>> CheckObjectsParallelAsync<TObjectType, TSubjectType>(List<TObjectType> objects, string relation, TSubjectType subject, CancellationToken cancellationToken)
+            where TSubjectType : Entity
+            where TObjectType : Entity
+        {
+            _logger.TraceMethodEntry();
+
+            var allowed = await CheckObjectsParallelAsync<TObjectType, TSubjectType>(objects, relation, subject.Id, cancellationToken).ConfigureAwait(false);
+
+            return allowed;
+        }
+
         public async Task<bool> CheckUserObjectAsync<TObjectType>(int userId, int objectId, string relation, CancellationToken cancellationToken)
             where TObjectType : Entity
         {
@@ -83,6 +139,16 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             var allowed = await CheckObjectAsync<TObjectType, User>(@object.Id, relation, userId, cancellationToken).ConfigureAwait(false);
+
+            return allowed;
+        }
+
+        public async Task<List<(bool Allowed, TObjectType Object)>> CheckUserObjectsParallelAsync<TObjectType>(int userId, List<TObjectType> objects, string relation, CancellationToken cancellationToken)
+            where TObjectType : Entity
+        {
+            _logger.TraceMethodEntry();
+
+            var allowed = await CheckObjectsParallelAsync<TObjectType, User>(objects, relation, userId, cancellationToken).ConfigureAwait(false);
 
             return allowed;
         }

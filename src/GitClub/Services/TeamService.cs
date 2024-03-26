@@ -2,6 +2,7 @@
 
 using GitClub.Database;
 using GitClub.Database.Models;
+using GitClub.Infrastructure.Authentication;
 using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.OpenFga;
@@ -24,12 +25,12 @@ namespace GitClub.Services
             _aclService = aclService;
         }
 
-        public async Task<Team> CreateTeamAsync(Team team, int currentUserId, CancellationToken cancellationToken)
+        public async Task<Team> CreateTeamAsync(Team team, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isAuthorized = await _aclService
-                .CheckUserObjectAsync<Organization>(currentUserId, team.OrganizationId, OrganizationRoleEnum.Owner, cancellationToken)
+                .CheckUserObjectAsync<Organization>(currentUser.UserId, team.OrganizationId, OrganizationRoleEnum.Owner, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isAuthorized)
@@ -38,12 +39,12 @@ namespace GitClub.Services
                 {
                     EntityName = nameof(Organization),
                     EntityId = team.OrganizationId,
-                    UserId = currentUserId
+                    UserId = currentUser.UserId
                 };
             }
 
             // Make sure the Current User is the last editor:
-            team.LastEditedBy = currentUserId;
+            team.LastEditedBy = currentUser.UserId;
 
             // Add the new Team
             await _applicationDbContext
@@ -54,9 +55,9 @@ namespace GitClub.Services
             var userTeamRole = new UserTeamRole
             {
                 TeamId = team.Id,
-                UserId = currentUserId,
+                UserId = currentUser.UserId,
                 Role = TeamRoleEnum.Maintainer,
-                LastEditedBy = currentUserId
+                LastEditedBy = currentUser.UserId
             };
 
             await _applicationDbContext
@@ -70,8 +71,8 @@ namespace GitClub.Services
             // Add Relations to Zanzibar
             var tuplesToWrite = new[]
             {
-                RelationTuples.Create<Team, Organization>(team.Id, currentUserId, TeamRoleEnum.Owner),
-                RelationTuples.Create<Team, User>(team.Id, currentUserId, TeamRoleEnum.Maintainer)
+                RelationTuples.Create<Team, Organization>(team.Id, currentUser.UserId, TeamRoleEnum.Owner),
+                RelationTuples.Create<Team, User>(team.Id, currentUser.UserId, TeamRoleEnum.Maintainer)
             };
 
             await _aclService
@@ -81,12 +82,12 @@ namespace GitClub.Services
             return team;
         }
 
-        public async Task<Team> GetTeamByIdAsync(int teamId, int currentUserId, CancellationToken cancellationToken)
+        public async Task<Team> GetTeamByIdAsync(int teamId, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Team>(currentUserId, teamId, RepositoryRoleEnum.Reader, cancellationToken)
+                .CheckUserObjectAsync<Team>(currentUser.UserId, teamId, RepositoryRoleEnum.Reader, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -141,23 +142,23 @@ namespace GitClub.Services
             return teams;
         }
 
-        public async Task<List<Team>> GetTeamsByUserIdAsync(int userId, CancellationToken cancellationToken)
+        public async Task<List<Team>> GetTeamsAsync(CurrentUser user, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             var teams = await _aclService
-                .ListUserObjectsAsync<Team>(userId, TeamRoleEnum.Member.AsRelation(), cancellationToken)
+                .ListUserObjectsAsync<Team>(user.UserId, TeamRoleEnum.Member.AsRelation(), cancellationToken)
                 .ConfigureAwait(false);
 
             return teams;
         }
 
-        public async Task<Team> UpdateTeamAsync(int teamId, Team values, int currentUserId, CancellationToken cancellationToken)
+        public async Task<Team> UpdateTeamAsync(int teamId, Team values, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Team>(currentUserId, teamId, TeamRoleEnum.Member, cancellationToken)
+                .CheckUserObjectAsync<Team>(currentUser.UserId, teamId, TeamRoleEnum.Member, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -170,7 +171,7 @@ namespace GitClub.Services
             }
 
             bool isUpdateAuthorized = await _aclService
-                .CheckUserObjectAsync<Team>(currentUserId, teamId, TeamRoleEnum.Maintainer, cancellationToken)
+                .CheckUserObjectAsync<Team>(currentUser.UserId, teamId, TeamRoleEnum.Maintainer, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isUpdateAuthorized)
@@ -179,7 +180,7 @@ namespace GitClub.Services
                 {
                     EntityName = nameof(Team),
                     EntityId = teamId,
-                    UserId = currentUserId,
+                    UserId = currentUser.UserId,
                 };
             }
 
@@ -201,7 +202,7 @@ namespace GitClub.Services
                 .Where(t => t.Id == teamId && t.RowVersion == values.RowVersion)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(x => x.Name, values.Name)
-                    .SetProperty(x => x.LastEditedBy, currentUserId), cancellationToken)
+                    .SetProperty(x => x.LastEditedBy, currentUser.UserId), cancellationToken)
                 .ConfigureAwait(false);
 
             if (rowsAffected == 0)
@@ -230,12 +231,12 @@ namespace GitClub.Services
             return updated;
         }
 
-        public async Task DeleteTeamAsync(int teamId, int currentUserId, CancellationToken cancellationToken)
+        public async Task DeleteTeamAsync(int teamId, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Team>(currentUserId, teamId, TeamRoleEnum.Member, cancellationToken)
+                .CheckUserObjectAsync<Team>(currentUser.UserId, teamId, TeamRoleEnum.Member, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -261,7 +262,7 @@ namespace GitClub.Services
             }
 
             bool isWriteAuthorized = await _aclService
-                .CheckUserObjectAsync<Team>(currentUserId, teamId, TeamRoleEnum.Maintainer, cancellationToken)
+                .CheckUserObjectAsync<Team>(currentUser.UserId, teamId, TeamRoleEnum.Maintainer, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isWriteAuthorized)
@@ -270,7 +271,7 @@ namespace GitClub.Services
                 {
                     EntityName = nameof(Team),
                     EntityId = teamId,
-                    UserId = currentUserId,
+                    UserId = currentUser.UserId,
                 };
             }
 
@@ -304,12 +305,12 @@ namespace GitClub.Services
                 .ConfigureAwait(false);
         }
 
-        public async Task<List<UserTeamRole>> GetUserTeamRolesByTeamIdAsync(int teamId, int currentUserId, CancellationToken cancellationToken)
+        public async Task<List<UserTeamRole>> GetUserTeamRolesByTeamIdAsync(int teamId, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Team>(currentUserId, teamId, TeamRoleEnum.Member, cancellationToken)
+                .CheckUserObjectAsync<Team>(currentUser.UserId, teamId, TeamRoleEnum.Member, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -322,7 +323,7 @@ namespace GitClub.Services
             }
 
             bool isWriteAuthorized = await _aclService
-                .CheckUserObjectAsync<Team>(currentUserId, teamId, TeamRoleEnum.Maintainer, cancellationToken)
+                .CheckUserObjectAsync<Team>(currentUser.UserId, teamId, TeamRoleEnum.Maintainer, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isWriteAuthorized)
@@ -331,7 +332,7 @@ namespace GitClub.Services
                 {
                     EntityName = nameof(Team),
                     EntityId = teamId,
-                    UserId = currentUserId,
+                    UserId = currentUser.UserId,
                 };
             }
 
@@ -343,12 +344,12 @@ namespace GitClub.Services
             return userTeamRoles;
         }
 
-        public async Task<UserTeamRole> AddUserToTeamAsync(int userId, int teamId, TeamRoleEnum role, int currentUserId, CancellationToken cancellationToken)
+        public async Task<UserTeamRole> AddUserToTeamAsync(int userId, int teamId, TeamRoleEnum role, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Team>(currentUserId, teamId, TeamRoleEnum.Member, cancellationToken)
+                .CheckUserObjectAsync<Team>(currentUser.UserId, teamId, TeamRoleEnum.Member, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -361,7 +362,7 @@ namespace GitClub.Services
             }
 
             bool isWriteAuthorized = await _aclService
-                .CheckUserObjectAsync<Team>(currentUserId, teamId, TeamRoleEnum.Maintainer, cancellationToken)
+                .CheckUserObjectAsync<Team>(currentUser.UserId, teamId, TeamRoleEnum.Maintainer, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isWriteAuthorized)
@@ -370,7 +371,7 @@ namespace GitClub.Services
                 {
                     EntityName = nameof(Team),
                     EntityId = teamId,
-                    UserId = currentUserId,
+                    UserId = currentUser.UserId,
                 };
             }
 
@@ -392,7 +393,7 @@ namespace GitClub.Services
                 UserId = userId,
                 TeamId = teamId,
                 Role = role,
-                LastEditedBy = currentUserId
+                LastEditedBy = currentUser.UserId
             };
 
             await _applicationDbContext
@@ -416,12 +417,12 @@ namespace GitClub.Services
             return userTeamRole;
         }
 
-        public async Task RemoveUserFromTeamAsync(int userId, int teamId, int currentUserId, CancellationToken cancellationToken)
+        public async Task RemoveUserFromTeamAsync(int userId, int teamId, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             bool isReadAuthorized = await _aclService
-                .CheckUserObjectAsync<Team>(currentUserId, teamId, TeamRoleEnum.Member, cancellationToken)
+                .CheckUserObjectAsync<Team>(currentUser.UserId, teamId, TeamRoleEnum.Member, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isReadAuthorized)
@@ -434,7 +435,7 @@ namespace GitClub.Services
             }
 
             bool isWriteAuthorized = await _aclService
-                .CheckUserObjectAsync<Team>(currentUserId, teamId, TeamRoleEnum.Maintainer, cancellationToken)
+                .CheckUserObjectAsync<Team>(currentUser.UserId, teamId, TeamRoleEnum.Maintainer, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!isWriteAuthorized)
@@ -443,7 +444,7 @@ namespace GitClub.Services
                 {
                     EntityName = nameof(Team),
                     EntityId = teamId,
-                    UserId = currentUserId,
+                    UserId = currentUser.UserId,
                 };
             }
 
