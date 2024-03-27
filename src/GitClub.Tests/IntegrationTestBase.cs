@@ -13,6 +13,7 @@ using OpenFga.Sdk.Client;
 using OpenFga.Sdk.Client.Model;
 using OpenFga.Sdk.Model;
 using System.Security.Claims;
+using System.Threading;
 
 namespace GitClub.Tests
 {
@@ -37,7 +38,7 @@ namespace GitClub.Tests
         /// Service Scope.
         /// </summary>
         protected IServiceScope ServiceScope { get; set; } = null!;
-        
+
         public IntegrationTestBase()
         {
             CreateConfiguration();
@@ -120,11 +121,13 @@ namespace GitClub.Tests
         {
             ServiceScope = ServiceProvider.CreateScope();
 
-            await CreateTestStore();
+            await PreparePostgresAsync(default);
+            await PrepareOpenFgaAsync(default);
 
+            // Create the CurrentUser and Claims:
             var claims = await ServiceProvider.GetRequiredService<UserService>().GetClaimsAsync(
                 email: "philipp@bytefish.de",
-                roles: [ Roles.Administrator, Roles.User ],
+                roles: [Roles.Administrator, Roles.User],
                 cancellationToken: default);
 
             var user = await ServiceProvider.GetRequiredService<UserService>().GetUserByEmailAsync(
@@ -134,17 +137,26 @@ namespace GitClub.Tests
             CurrentUser = new CurrentUser
             {
                 Principal = new ClaimsPrincipal(new ClaimsIdentity(claims)),
-                User =  user
+                User = user
             };
         }
 
-        private async Task CreateTestStore()
+        private async Task PreparePostgresAsync(CancellationToken cancellationToken)
+        {
+            await GetRequiredService<ApplicationDbContext>().Database
+                .ExecuteSqlRawAsync("call gitclub.cleanup_tests()", cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        private async Task PrepareOpenFgaAsync(CancellationToken cancellationToken)
         {
             // This is the OpenFGA Store under Test:
             var sourceStoreId = Configuration.GetValue<string>("OpenFGA:StoreId")!;
-            
+
             // We always want to run Integration Tests on the latest Authorization Model:
-            var sourceAuthorizationModel = await GetLatestAuthorizationModelByStoreId(sourceStoreId).ConfigureAwait(false);
+            var sourceAuthorizationModel = await this
+                .GetLatestAuthorizationModelByStoreIdAsync(sourceStoreId, cancellationToken)
+                .ConfigureAwait(false);
 
             // Then create the Store to run the Tests with:
             var targetStoreResponse = await GetRequiredService<OpenFgaClient>()
@@ -153,33 +165,38 @@ namespace GitClub.Tests
 
             var targetStoreId = targetStoreResponse.Id;
 
-            var targetAuthorizationModel = await GetRequiredService<OpenFgaClient>()
-                .WriteAuthorizationModel(new ClientWriteAuthorizationModelRequest
+            var targetAuthorizationModel = await GetRequiredService<OpenFgaClient>().WriteAuthorizationModel(
+                body: new ClientWriteAuthorizationModelRequest
                 {
                     TypeDefinitions = sourceAuthorizationModel.TypeDefinitions,
                     SchemaVersion = sourceAuthorizationModel.SchemaVersion,
                     AdditionalProperties = sourceAuthorizationModel.AdditionalProperties,
                     Conditions = sourceAuthorizationModel.Conditions,
-                }, new ClientWriteOptions { StoreId = targetStoreId });
+                },
+                options: new ClientWriteOptions
+                {
+                    StoreId = targetStoreId
+                },
+                cancellationToken: cancellationToken);
 
             // This is a bit ugly, but it makes things easier ...
             GetRequiredService<OpenFgaClient>().StoreId = targetStoreId;
             GetRequiredService<OpenFgaClient>().AuthorizationModelId = targetAuthorizationModel.AuthorizationModelId;
         }
 
-        private async Task<AuthorizationModel> GetLatestAuthorizationModelByStoreId(string storeId)
+        private async Task<AuthorizationModel> GetLatestAuthorizationModelByStoreIdAsync(string storeId, CancellationToken cancellationToken)
         {
             // Create a new Store:
             var client = GetRequiredService<OpenFgaClient>();
 
             // Apparently the first Authorization Model is also the latest one:
             var authorizationModelsResponse = await client
-                .ReadAuthorizationModels(new ClientReadAuthorizationModelsOptions { StoreId = storeId })
+                .ReadAuthorizationModels(new ClientReadAuthorizationModelsOptions { StoreId = storeId }, cancellationToken: cancellationToken)
                 .ConfigureAwait(false);
 
             var latestAuthorizationModel = authorizationModelsResponse.AuthorizationModels.FirstOrDefault();
 
-            if(latestAuthorizationModel == null)
+            if (latestAuthorizationModel == null)
             {
                 throw new Exception($"No AuthorizationModel found for StoreId {storeId}");
             }

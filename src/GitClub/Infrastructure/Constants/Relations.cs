@@ -55,16 +55,16 @@ namespace GitClub.Infrastructure.Constants
         /// <summary>
         /// RepoAdmin.
         /// </summary>
-        public static readonly string RepoAdmin = "repo_admin";
+        public static readonly string RepoAdmin = "repository_admin";
 
         /// <summary>
         /// RepoReader.
         /// </summary>
-        public static readonly string RepoReader = "repo_reader";
+        public static readonly string RepoReader = "repository_reader";
 
         /// <summary>
         /// RepoWriter.
         /// </summary>
-        public static readonly string RepoWriter = "repo_writer";
+        public static readonly string RepoWriter = "repository_writer";
     }
 }

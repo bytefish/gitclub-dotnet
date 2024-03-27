@@ -331,6 +331,10 @@ CREATE TABLE IF NOT EXISTS gitclub.organization_history (
     LIKE gitclub.organization
 );
 
+CREATE TABLE IF NOT EXISTS gitclub.team_history (
+    LIKE gitclub.team
+);
+
 CREATE TABLE IF NOT EXISTS gitclub.user_history (
     LIKE gitclub.user
 );
@@ -646,7 +650,7 @@ FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
 );
 
 CREATE OR REPLACE TRIGGER team_repository_role_versioning_trigger
-BEFORE INSERT OR UPDATE OR DELETE ON gitclub.user_organization_role
+BEFORE INSERT OR UPDATE OR DELETE ON gitclub.team_repository_role
 FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
   'sys_period', 'gitclub.team_repository_role_history', true
 );
@@ -668,6 +672,38 @@ BEFORE INSERT OR UPDATE OR DELETE ON gitclub.user_team_role
 FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
   'sys_period', 'gitclub.user_team_role_history', true
 );
+
+-- Performs a Cleanup for Tests, which removes all data except the Data Conversion User
+CREATE OR REPLACE PROCEDURE gitclub.cleanup_tests()
+AS $cleanup_tests_func$
+BEGIN
+
+	-- Delete all non-fixed data
+	DELETE FROM gitclub.user_organization_role;
+	DELETE FROM gitclub.user_team_role;
+	DELETE FROM gitclub.user_repository_role;
+	DELETE FROM gitclub.team_repository_role;
+	
+	DELETE FROM gitclub.issue;
+	DELETE FROM gitclub.repository;
+	DELETE FROM gitclub.team;
+	DELETE FROM gitclub.organization;
+	DELETE FROM gitclub.user WHERE user_id != 1;
+	
+	-- Delete historic data
+	DELETE FROM gitclub.user_organization_role_history;
+	DELETE FROM gitclub.user_team_role_history;
+	DELETE FROM gitclub.user_repository_role_history;
+	DELETE FROM gitclub.team_repository_role_history;
+	
+	DELETE FROM gitclub.issue_history;
+	DELETE FROM gitclub.repository_history;
+	DELETE FROM gitclub.team_history;
+	DELETE FROM gitclub.organization_history;
+	DELETE FROM gitclub.user_history WHERE user_id != 1;
+	
+END; $cleanup_tests_func$ 
+LANGUAGE plpgsql;
 
 -- Initial Data
 INSERT INTO gitclub.user(user_id, email, preferred_name, last_edited_by) 
@@ -736,8 +772,7 @@ INSERT INTO gitclub.repository(repository_id, organization_id, name, last_edited
 
 INSERT INTO gitclub.issue(issue_id, title, content, closed, repository_id, created_by, last_edited_by)
     VALUES
-        (1, 'GitClub rocks!', 'Amazing Project!', false, 1, 1, 1),
-        (1, 'Hello Team Protocols!', 'You are doing a great job!', false, 2, 1, 1),
+        (1, 'GitClub rocks!', 'Amazing Project!', false, 1, 1, 1)
     ON CONFLICT DO NOTHING;
 
 

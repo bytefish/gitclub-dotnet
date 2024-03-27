@@ -44,6 +44,19 @@ namespace GitClub.Services
                 .AddAsync(organization, cancellationToken)
                 .ConfigureAwait(false);
 
+            // The User creating the Organization is automatically the Owner
+            var userOrganizationRole = new UserOrganizationRole
+            {
+                OrganizationId = organization.Id,
+                Role = OrganizationRoleEnum.Owner,
+                UserId = currentUser.UserId,
+                LastEditedBy = currentUser.UserId
+            };
+
+            await _applicationDbContext
+                .AddAsync(userOrganizationRole, cancellationToken)
+                .ConfigureAwait(false);
+
             await _applicationDbContext
                 .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -52,7 +65,7 @@ namespace GitClub.Services
             var tuplesToWrite = new[]
             {
                 RelationTuples.Create<Organization, Organization>(organization, organization, organization.BaseRepositoryRole, Relations.Member),
-                RelationTuples.Create<Organization, User>(organization.Id, currentUser.UserId, OrganizationRoleEnum.Owner),
+                RelationTuples.Create<Organization, User>(userOrganizationRole.OrganizationId, userOrganizationRole.UserId, userOrganizationRole.Role),
             };
 
             await _aclService
