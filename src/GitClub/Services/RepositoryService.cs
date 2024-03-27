@@ -318,7 +318,7 @@ namespace GitClub.Services
             }
         }
 
-        public async Task<UserRepositoryRole> AddUserToRepositoryAsync(int repositoryId, int userId, RepositoryRoleEnum role, CurrentUser currentUser, CancellationToken cancellationToken)
+        public async Task<UserRepositoryRole> AddUserToRepositoryAsync(int userId, int repositoryId, RepositoryRoleEnum role, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
@@ -365,7 +365,7 @@ namespace GitClub.Services
             return repositoryRole;
         }
 
-        public async Task RemoveUserFromRepositoryAsync(int repositoryId, int userId, CurrentUser currentUser, CancellationToken cancellationToken)
+        public async Task RemoveUserFromRepositoryAsync(int userId, int repositoryId, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 

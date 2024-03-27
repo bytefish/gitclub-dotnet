@@ -12,6 +12,6 @@ namespace GitClub.Database.Models
         /// <summary>
         /// Gets or sets the OrganizationId.
         /// </summary>
-        public int OrganizationId { get; set; }
+        public required int OrganizationId { get; set; }
     }
 }

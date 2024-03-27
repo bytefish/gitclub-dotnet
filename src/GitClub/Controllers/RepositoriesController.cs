@@ -243,7 +243,7 @@ namespace GitClub.Controllers
                 }
 
                 var userRepositoryRole = await repositoryService
-                    .AddUserToRepositoryAsync(repositoryId, userId, role, currentUser, cancellationToken);
+                    .AddUserToRepositoryAsync(userId, repositoryId, role, currentUser, cancellationToken);
 
                 return Ok(userRepositoryRole);
             }
@@ -275,7 +275,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                await repositoryService.RemoveUserFromRepositoryAsync(repositoryId, userId, currentUser, cancellationToken);
+                await repositoryService.RemoveUserFromRepositoryAsync(userId, repositoryId, currentUser, cancellationToken);
 
                 return StatusCode(StatusCodes.Status204NoContent);
             }

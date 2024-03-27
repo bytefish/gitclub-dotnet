@@ -302,7 +302,7 @@ namespace GitClub.Controllers
                 }
 
                 var userOrganizationRole = await organizationService
-                    .AddUserOrganizationRoleAsync(organizationId, userId, role, currentUser, cancellationToken);
+                    .AddUserToOrganizationAsync(userId, organizationId, role, currentUser, cancellationToken);
 
                 return Ok(userOrganizationRole);
             }
@@ -335,7 +335,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                await organizationService.RemoveUserOrganizationRoleAsync(organizationId, userId, role, currentUser, cancellationToken);
+                await organizationService.RemoveUserFromOrganizationAsync(userId, organizationId, role, currentUser, cancellationToken);
 
                 return StatusCode(StatusCodes.Status204NoContent);
             }

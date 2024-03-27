@@ -106,8 +106,8 @@ namespace GitClub.Tests.Services
             // Act
             organization = await OrganizationService.CreateOrganizationAsync(organization, CurrentUser, default);
             user = await UserService.CreateUserAsync(user, CurrentUser, default);
-            
-            await OrganizationService.AddUserOrganizationRoleAsync(organization.Id, user.Id, OrganizationRoleEnum.Member, CurrentUser, default);
+
+            await OrganizationService.AddUserToOrganizationAsync(user.Id, organization.Id, OrganizationRoleEnum.Member, CurrentUser, default);
 
             // Assert
             var userOrganizationRoleTuples = await AclService.ReadTuplesAsync<Organization, User>(organization.Id, null, user.Id, null).ToListAsync();
@@ -124,7 +124,6 @@ namespace GitClub.Tests.Services
         public async Task AddMemberToOrganizationAsync_AssignMultipleTimesToSameOrganization_FailsWithException()
         {
             // Arrange
-            
             var organization = await OrganizationService.CreateOrganizationAsync(new Organization
             {
                 BaseRepositoryRole = BaseRepositoryRoleEnum.RepositoryReader,
@@ -132,7 +131,7 @@ namespace GitClub.Tests.Services
                 BillingAddress = "Billing Address",
                 LastEditedBy = Users.GhostUserId
             }, CurrentUser, default);
-            
+
             var user = await UserService.CreateUserAsync(new User
             {
                 Email = "test@test.local",
@@ -145,10 +144,10 @@ namespace GitClub.Tests.Services
 
             try
             {
-                await OrganizationService.AddUserOrganizationRoleAsync(organization.Id, user.Id, OrganizationRoleEnum.Member, CurrentUser, default);
-                await OrganizationService.AddUserOrganizationRoleAsync(organization.Id, user.Id, OrganizationRoleEnum.Administrator, CurrentUser, default);
-            } 
-            catch(ApplicationErrorException e)
+                await OrganizationService.AddUserToOrganizationAsync(user.Id, organization.Id, OrganizationRoleEnum.Member, CurrentUser, default);
+                await OrganizationService.AddUserToOrganizationAsync(user.Id, organization.Id, OrganizationRoleEnum.Administrator, CurrentUser, default);
+            }
+            catch (ApplicationErrorException e)
             {
                 caught = e;
             }
@@ -156,6 +155,93 @@ namespace GitClub.Tests.Services
             // Assert
             Assert.IsNotNull(caught);
             Assert.AreEqual(ErrorCodes.UserAlreadyAssignedToOrganization, caught.ErrorCode);
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="Organization">, and adds a <see cref="User"/> as the Organizations Administrator. 
+        /// </summary>
+        [TestMethod]
+        public async Task UpdateOrganizationAsync_InRoleAdministrator_CanUpdateOrganization()
+        {
+            // Arrange
+            var testUser = await UserService.CreateUserAsync(new User
+            {
+                Email = "test@test.local",
+                PreferredName = "Test User",
+                LastEditedBy = CurrentUser.UserId
+            }, CurrentUser, default);
+
+            var organization = await OrganizationService.CreateOrganizationAsync(new Organization
+            {
+                BaseRepositoryRole = BaseRepositoryRoleEnum.RepositoryReader,
+                Name = "Unit Test",
+                BillingAddress = "Billing Address",
+                LastEditedBy = Users.GhostUserId
+            }, CurrentUser, default);
+
+            await OrganizationService.AddUserToOrganizationAsync(testUser.Id, organization.Id, OrganizationRoleEnum.Administrator, CurrentUser, default);
+
+            var currentTestUser = await CreateCurrentUserAsync(testUser.Email, [Roles.User]);
+
+            // Act
+            var updatedOrganization = await OrganizationService.UpdateOrganizationAsync(organization.Id, new Organization
+            {
+                BaseRepositoryRole = BaseRepositoryRoleEnum.RepositoryWriter,
+                Name = "My New Name",
+                RowVersion = organization.RowVersion,
+                LastEditedBy = currentTestUser.UserId,
+            }, currentTestUser, default);
+
+            // Assert
+            Assert.AreEqual("My New Name", updatedOrganization.Name);
+        }
+
+        /// <summary>
+        /// Cannot update an <see cref="Organization">, if not in Administrator Role.
+        /// </summary>
+        [TestMethod]
+        public async Task UpdateOrganizationAsync_NotInRoleAdministrator_ExceptionWithErrorCode()
+        {
+            // Arrange
+            var testUser = await UserService.CreateUserAsync(new User
+            {
+                Email = "test@test.local",
+                PreferredName = "Test User",
+                LastEditedBy = CurrentUser.UserId
+            }, CurrentUser, default);
+
+            var organization = await OrganizationService.CreateOrganizationAsync(new Organization
+            {
+                BaseRepositoryRole = BaseRepositoryRoleEnum.RepositoryReader,
+                Name = "Unit Test",
+                BillingAddress = "Billing Address",
+                LastEditedBy = Users.GhostUserId
+            }, CurrentUser, default);
+
+            await OrganizationService.AddUserToOrganizationAsync(testUser.Id, organization.Id, OrganizationRoleEnum.Member, CurrentUser, default);
+
+            var currentTestUser = await CreateCurrentUserAsync(testUser.Email, [Roles.User]);
+
+            // Act
+            ApplicationErrorException? caught = null;
+
+            try
+            {
+                await OrganizationService.UpdateOrganizationAsync(organization.Id, new Organization
+                {
+                    BaseRepositoryRole = BaseRepositoryRoleEnum.RepositoryWriter,
+                    Name = "My Name",
+                    LastEditedBy = currentTestUser.UserId,
+                }, currentTestUser, default);
+            }
+            catch (ApplicationErrorException e)
+            {
+                caught = e;
+            }
+
+            // Assert
+            Assert.IsNotNull(caught);
+            Assert.AreEqual(ErrorCodes.EntityUnauthorized, caught.ErrorCode);
         }
 
         /// <summary>
@@ -172,7 +258,7 @@ namespace GitClub.Tests.Services
                 PreferredName = "Test User",
                 LastEditedBy = CurrentUser.UserId
             }, CurrentUser, default);
-            
+
             var organization = await OrganizationService.CreateOrganizationAsync(new Organization
             {
                 BaseRepositoryRole = BaseRepositoryRoleEnum.RepositoryReader,
@@ -182,8 +268,8 @@ namespace GitClub.Tests.Services
             }, CurrentUser, default); ;
 
             // Act
-            await OrganizationService.AddUserOrganizationRoleAsync(organization.Id, user.Id, OrganizationRoleEnum.Member, CurrentUser, default);
-            await OrganizationService.RemoveUserOrganizationRoleAsync(organization.Id, user.Id, OrganizationRoleEnum.Member, CurrentUser, default);
+            await OrganizationService.AddUserToOrganizationAsync(user.Id, organization.Id, OrganizationRoleEnum.Member, CurrentUser, default);
+            await OrganizationService.RemoveUserFromOrganizationAsync(user.Id, organization.Id, OrganizationRoleEnum.Member, CurrentUser, default);
 
             // Assert
             var userOrganizationRoleTuples = await AclService.ReadTuplesAsync<Organization, User>(organization.Id, null, user.Id, null).ToListAsync();
@@ -218,9 +304,9 @@ namespace GitClub.Tests.Services
             ApplicationErrorException? caught = null;
             try
             {
-                await OrganizationService.RemoveUserOrganizationRoleAsync(organization.Id, user.Id, OrganizationRoleEnum.Member, CurrentUser, default);
-            } 
-            catch(ApplicationErrorException e)
+                await OrganizationService.RemoveUserFromOrganizationAsync(user.Id, organization.Id, OrganizationRoleEnum.Member, CurrentUser, default);
+            }
+            catch (ApplicationErrorException e)
             {
                 caught = e;
             }

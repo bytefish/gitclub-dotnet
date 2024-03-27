@@ -124,17 +124,21 @@ namespace GitClub.Tests
             await PreparePostgresAsync(default);
             await PrepareOpenFgaAsync(default);
 
-            // Create the CurrentUser and Claims:
+            CurrentUser = await CreateCurrentUserAsync(email: "philipp@bytefish.de", roles: [Roles.Administrator, Roles.User]);
+        }
+
+        protected async Task<CurrentUser> CreateCurrentUserAsync(string email, string[] roles)
+        {
             var claims = await ServiceProvider.GetRequiredService<UserService>().GetClaimsAsync(
-                email: "philipp@bytefish.de",
-                roles: [Roles.Administrator, Roles.User],
+                email: email,
+                roles: roles,
                 cancellationToken: default);
 
             var user = await ServiceProvider.GetRequiredService<UserService>().GetUserByEmailAsync(
-                email: "philipp@bytefish.de",
+                email: email,
                 cancellationToken: default);
 
-            CurrentUser = new CurrentUser
+            return new CurrentUser
             {
                 Principal = new ClaimsPrincipal(new ClaimsIdentity(claims)),
                 User = user
