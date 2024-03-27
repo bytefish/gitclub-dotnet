@@ -11,6 +11,7 @@ using GitClub.Infrastructure.OpenFga;
 using OpenFga.Sdk.Model;
 using System.Collections.Concurrent;
 using System.ComponentModel.DataAnnotations;
+using System.Runtime.CompilerServices;
 
 namespace GitClub.Services
 {
@@ -222,7 +223,6 @@ namespace GitClub.Services
             await _openFgaClient.WriteTuples(tuples, null, cancellationToken).ConfigureAwait(false);
         }
 
-
         public async Task DeleteRelationshipAsync<TObjectType, TSubjectType>(int objectId, string relation, int subjectId, string? subjectRelation, CancellationToken cancellationToken = default)
             where TObjectType : Entity
             where TSubjectType : Entity
@@ -242,18 +242,16 @@ namespace GitClub.Services
             await _openFgaClient.DeleteTuples(tuples, null, cancellationToken).ConfigureAwait(false);
         }
 
-        public async Task<List<RelationTuple>> ReadAllRelationships(string? @object, string? relation, string? subject, CancellationToken cancellationToken = default)
+        public async IAsyncEnumerable<RelationTuple> ReadTuplesAsync(string? @object, string? relation, string? subject, [EnumeratorCancellation] CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
             var body = new ClientReadRequest
             {
-                Object = @object,
-                Relation = relation,
-                User = subject,
+                Object = @object ?? string.Empty,
+                Relation = relation ?? string.Empty,
+                User = subject ?? string.Empty
             };
-
-            var readResult = new List<RelationTuple>();
 
             string? continuationToken = null;
 
@@ -285,7 +283,7 @@ namespace GitClub.Services
                             Subject = tuple.Key?.User ?? string.Empty,
                         };
 
-                        readResult.Add(relationTuple);
+                        yield return relationTuple;
                     }
                 }
 
@@ -293,79 +291,19 @@ namespace GitClub.Services
                 continuationToken = response.ContinuationToken;
 
             } while (!string.IsNullOrWhiteSpace(continuationToken));
-
-            return readResult;
         }
 
-        public async Task<List<RelationTuple>> ReadAllRelationships<TObjectType, TSubjectType>(int? objectId, string? relation, int? subjectId, string? subjectRelation, CancellationToken cancellationToken = default)
+        public IAsyncEnumerable<RelationTuple> ReadTuplesAsync<TObjectType, TSubjectType>(int? objectId, string? relation, int? subjectId, string? subjectRelation, CancellationToken cancellationToken = default)
             where TObjectType : Entity
             where TSubjectType : Entity
         {
             _logger.TraceMethodEntry();
 
-            var body = new ClientReadRequest
-            {
-                Object = ZanzibarFormatters.ToZanzibarNotation<TObjectType>(objectId),
-                Relation = relation,
-                User = ZanzibarFormatters.ToZanzibarNotation<TSubjectType>(subjectId, subjectRelation),
-            };
+            return ReadTuplesAsync(
+                @object: ZanzibarFormatters.ToZanzibarNotation<TObjectType>(objectId),
+                relation: relation,
+                subject: ZanzibarFormatters.ToZanzibarNotation<TSubjectType>(subjectId, subjectRelation), cancellationToken);
 
-            var readResult = new List<RelationTuple>();
-
-            string? continuationToken = null;
-
-            do
-            {
-                var options = new ClientReadOptions
-                {
-                    PageSize = 100,
-                    ContinuationToken = continuationToken
-                };
-
-                var response = await _openFgaClient
-                    .Read(body, options, cancellationToken)
-                    .ConfigureAwait(false);
-
-                if (response == null)
-                {
-                    throw new InvalidOperationException("No Response received");
-                }
-
-                if (response.Tuples != null)
-                {
-                    foreach (var tuple in response.Tuples)
-                    {
-                        var relationTuple = new RelationTuple
-                        {
-                            Object = tuple.Key?.Object ?? string.Empty,
-                            Relation = tuple.Key?.Relation ?? string.Empty,
-                            Subject = tuple.Key?.User ?? string.Empty,
-                        };
-
-                        readResult.Add(relationTuple);
-                    }
-                }
-
-                // Set the new Continuation Token to get more data ...
-                continuationToken = response.ContinuationToken;
-
-            } while (continuationToken != null);
-
-            return readResult;
-        }
-
-        public RelationTuple GetRelationshipTuple<TObjectType, TSubjectType>(int objectId, string relation, int subjectId, string? subjectRelation)
-            where TObjectType : Entity
-            where TSubjectType : Entity
-        {
-            _logger.TraceMethodEntry();
-
-            return new RelationTuple
-            {
-                Object = ZanzibarFormatters.ToZanzibarNotation<TObjectType>(objectId),
-                Relation = relation,
-                Subject = ZanzibarFormatters.ToZanzibarNotation<TSubjectType>(subjectId, subjectRelation)
-            };
         }
 
         public async Task AddRelationshipsAsync(ICollection<RelationTuple> relationTuples, CancellationToken cancellationToken)

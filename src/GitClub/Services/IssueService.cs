@@ -15,7 +15,7 @@ namespace GitClub.Services
     public class IssueService
     {
         private readonly ILogger<IssueService> _logger;
-
+        
         private readonly ApplicationDbContext _applicationDbContext;
         private readonly AclService _aclService;
 

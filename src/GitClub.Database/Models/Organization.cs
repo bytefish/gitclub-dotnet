@@ -12,7 +12,7 @@ namespace GitClub.Database.Models
         /// <summary>
         /// Gets or sets the base role for Repositories.
         /// </summary>
-        public required RepositoryRoleEnum BaseRepositoryRole { get; set; }
+        public required BaseRepositoryRoleEnum BaseRepositoryRole { get; set; }
 
         /// <summary>
         /// Gets or sets the optional Billing Address.
