@@ -158,7 +158,6 @@ namespace GitClub.Tests.Services
             Assert.AreEqual(ErrorCodes.UserAlreadyAssignedToOrganization, caught.ErrorCode);
         }
 
-
         /// <summary>
         /// Creates a new <see cref="Organization">, creates a new <see cref="User"/>, assigns the user to the organization, 
         /// removes the user from the organization and checks the OpenFGA tuples.
@@ -190,6 +189,45 @@ namespace GitClub.Tests.Services
             var userOrganizationRoleTuples = await AclService.ReadTuplesAsync<Organization, User>(organization.Id, null, user.Id, null).ToListAsync();
 
             Assert.AreEqual(0, userOrganizationRoleTuples.Count);
+        }
+
+        /// <summary>
+        /// Creates a new <see cref="Organization">, creates a new <see cref="User"/>, does NOT assign the user to the 
+        /// organization, removes the user from the organization. Fails with an Exception.
+        /// </summary>
+        [TestMethod]
+        public async Task RemoveUserOrganizationRoleAsync_UserNotAssignedToOrganization_FailsWithException()
+        {
+            // Arrange
+            var user = await UserService.CreateUserAsync(new User
+            {
+                Email = "test@test.local",
+                PreferredName = "Test User",
+                LastEditedBy = CurrentUser.UserId
+            }, CurrentUser, default);
+
+            var organization = await OrganizationService.CreateOrganizationAsync(new Organization
+            {
+                BaseRepositoryRole = BaseRepositoryRoleEnum.RepositoryReader,
+                Name = "Unit Test",
+                BillingAddress = "Billing Address",
+                LastEditedBy = Users.GhostUserId
+            }, CurrentUser, default);
+
+            // Act
+            ApplicationErrorException? caught = null;
+            try
+            {
+                await OrganizationService.RemoveUserOrganizationRoleAsync(organization.Id, user.Id, OrganizationRoleEnum.Member, CurrentUser, default);
+            } 
+            catch(ApplicationErrorException e)
+            {
+                caught = e;
+            }
+
+            // Assert
+            Assert.IsNotNull(caught);
+            Assert.AreEqual(ErrorCodes.UserNotAssignedToOrganization, caught.ErrorCode);
         }
     }
 }
