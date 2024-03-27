@@ -381,6 +381,20 @@ namespace GitClub.Services
                 };
             }
 
+            var userIsAlreadyAssignedToOrganization = await _applicationDbContext.UserOrganizationRoles.AsNoTracking()
+                .Where(x => x.OrganizationId == organizationId && x.UserId == userId)
+                .AnyAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            if (userIsAlreadyAssignedToOrganization)
+            {
+                throw new UserAlreadyAssignedToOrganizationException
+                {
+                    OrganizationId = organizationId,
+                    UserId = userId
+                };
+            }
+
             var organizationRole = new UserOrganizationRole
             {
                 OrganizationId = organizationId,
@@ -400,7 +414,7 @@ namespace GitClub.Services
             // Write Tuples to Zanzibar
             var relationsToWrite = new[]
             {
-                RelationTuples.Create<Organization, User>(organizationId, currentUser.UserId, role),
+                RelationTuples.Create<Organization, User>(organizationRole.OrganizationId, organizationRole.UserId, organizationRole.Role),
             };
 
             await _aclService
@@ -441,9 +455,8 @@ namespace GitClub.Services
                 };
             }
 
-            var organizationRole = await _applicationDbContext.UserOrganizationRoles
-                .AsNoTracking()
-                .FirstOrDefaultAsync(x => x.Id == organizationId && x.UserId == userId && x.Role == role)
+            var organizationRole = await _applicationDbContext.UserOrganizationRoles.AsNoTracking()
+                .FirstOrDefaultAsync(x => x.OrganizationId == organizationId && x.UserId == userId && x.Role == role)
                 .ConfigureAwait(false);
 
             if(organizationRole == null)

@@ -695,7 +695,6 @@ BEGIN
 	DELETE FROM gitclub.user_team_role_history;
 	DELETE FROM gitclub.user_repository_role_history;
 	DELETE FROM gitclub.team_repository_role_history;
-	
 	DELETE FROM gitclub.issue_history;
 	DELETE FROM gitclub.repository_history;
 	DELETE FROM gitclub.team_history;
