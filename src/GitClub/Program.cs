@@ -18,6 +18,7 @@ using GitClub.Infrastructure.Mvc;
 using GitClub.Database.Models;
 using GitClub.Infrastructure.Authentication;
 using Microsoft.AspNetCore.Authentication;
+using GitClub.Hosted;
 
 // We will log to %LocalAppData%/RebacExperiments to store the Logs, so it doesn't need to be configured 
 // to a different path, when you run it on your machine.
@@ -49,8 +50,10 @@ try
     // Logging
     builder.Services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
 
+
+
     // Database
-    builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    builder.Services.AddSingleton<NpgsqlDataSource>((sp) =>
     {
         var connectionString = builder.Configuration.GetConnectionString("ApplicationDatabase");
 
@@ -67,13 +70,22 @@ try
         // Call UseNodaTime() when building your data source:
         dataSourceBuilder.UseNodaTime();
 
-        var dataSource = dataSourceBuilder.Build();
+        return dataSourceBuilder.Build();
+    });
+
+    // Database
+    builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
+    {
+        var dataSource = sp.GetRequiredService<NpgsqlDataSource>();
 
         // Then, when configuring EF Core with UseNpgsql(), call UseNodaTime() there as well:
         options
             .EnableSensitiveDataLogging()
             .UseNpgsql(dataSource, options => options.UseNodaTime());
     });
+
+    // Hosted Services
+    builder.Services.AddHostedService<PostgresNotifcationsHostedService>();
 
     // OpenFGA
     builder.Services.AddSingleton<OpenFgaClient>(sp =>

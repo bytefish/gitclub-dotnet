@@ -673,6 +673,100 @@ FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
   'sys_period', 'gitclub.user_team_role_history', true
 );
 
+-- Notify Triggers
+CREATE OR REPLACE FUNCTION notify_trigger() RETURNS trigger AS $trigger$
+DECLARE
+  rec RECORD;
+  payload TEXT;
+  column_name TEXT;
+  column_value TEXT;
+  payload_items json;
+BEGIN
+  -- Set record row depending on operation
+  CASE TG_OP
+  WHEN 'INSERT','UPDATE' THEN
+     rec := NEW;
+  WHEN 'DELETE' THEN
+     rec := OLD;
+  ELSE
+     RAISE EXCEPTION 'Unknown TG_OP: "%". Should not occur!', TG_OP;
+  END CASE;
+
+  -- Get required fields
+  IF TG_ARGV[0] IS NOT NULL THEN
+    FOREACH column_name IN ARRAY TG_ARGV LOOP
+      EXECUTE format('SELECT $1.%I::TEXT', column_name)
+      INTO column_value
+      USING rec;
+      payload_items := array_to_json(array_append(payload_items, '"' || replace(column_name, '"', '\"') || '":"' || replace(column_value, '"', '\"') || '"'));
+    END LOOP;
+  ELSE
+    payload_items := row_to_json(rec);
+  END IF;
+
+  -- Build the payload
+  payload := json_build_object('timestamp',CURRENT_TIMESTAMP,'operation',TG_OP,'schema',TG_TABLE_SCHEMA,'table',TG_TABLE_NAME,'payload',payload_items);
+
+  -- Notify the channel
+  PERFORM pg_notify('core_db_event', payload);
+  
+  RETURN rec;
+END;
+$trigger$ LANGUAGE plpgsql;
+
+-- Triggers (Versioning)
+CREATE OR REPLACE TRIGGER organization_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.organization
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger();
+
+CREATE OR REPLACE TRIGGER organization_role_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.organization_role
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger();
+
+CREATE OR REPLACE TRIGGER repository_role_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.repository_role
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger();
+
+CREATE OR REPLACE TRIGGER team_role_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.team_role
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger();
+
+CREATE OR REPLACE TRIGGER base_repository_role_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.base_repository_role
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger();
+
+CREATE OR REPLACE TRIGGER user_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.user
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger();
+
+CREATE OR REPLACE TRIGGER repository_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.repository
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger();
+
+CREATE OR REPLACE TRIGGER issue_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.issue
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger();
+
+CREATE OR REPLACE TRIGGER team_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.team
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger();
+
+CREATE OR REPLACE TRIGGER team_repository_role_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.team_repository_role
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger();
+
+CREATE OR REPLACE TRIGGER user_organization_role_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.user_organization_role
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger();
+
+CREATE OR REPLACE TRIGGER user_repository_role_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.user_repository_role
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger();
+
+CREATE OR REPLACE TRIGGER user_team_role_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.user_team_role
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger();
+
 -- Performs a Cleanup for Tests, which removes all data except the Data Conversion User
 CREATE OR REPLACE PROCEDURE gitclub.cleanup_tests()
 AS $cleanup_tests_func$
