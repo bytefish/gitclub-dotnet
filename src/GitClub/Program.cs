@@ -19,6 +19,7 @@ using GitClub.Database.Models;
 using GitClub.Infrastructure.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using GitClub.Hosted;
+using GitClub.Infrastructure.Postgres;
 
 // We will log to %LocalAppData%/RebacExperiments to store the Logs, so it doesn't need to be configured 
 // to a different path, when you run it on your machine.
@@ -49,8 +50,6 @@ try
 
     // Logging
     builder.Services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
-
-
 
     // Database
     builder.Services.AddSingleton<NpgsqlDataSource>((sp) =>
@@ -85,7 +84,15 @@ try
     });
 
     // Hosted Services
-    builder.Services.AddHostedService<PostgresNotifcationsHostedService>();
+
+    builder.Services.Configure<PostgresNotificationServiceOptions>(o =>
+    {
+        o.ChannelName = "core_db_event";
+    });
+
+    builder.Services.AddSingleton<IPostgresNotificationHandler, LoggingPostgresNotificationHandler>();
+
+    builder.Services.AddHostedService<PostgresNotificationService>();
 
     // OpenFGA
     builder.Services.AddSingleton<OpenFgaClient>(sp =>
