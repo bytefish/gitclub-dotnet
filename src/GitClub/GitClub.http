@@ -47,14 +47,14 @@ GET {{GitClub_HostAddress}}/Repositories/1/teams
 Accept: application/json
 
 ### Members of Team 2 are Maintainers of Repository 1
-PUT {{GitClub_HostAddress}}/Repositories/1/teams/2/Maintainer
+PUT {{GitClub_HostAddress}}/Repositories/1/teams/1/Maintainer
 
 ### Create new Team "Rockstar Developers"
 POST {{GitClub_HostAddress}}/Teams
 Content-Type: application/json
 
 {
-    "name": "        Developers",
+    "name": "     Developers",
     "organizationId": 1,
     "lastEditedBy": 1
 }

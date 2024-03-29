@@ -84,10 +84,25 @@ try
     });
 
     // Hosted Services
-    builder.Services.AddSingleton<IPostgresNotificationHandler, LoggingPostgresNotificationHandler>();    
-    builder.Services.Configure<PostgresNotificationServiceOptions>(o => o.ChannelName = "core_db_event");
+    builder.Services.Configure<PostgresNotificationServiceOptions>(o =>
+    {
+        o.ChannelName = "core_db_event";
+    });
+
+    builder.Services.Configure<PostgresWalServiceOptions>(o =>
+    {
+        var connectionString = builder.Configuration.GetConnectionString("ApplicationDatabase")!;
+
+        o.ConnectionString = connectionString;
+        o.PublicationName = "gitclub_pub";
+        o.ReplicationSlotName = "gitclub_slot";
+    });
+
+    builder.Services.AddHostedService<PostgresWalService>();
     builder.Services.AddHostedService<PostgresNotificationService>();
 
+    builder.Services.AddSingleton<IPostgresNotificationHandler, LoggingPostgresNotificationHandler>();    
+    
     // OpenFGA
     builder.Services.AddSingleton<OpenFgaClient>(sp =>
     {

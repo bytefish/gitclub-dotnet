@@ -803,6 +803,18 @@ BEGIN
 END; $cleanup_tests_func$ 
 LANGUAGE plpgsql;
 
+-- Enable Logical Replication
+CREATE PUBLICATION gitclub_pub FOR TABLE 
+	gitclub.user,
+	gitclub.organization, 
+	gitclub.team,
+	gitclub.repository,
+	gitclub.issue, 
+	gitclub.user_organization_role, 
+	gitclub.user_team_role,
+	gitclub.user_repository_role,
+	gitclub.team_repository_role;
+
 -- Initial Data
 INSERT INTO gitclub.user(user_id, email, preferred_name, last_edited_by) 
     VALUES 
@@ -892,5 +904,35 @@ INSERT INTO gitclub.user_repository_role(user_repository_role_id, user_id, repos
         (2, 6, 1, 3, 1)     -- User "beth" (2) is a Writer (3) of the Repository "tooling" (1)
     ON CONFLICT DO NOTHING;
 
+END;
+$$ LANGUAGE plpgsql;
+
+-- Enable Logical Replication.
+DO $$
+BEGIN
+
+IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_publication WHERE pubname = 'gitclub_pub') 
+THEN
+
+	CREATE PUBLICATION gitclub_pub FOR TABLE 
+		gitclub.user,
+		gitclub.organization, 
+		gitclub.team,
+		gitclub.repository,
+		gitclub.issue, 
+		gitclub.user_organization_role, 
+		gitclub.user_team_role,
+		gitclub.user_repository_role,
+		gitclub.team_repository_role;
+
+END IF;
+
+IF NOT EXISTS (SELECT 1 from pg_catalog.pg_replication_slots WHERE slot_name = 'gitclub_slot') 
+THEN
+
+	-- Replication slot, which will hold the state of the replication stream:
+	PERFORM pg_create_logical_replication_slot('gitclub_slot', 'pgoutput');
+
+END IF;
 END;
 $$ LANGUAGE plpgsql;
