@@ -7,7 +7,6 @@ using System.Threading.Channels;
 
 namespace GitClub.Hosted
 {
-
     /// <summary>
     /// Options to configure the <see cref="PostgresNotificationService"/>.
     /// </summary>
@@ -17,6 +16,11 @@ namespace GitClub.Hosted
         /// Gets or sets the Channel the Service is listening to.
         /// </summary>
         public required string ChannelName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Maximum Capacity of unhandled Notifications. Default is 10,000 notifications. 
+        /// </summary>
+        public int MaxCapacity { get; set; } = 10_000;
     }
 
     /// <summary>
@@ -41,7 +45,7 @@ namespace GitClub.Hosted
         protected override async Task ExecuteAsync(CancellationToken stoppingToken)
         {
             // Now this could be a horrible thing to do when we experience backpressure... 
-            var channel = Channel.CreateBounded<PostgresNotification>(new BoundedChannelOptions(10000)
+            var channel = Channel.CreateBounded<PostgresNotification>(new BoundedChannelOptions(_options.MaxCapacity)
             {
                 SingleReader = true,
                 SingleWriter = true,
@@ -49,7 +53,9 @@ namespace GitClub.Hosted
             });
 
             // We are running both loops until either of them is stopped or runs dry ...
-            await Task.WhenAny(SetupPostgresAsync(stoppingToken), ProcessChannelAsync(stoppingToken));
+            await Task
+                .WhenAny(SetupPostgresAsync(stoppingToken), ProcessChannelAsync(stoppingToken))
+                .ConfigureAwait(false);
 
             // Initializes the Postgres Listener by issueing a LISTEN Command.
             async Task SetupPostgresAsync(CancellationToken cancellationToken)
@@ -113,6 +119,5 @@ namespace GitClub.Hosted
                 }
             }
         }
-
     }
 }

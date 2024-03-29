@@ -1,4 +1,6 @@
-﻿namespace GitClub.Infrastructure.Postgres
+﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace GitClub.Infrastructure.Postgres
 {
     /// <summary>
     /// Handles Notifications received from a Postgres Channel.
@@ -13,5 +15,4 @@
         /// <returns>Awaitable ValueTask</returns>
         ValueTask HandleNotificationAsync(PostgresNotification notification, CancellationToken cancellationToken);
     }
-
 }

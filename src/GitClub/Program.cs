@@ -84,14 +84,8 @@ try
     });
 
     // Hosted Services
-
-    builder.Services.Configure<PostgresNotificationServiceOptions>(o =>
-    {
-        o.ChannelName = "core_db_event";
-    });
-
-    builder.Services.AddSingleton<IPostgresNotificationHandler, LoggingPostgresNotificationHandler>();
-
+    builder.Services.AddSingleton<IPostgresNotificationHandler, LoggingPostgresNotificationHandler>();    
+    builder.Services.Configure<PostgresNotificationServiceOptions>(o => o.ChannelName = "core_db_event");
     builder.Services.AddHostedService<PostgresNotificationService>();
 
     // OpenFGA
