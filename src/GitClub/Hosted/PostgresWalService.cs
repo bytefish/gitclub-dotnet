@@ -1,11 +1,13 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.Postgres;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using Npgsql.Replication;
 using Npgsql.Replication.PgOutput;
-using System.Threading.Channels;
+using Npgsql.Replication.PgOutput.Messages;
+using System.Collections.Concurrent;
 
 namespace GitClub.Hosted
 {
@@ -38,17 +40,17 @@ namespace GitClub.Hosted
         private readonly ILogger<PostgresWalService> _logger;
 
         private readonly PostgresWalServiceOptions _options;
-        private readonly NpgsqlDataSource _npgsqlDataSource;
 
         public PostgresWalService(ILogger<PostgresWalService> logger, IOptions<PostgresWalServiceOptions> options, NpgsqlDataSource npgsqlDataSource, IPostgresNotificationHandler postgresNotificationHandler)
         {
             _logger = logger;
             _options = options.Value;
-            _npgsqlDataSource = npgsqlDataSource;
         }
 
         protected override async Task ExecuteAsync(CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
+
             // Connection to subscribe to the logical replication slot
             var replicationConnection = new LogicalReplicationConnection(_options.ConnectionString);
 
@@ -67,6 +69,31 @@ namespace GitClub.Hosted
                 .StartReplication(replicationSlot, replicationPublication, cancellationToken)
                 .ConfigureAwait(false))
             {
+                _logger.LogDebug("Received Postgres WAL Message (Type = {WalMessageType}, ServerClock = {WalServerClock}, WalStart = {WalStart}, WalEnd = {WalEnd})",
+                    message.GetType().Name, message.ServerClock, message.WalStart, message.WalEnd);
+
+                switch(message)
+                {
+                    case BeginMessage beginMessage:
+                        break;
+                    case CommitMessage commitMessage:
+                        break;
+                    case RelationMessage relationMessage:
+                        break;
+                    case InsertMessage insertMessage:
+                        break;
+                    case DefaultUpdateMessage defaultUpdateMessage:
+                        break;
+                    case FullUpdateMessage fullUpdateMessage:
+                        break;
+                    case KeyDeleteMessage keyDeleteMessage:
+                        break;
+                    case FullDeleteMessage fullDeleteMessage:
+                        break;
+                    default:
+                        throw new InvalidOperationException($"Could not handle Message Type {message.GetType().Name}");
+                }
+
                 replicationConnection.SetReplicationStatus(message.WalEnd);
             }
         }
