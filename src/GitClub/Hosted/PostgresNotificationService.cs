@@ -1,6 +1,6 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using GitClub.Infrastructure.Postgres;
+using GitClub.Infrastructure.Postgres.Notify;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using System.Threading.Channels;

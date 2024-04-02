@@ -1,6 +1,6 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-namespace GitClub.Infrastructure.Postgres
+namespace GitClub.Infrastructure.Postgres.Notify
 {
     /// <summary>
     /// A Notification received from Postgres NOTIFY / LISTEN.

@@ -19,7 +19,8 @@ using GitClub.Database.Models;
 using GitClub.Infrastructure.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using GitClub.Hosted;
-using GitClub.Infrastructure.Postgres;
+using GitClub.Infrastructure.Postgres.Notify;
+using GitClub.Infrastructure.Postgres.Wal;
 
 // We will log to %LocalAppData%/RebacExperiments to store the Logs, so it doesn't need to be configured 
 // to a different path, when you run it on your machine.
@@ -84,12 +85,17 @@ try
     });
 
     // Hosted Services
+    builder.Services.AddSingleton<IPostgresNotificationHandler, LoggingPostgresNotificationHandler>();
+
     builder.Services.Configure<PostgresNotificationServiceOptions>(o =>
     {
         o.ChannelName = "core_db_event";
     });
 
-    builder.Services.Configure<PostgresWalServiceOptions>(o =>
+    builder.Services.AddHostedService<PostgresNotificationService>();
+
+    // Configures the Postgres Replication Settings.
+    builder.Services.Configure<PostgresReplicationServiceOptions>(o =>
     {
         var connectionString = builder.Configuration.GetConnectionString("ApplicationDatabase")!;
 
@@ -98,11 +104,11 @@ try
         o.ReplicationSlotName = "gitclub_slot";
     });
 
-    builder.Services.AddHostedService<PostgresWalService>();
-    builder.Services.AddHostedService<PostgresNotificationService>();
+    builder.Services.AddSingleton<PostgresReplicationService>();
 
-    builder.Services.AddSingleton<IPostgresNotificationHandler, LoggingPostgresNotificationHandler>();    
-    
+    builder.Services.AddHostedService<PostgresReplicationListener>();
+
+
     // OpenFGA
     builder.Services.AddSingleton<OpenFgaClient>(sp =>
     {

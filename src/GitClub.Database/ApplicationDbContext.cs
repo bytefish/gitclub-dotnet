@@ -86,6 +86,10 @@ namespace GitClub.Database
                 .StartsAt(1)
                 .IncrementsBy(1);
 
+            modelBuilder.HasSequence<int>("team_seq", schema: "gitclub")
+                .StartsAt(1)
+                .IncrementsBy(1);
+
             modelBuilder.HasSequence<int>("user_seq", schema: "gitclub")
                 .StartsAt(1)
                 .IncrementsBy(1);
