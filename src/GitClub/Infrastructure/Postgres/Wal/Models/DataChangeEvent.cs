@@ -7,7 +7,7 @@ namespace GitClub.Infrastructure.Postgres.Wal.Models
     /// <summary>
     /// Emitted, when a change to the Postgres tables occurs.
     /// </summary>
-    [JsonPolymorphic(TypeDiscriminatorPropertyName = "$discriminator")]
+    [JsonPolymorphic(TypeDiscriminatorPropertyName = "$type")]
     [JsonDerivedType(typeof(InsertDataChangeEvent), typeDiscriminator: "insert")]
     [JsonDerivedType(typeof(DefaultUpdateDataChangeEvent), typeDiscriminator: "default_update")]
     [JsonDerivedType(typeof(FullUpdateDataChangeEvent), typeDiscriminator: "full_update")]

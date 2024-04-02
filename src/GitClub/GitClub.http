@@ -49,12 +49,15 @@ Accept: application/json
 ### Members of Team 2 are Maintainers of Repository 1
 PUT {{GitClub_HostAddress}}/Repositories/1/teams/1/Maintainer
 
+### Members of Team 2 are Maintainers of Repository 1
+DELETE {{GitClub_HostAddress}}/Repositories/1/teams/1
+
 ### Create new Team "Rockstar Developers"
 POST {{GitClub_HostAddress}}/Teams
 Content-Type: application/json
 
 {
-    "name": "Rockstars227432423423424234234233",
+    "name": "Rockstar Developers #2",
     "organizationId": 1,
     "lastEditedBy": 1
 }

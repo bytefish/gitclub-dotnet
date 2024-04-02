@@ -935,4 +935,5 @@ THEN
 
 END IF;
 END;
+
 $$ LANGUAGE plpgsql;

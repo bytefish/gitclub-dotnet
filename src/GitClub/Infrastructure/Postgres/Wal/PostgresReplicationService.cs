@@ -207,6 +207,5 @@ namespace GitClub.Infrastructure.Postgres.Wal
 
             return results;
         }
-
     }
 }

@@ -3,7 +3,7 @@
 namespace GitClub.Infrastructure.Postgres.Wal.Models
 {
     /// <summary>
-    /// Postgres send a so called Relation Message during the Logical Replication.
+    /// Postgres send a Relation Message during the Logical Replication.
     /// </summary>
     public record Relation
     {
