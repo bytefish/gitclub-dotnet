@@ -7,6 +7,8 @@ using GitClub.Infrastructure.Constants;
 using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.OpenFga;
+using GitClub.Infrastructure.Outbox;
+using GitClub.Infrastructure.Outbox.Messages;
 using GitClub.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
@@ -57,20 +59,37 @@ namespace GitClub.Services
                 .AddAsync(userOrganizationRole, cancellationToken)
                 .ConfigureAwait(false);
 
+            var outboxEvent = OutboxEventUtils.Create(new OrganizationCreatedMessage
+            {
+                OrganizationId = organization.Id,
+                UserOrganizationRoles = new[] { userOrganizationRole }
+                    .Select(x => new AddedUserToOrganizationMessage
+                    {
+                        OrganizationId = userOrganizationRole.OrganizationId,
+                        UserId = userOrganizationRole.UserId,
+                        Role = userOrganizationRole.Role,
+                    })
+                    .ToList()
+            }, lastEditedBy: currentUser.UserId);
+
+            await _applicationDbContext
+                .AddAsync(outboxEvent, cancellationToken)
+                .ConfigureAwait(false);
+
             await _applicationDbContext
                 .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
 
             // Write Tuples to Zanzibar
-            var tuplesToWrite = new[]
-            {
-                RelationTuples.Create<Organization, Organization>(organization, organization, organization.BaseRepositoryRole, Relations.Member),
-                RelationTuples.Create<Organization, User>(userOrganizationRole.OrganizationId, userOrganizationRole.UserId, userOrganizationRole.Role),
-            };
+            //var tuplesToWrite = new[]
+            //{
+            //    RelationTuples.Create<Organization, Organization>(organization, organization, organization.BaseRepositoryRole, Relations.Member),
+            //    RelationTuples.Create<Organization, User>(userOrganizationRole.OrganizationId, userOrganizationRole.UserId, userOrganizationRole.Role),
+            //};
 
-            await _aclService
-                .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
-                .ConfigureAwait(false);
+            //await _aclService
+            //    .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
+            //    .ConfigureAwait(false);
 
             return organization;
         }
@@ -164,37 +183,52 @@ namespace GitClub.Services
                 };
             }
 
-            int rowsAffected = await _applicationDbContext.Organizations.AsNoTracking()
-                .Where(t => t.Id == organizationId && t.RowVersion == values.RowVersion)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(x => x.Name, values.Name)
-                    .SetProperty(x => x.BaseRepositoryRole, values.BaseRepositoryRole)
-                    .SetProperty(x => x.BillingAddress, values.BillingAddress)
-                    .SetProperty(x => x.LastEditedBy, currentUser.UserId), cancellationToken)
-                .ConfigureAwait(false);
-
-            if (rowsAffected == 0)
+            using (var transaction = await _applicationDbContext.Database
+                .BeginTransactionAsync(cancellationToken)
+                .ConfigureAwait(false))
             {
-                throw new EntityConcurrencyException()
+                int rowsAffected = await _applicationDbContext.Organizations.AsNoTracking()
+                    .Where(t => t.Id == organizationId && t.RowVersion == values.RowVersion)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(x => x.Name, values.Name)
+                        .SetProperty(x => x.BaseRepositoryRole, values.BaseRepositoryRole)
+                        .SetProperty(x => x.BillingAddress, values.BillingAddress)
+                        .SetProperty(x => x.LastEditedBy, currentUser.UserId), cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (rowsAffected == 0)
                 {
-                    EntityName = nameof(Organization),
-                    EntityId = original.Id,
-                };
+                    throw new EntityConcurrencyException()
+                    {
+                        EntityName = nameof(Organization),
+                        EntityId = original.Id,
+                    };
+                }
+
+                var outboxEvent = OutboxEventUtils.Create(new OrganizationUpdatedMessage { OrganizationId = organizationId }, lastEditedBy: currentUser.UserId);
+
+                await _applicationDbContext
+                    .AddAsync(outboxEvent, cancellationToken)
+                    .ConfigureAwait(false);
+
+                await transaction
+                    .CommitAsync(cancellationToken)
+                    .ConfigureAwait(false);
             }
 
-            var tuplesToWrite = new[] 
-            {
-                RelationTuples.Create<Organization, Organization>(organizationId, organizationId, values.BaseRepositoryRole, Relations.Member)
-            };
+            //var tuplesToWrite = new[] 
+            //{
+            //    RelationTuples.Create<Organization, Organization>(organizationId, organizationId, values.BaseRepositoryRole, Relations.Member)
+            //};
 
-            var tuplesToDelete = new []
-            {
-                RelationTuples.Create<Organization, Organization>(organizationId, organizationId, original.BaseRepositoryRole, Relations.Member)
-            };
+            //var tuplesToDelete = new []
+            //{
+            //    RelationTuples.Create<Organization, Organization>(organizationId, organizationId, original.BaseRepositoryRole, Relations.Member)
+            //};
 
-            await _aclService
-                .WriteAsync(tuplesToWrite, tuplesToDelete, cancellationToken)
-                .ConfigureAwait(false);
+            //await _aclService
+            //    .WriteAsync(tuplesToWrite, tuplesToDelete, cancellationToken)
+            //    .ConfigureAwait(false);
 
             var updated = await _applicationDbContext.Organizations.AsNoTracking()
                 .Where(x => x.Id == organizationId)
@@ -257,46 +291,7 @@ namespace GitClub.Services
                 };
             }
 
-            using (var transaction = await _applicationDbContext.Database
-                .BeginTransactionAsync(cancellationToken)
-                .ConfigureAwait(false))
-            {                
-                // Get dependent data ...
-                var userOrganizationRoles = await _applicationDbContext.UserOrganizationRoles.AsNoTracking()
-                    .Where(x => x.OrganizationId == organizationId)
-                    .ToListAsync(cancellationToken)
-                    .ConfigureAwait(false);
-
-                // Run deletes ...
-                await _applicationDbContext.UserOrganizationRoles
-                    .Where(x => x.OrganizationId == organization.Id)
-                    .ExecuteDeleteAsync(cancellationToken)
-                    .ConfigureAwait(false);
-
-                await _applicationDbContext.Organizations
-                        .Where(t => t.Id == organization.Id)
-                        .ExecuteDeleteAsync(cancellationToken)
-                        .ConfigureAwait(false);
-
-                await transaction
-                    .CommitAsync(cancellationToken)
-                    .ConfigureAwait(false);
-
-                // Delete Relations from Zanzibar
-                List<RelationTuple> tuplesToDelete =
-                [
-                    RelationTuples.Create<Organization, Organization>(organizationId, organizationId, organization.BaseRepositoryRole, Relations.Member)
-                ];
-
-                foreach(var userOrganizationRole in userOrganizationRoles)
-                {
-                    var tuple = RelationTuples.Create<Organization, User>(userOrganizationRole.OrganizationId, userOrganizationRole.UserId, userOrganizationRole.Role);
-
-                    tuplesToDelete.Add(tuple);
-                }
-
-                await _aclService.DeleteRelationshipsAsync(tuplesToDelete, cancellationToken);
-            }
+            throw new NotImplementedException("Cannot delete Organizations");
         }
 
         public async Task<List<UserOrganizationRole>> GetUserOrganizationRolesByOrganizationIdAsync(int organizationId, CurrentUser currentUser, CancellationToken cancellationToken)
@@ -315,7 +310,6 @@ namespace GitClub.Services
                     EntityId = organizationId,
                 };
             }
-
 
             var userOrganizationRoles = await _applicationDbContext.UserOrganizationRoles.AsNoTracking()
                 .Where(x => x.OrganizationId == organizationId)
@@ -407,6 +401,17 @@ namespace GitClub.Services
                 .AddAsync(organizationRole)
                 .ConfigureAwait(false);
 
+            var outboxEvent = OutboxEventUtils.Create<AddedUserToOrganizationMessage>(new AddedUserToOrganizationMessage
+            {
+                UserId = organizationRole.UserId,
+                OrganizationId = organizationRole.OrganizationId,
+                Role = organizationRole.Role,
+            }, lastEditedBy: currentUser.UserId);
+
+            await _applicationDbContext
+                .AddAsync(outboxEvent, cancellationToken)
+                .ConfigureAwait(false);
+
             await _applicationDbContext
                 .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -469,11 +474,15 @@ namespace GitClub.Services
                 };
             }
 
-            int rowsAffected = await _applicationDbContext.UserOrganizationRoles
+            using (var transaction = await _applicationDbContext.Database
+                .BeginTransactionAsync(cancellationToken)
+                .ConfigureAwait(false))
+            {
+                int rowsAffected = await _applicationDbContext.UserOrganizationRoles
                 .Where(x => x.Id == organizationRole.Id)
                 .ExecuteDeleteAsync(cancellationToken)
                 .ConfigureAwait(false);
-
+            }
             // Delete Tuple from Zanzibar
             var relationsToDelete = new[]
             {

@@ -16,5 +16,23 @@ namespace GitClub.Infrastructure.Outbox
 
             return outboxEvent;
         }
+
+        public static bool TryGetOutboxEventPayload(OutboxEvent outboxEvent, out object? result)
+        {
+            result = null;
+
+            // Maybe throw here? We should probably log it at least...
+            var type = Type.GetType(outboxEvent.EventType, throwOnError: false);
+
+            if (type == null)
+            {
+                return false;
+            }
+
+            result = JsonSerializer.Deserialize(outboxEvent.Payload, type);
+
+            return true;
+        }
+
     }
 }

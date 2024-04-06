@@ -2,9 +2,12 @@
 
 using System.Text.Json.Serialization;
 
-namespace GitClub.Infrastructure.Outbox.Messages
+namespace GitClub.Infrastructure.Messages
 {
-    public class TeamDeletedMessage
+    /// <summary>
+    /// A User has been added to a Team.
+    /// </summary>
+    public class RemovedTeamFromRepositoryMessage
     {
         /// <summary>
         /// Gets or sets the Team ID.
@@ -13,8 +16,9 @@ namespace GitClub.Infrastructure.Outbox.Messages
         public required int TeamId { get; set; }
 
         /// <summary>
-        /// Gets or sets the TeamRoles to delete.
+        /// Gets or sets the User ID.
         /// </summary>
-        public List<RemovedUserFromTeamMessage> TeamRoles { get; set; } = [];
+        [JsonPropertyName("repositoryId")]
+        public required int RepositoryId { get; set; }
     }
 }

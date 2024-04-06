@@ -6,7 +6,8 @@ using GitClub.Infrastructure.Authentication;
 using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.OpenFga;
-using GitClub.Models;
+using GitClub.Infrastructure.Outbox;
+using GitClub.Infrastructure.Outbox.Messages;
 using Microsoft.EntityFrameworkCore;
 
 namespace GitClub.Services
@@ -64,20 +65,38 @@ namespace GitClub.Services
                 .AddAsync(userTeamRole, cancellationToken)
                 .ConfigureAwait(false);
 
+            var outboxEvent = OutboxEventUtils.Create(new TeamCreatedMessage
+            {
+                OrganizationId = team.OrganizationId,
+                TeamId = team.Id,
+                TeamRoles = new[] { userTeamRole }
+                        .Select(x => new AddedUserToTeamMessage
+                        {
+                            TeamId = team.Id,
+                            UserId = currentUser.UserId,
+                            Role = TeamRoleEnum.Maintainer
+                        })
+                        .ToList()
+            }, lastEditedBy: currentUser.UserId);
+
+            await _applicationDbContext
+                .AddAsync(outboxEvent, cancellationToken)
+                .ConfigureAwait(false);
+
             await _applicationDbContext
                 .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            // Add Relations to Zanzibar
-            var tuplesToWrite = new[]
-            {
-                RelationTuples.Create<Team, Organization>(team.Id, currentUser.UserId, TeamRoleEnum.Owner),
-                RelationTuples.Create<Team, User>(team.Id, currentUser.UserId, TeamRoleEnum.Maintainer)
-            };
+            //// Add Relations to Zanzibar
+            //var tuplesToWrite = new[]
+            //{
+            //    RelationTuples.Create<Team, Organization>(team.Id, currentUser.UserId, TeamRoleEnum.Owner),
+            //    RelationTuples.Create<Team, User>(team.Id, currentUser.UserId, TeamRoleEnum.Maintainer)
+            //};
 
-            await _aclService
-                .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
-                .ConfigureAwait(false);
+            //await _aclService
+            //    .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
+            //    .ConfigureAwait(false);
 
             return team;
         }
@@ -189,29 +208,46 @@ namespace GitClub.Services
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            if(original == null)
+            if (original == null)
             {
-                throw new EntityNotFoundException 
+                throw new EntityNotFoundException
                 {
                     EntityName = nameof(Team),
                     EntityId = teamId,
                 };
             }
 
-            int rowsAffected = await _applicationDbContext.Teams
-                .Where(t => t.Id == teamId && t.RowVersion == values.RowVersion)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(x => x.Name, values.Name)
-                    .SetProperty(x => x.LastEditedBy, currentUser.UserId), cancellationToken)
-                .ConfigureAwait(false);
-
-            if (rowsAffected == 0)
+            using (var transaction = await _applicationDbContext.Database
+                .BeginTransactionAsync(cancellationToken)
+                .ConfigureAwait(false))
             {
-                throw new EntityConcurrencyException()
+                int rowsAffected = await _applicationDbContext.Teams
+                    .Where(t => t.Id == teamId && t.RowVersion == values.RowVersion)
+                    .ExecuteUpdateAsync(setters => setters
+                        .SetProperty(x => x.Name, values.Name)
+                        .SetProperty(x => x.LastEditedBy, currentUser.UserId), cancellationToken)
+                    .ConfigureAwait(false);
+
+                if (rowsAffected == 0)
                 {
-                    EntityName = nameof(Team),
-                    EntityId = teamId,
-                };
+                    throw new EntityConcurrencyException()
+                    {
+                        EntityName = nameof(Team),
+                        EntityId = teamId,
+                    };
+                }
+
+                var outboxEvent = OutboxEventUtils.Create(new TeamUpdatedMessage { TeamId = teamId }, lastEditedBy: currentUser.UserId);
+
+                await _applicationDbContext.OutboxEvents
+                    .AddAsync(outboxEvent, cancellationToken)
+                    .ConfigureAwait(false);
+
+                await _applicationDbContext.SaveChangesAsync(cancellationToken);
+
+                await transaction
+                    .CommitAsync(cancellationToken)
+                    .ConfigureAwait(false);
             }
 
             var updated = await _applicationDbContext.Teams.AsNoTracking()
@@ -275,34 +311,52 @@ namespace GitClub.Services
                 };
             }
 
-            var userTeamRoles = await _applicationDbContext.UserTeamRoles.AsNoTracking()
-                .Where(x => x.TeamId == teamId)
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
+            using (var transaction = await _applicationDbContext.Database
+                .BeginTransactionAsync(cancellationToken)
+                .ConfigureAwait(false))
+            {
+                var userTeamRoles = await _applicationDbContext.UserTeamRoles.AsNoTracking()
+                    .Where(x => x.TeamId == teamId)
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false);
 
-            await _applicationDbContext.UserTeamRoles
-                .Where(t => t.Id == team.Id)
-                .ExecuteDeleteAsync(cancellationToken)
-                .ConfigureAwait(false);
-
-            await _applicationDbContext.Teams
+                await _applicationDbContext.UserTeamRoles
                     .Where(t => t.Id == team.Id)
                     .ExecuteDeleteAsync(cancellationToken)
                     .ConfigureAwait(false);
 
-            // Delete tuples in Zanzibar
-            List<RelationTuple> tuplesToDelete = [];
+                await _applicationDbContext.Teams
+                        .Where(t => t.Id == team.Id)
+                        .ExecuteDeleteAsync(cancellationToken)
+                        .ConfigureAwait(false);
 
-            foreach (var userTeamRole in userTeamRoles)
-            {
-                var tuple = RelationTuples.Create<Team, User>(userTeamRole.TeamId, userTeamRole.UserId, userTeamRole.Role);
+                // Write Outbox Event at the same time
+                var outboxEvent = OutboxEventUtils.Create(new TeamDeletedMessage
+                {
+                    TeamId = team.Id,
+                    TeamRoles = userTeamRoles
+                        .Select(x => new RemovedUserFromTeamMessage { TeamId = x.TeamId, UserId = x.UserId })
+                        .ToList()
+                }, lastEditedBy: currentUser.UserId);
 
-                tuplesToDelete.Add(tuple);
+                await transaction
+                    .CommitAsync(cancellationToken)
+                    .ConfigureAwait(false);
             }
 
-            await _aclService
-                .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken) 
-                .ConfigureAwait(false);
+            // Delete tuples in Zanzibar
+            //List<RelationTuple> tuplesToDelete = [];
+
+            //foreach (var userTeamRole in userTeamRoles)
+            //{
+            //    var tuple = RelationTuples.Create<Team, User>(userTeamRole.TeamId, userTeamRole.UserId, userTeamRole.Role);
+
+            //    tuplesToDelete.Add(tuple);
+            //}
+
+            //await _aclService
+            //    .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken) 
+            //    .ConfigureAwait(false);
         }
 
         public async Task<List<UserTeamRole>> GetUserTeamRolesByTeamIdAsync(int teamId, CurrentUser currentUser, CancellationToken cancellationToken)
@@ -379,16 +433,16 @@ namespace GitClub.Services
                 .AnyAsync(x => x.UserId == userId && x.TeamId == teamId, cancellationToken)
                 .ConfigureAwait(false);
 
-            if(userTeamRoleExists)
+            if (userTeamRoleExists)
             {
-                throw new UserAlreadyAssignedToTeamException 
-                { 
-                    TeamId = teamId, 
-                    UserId = userId 
+                throw new UserAlreadyAssignedToTeamException
+                {
+                    TeamId = teamId,
+                    UserId = userId
                 };
             }
 
-            var userTeamRole = new UserTeamRole 
+            var userTeamRole = new UserTeamRole
             {
                 UserId = userId,
                 TeamId = teamId,
@@ -397,22 +451,34 @@ namespace GitClub.Services
             };
 
             await _applicationDbContext
-                .AddAsync(userTeamRole)
+                .AddAsync(userTeamRole, cancellationToken)
+                .ConfigureAwait(false);
+
+            var outboxEvent = OutboxEventUtils.Create(new AddedUserToTeamMessage
+            {
+                Role = userTeamRole.Role,
+                TeamId = userTeamRole.TeamId,
+                UserId = userTeamRole.UserId
+            }, lastEditedBy: currentUser.UserId);
+
+            await _applicationDbContext.OutboxEvents
+                .AddAsync(outboxEvent, cancellationToken)
                 .ConfigureAwait(false);
 
             await _applicationDbContext
                 .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            // Write tuples to Zanzibar
-            var tuplesToWrite = new[]
-            {
-                RelationTuples.Create<Team, User>(userTeamRole.TeamId, userTeamRole.UserId, userTeamRole.Role, null)
-            };
 
-            await _aclService
-                .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
-                .ConfigureAwait(false);
+            //// Write tuples to Zanzibar
+            //var tuplesToWrite = new[]
+            //{
+            //    RelationTuples.Create<Team, User>(userTeamRole.TeamId, userTeamRole.UserId, userTeamRole.Role, null)
+            //};
+
+            //await _aclService
+            //    .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
+            //    .ConfigureAwait(false);
 
             return userTeamRole;
         }
@@ -453,7 +519,7 @@ namespace GitClub.Services
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            if(userTeamRole == null)
+            if (userTeamRole == null)
             {
                 throw new UserNotAssignedToTeamException
                 {
@@ -462,15 +528,43 @@ namespace GitClub.Services
                 };
             }
 
-            // Delete Tuples from Zanzibar
-            var tuplesToDelete = new[]
+            using (var transaction = await _applicationDbContext.Database
+                .BeginTransactionAsync(cancellationToken)
+                .ConfigureAwait(false))
             {
-                RelationTuples.Create<Team, User>(userTeamRole.TeamId, userTeamRole.UserId, userTeamRole.Role, null)
-            };
+                await _applicationDbContext.UserTeamRoles
+                    .Where(x => x.Id == userTeamRole.Id)
+                    .ExecuteDeleteAsync()
+                    .ConfigureAwait(false);
 
-            await _aclService
-                .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
-                .ConfigureAwait(false);
+                var outboxEvent = OutboxEventUtils.Create(new RemovedUserFromTeamMessage
+                {
+                    TeamId = userTeamRole.TeamId,
+                    UserId = userTeamRole.UserId
+                }, lastEditedBy: currentUser.UserId);
+
+                await _applicationDbContext.OutboxEvents
+                    .AddAsync(outboxEvent, cancellationToken)
+                    .ConfigureAwait(false);
+
+                await _applicationDbContext
+                    .SaveChangesAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                await transaction
+                    .CommitAsync(cancellationToken)
+                    .ConfigureAwait(false);
+            }
+
+            //// Delete Tuples from Zanzibar
+            //var tuplesToDelete = new[]
+            //{
+            //    RelationTuples.Create<Team, User>(userTeamRole.TeamId, userTeamRole.UserId, userTeamRole.Role, null)
+            //};
+
+            //await _aclService
+            //    .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
+            //    .ConfigureAwait(false);
         }
     }
 }

@@ -1,8 +1,9 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using GitClub.Database.Models;
 using System.Text.Json.Serialization;
 
-namespace GitClub.Infrastructure.Messages
+namespace GitClub.Infrastructure.Outbox.Messages
 {
     public class OrganizationCreatedMessage
     {
@@ -12,5 +13,7 @@ namespace GitClub.Infrastructure.Messages
         [JsonPropertyName("organizationId")]
         public required int OrganizationId { get; set; }
 
+        [JsonPropertyName("userOrganizationRoles")]
+        public List<AddedUserToOrganizationMessage> UserOrganizationRoles { get; set; } = [];
     }
 }

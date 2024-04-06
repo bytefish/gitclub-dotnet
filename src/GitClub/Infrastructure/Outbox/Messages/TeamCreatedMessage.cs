@@ -2,7 +2,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace GitClub.Infrastructure.Messages
+namespace GitClub.Infrastructure.Outbox.Messages
 {
     public class TeamCreatedMessage
     {
@@ -11,5 +11,18 @@ namespace GitClub.Infrastructure.Messages
         /// </summary>
         [JsonPropertyName("teamId")]
         public required int TeamId { get; set; }
+        
+        /// <summary>
+        /// Gets or sets the Organization ID.
+        /// </summary>
+        [JsonPropertyName("organizationId")]
+        public required int OrganizationId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Team Roles for Users, when creating the Team.
+        /// </summary>
+        [JsonPropertyName("teamRoles")]
+        public required List<AddedUserToTeamMessage> TeamRoles { get; set; }
+
     }
 }
