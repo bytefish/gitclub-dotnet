@@ -60,6 +60,12 @@ CREATE SEQUENCE IF NOT EXISTS gitclub.team_repository_role_seq
     NO MAXVALUE
     CACHE 1;
 
+CREATE SEQUENCE IF NOT EXISTS gitclub.outbox_event_seq
+    start 38187
+    increment 1
+    NO MAXVALUE
+    CACHE 1;
+
 -- Tables
 CREATE TABLE IF NOT EXISTS gitclub.user (
     user_id integer default nextval('gitclub.user_seq'),
@@ -289,6 +295,25 @@ CREATE TABLE IF NOT EXISTS gitclub.team_repository_role (
         REFERENCES gitclub.user(user_id)
 );
 
+CREATE TABLE IF NOT EXISTS gitclub.outbox_event (
+    outbox_event_id integer default nextval('gitclub.outbox_event_seq'),
+    correlation_id_1 varchar(2000) not null,
+    correlation_id_2 varchar(2000) not null,
+    correlation_id_3 varchar(2000) not null,
+    correlation_id_4 varchar(2000) not null,
+    event_time timestamptz not null,
+    event_source varchar(2000) not null,
+    event_type varchar(255) not null,
+    payload JSONB not null,
+    last_edited_by integer not null,
+    sys_period tstzrange not null default tstzrange(current_timestamp, null),
+    CONSTRAINT outbox_event_pkey
+        PRIMARY KEY (outbox_event_id),
+    CONSTRAINT outbox_event_last_edited_by_fkey 
+        FOREIGN KEY (last_edited_by)
+        REFERENCES gitclub.user(user_id)
+);
+
 -- Indexes
 CREATE UNIQUE INDEX IF NOT EXISTS organization_name_key 
     ON gitclub.organization(name);
@@ -377,6 +402,10 @@ CREATE TABLE IF NOT EXISTS gitclub.user_team_role_history (
 
 CREATE TABLE IF NOT EXISTS gitclub.team_repository_role_history (
     LIKE gitclub.team_repository_role
+);
+
+CREATE TABLE IF NOT EXISTS gitclub.outbox_event_history (
+    LIKE gitclub.outbox_event
 );
 
 -- Versioning Function (https://github.com/nearform/temporal_tables)
@@ -673,6 +702,12 @@ FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
   'sys_period', 'gitclub.user_team_role_history', true
 );
 
+CREATE OR REPLACE TRIGGER outbox_event_versioning_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON gitclub.outbox_event
+FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
+  'sys_period', 'gitclub.outbox_event_history', true
+);
+
 -- Notify Triggers
 CREATE OR REPLACE FUNCTION notify_trigger() 
 RETURNS TRIGGER AS $trigger$
@@ -772,6 +807,10 @@ CREATE OR REPLACE TRIGGER user_team_role_notify_trigger
 AFTER INSERT OR UPDATE OR DELETE ON gitclub.user_team_role
 FOR EACH ROW EXECUTE PROCEDURE notify_trigger('core_db_event');
 
+CREATE OR REPLACE TRIGGER outbox_event_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.outbox_event
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger('core_db_event');
+
 -- Performs a Cleanup for Tests, which removes all data except the Data Conversion User
 CREATE OR REPLACE PROCEDURE gitclub.cleanup_tests()
 AS $cleanup_tests_func$
@@ -787,6 +826,7 @@ BEGIN
 	DELETE FROM gitclub.repository;
 	DELETE FROM gitclub.team;
 	DELETE FROM gitclub.organization;
+	DELETE FROM gitclub.outbox_event;
 	DELETE FROM gitclub.user WHERE user_id != 1;
 	
 	-- Delete historic data
@@ -802,18 +842,6 @@ BEGIN
 	
 END; $cleanup_tests_func$ 
 LANGUAGE plpgsql;
-
--- Enable Logical Replication
-CREATE PUBLICATION gitclub_pub FOR TABLE 
-	gitclub.user,
-	gitclub.organization, 
-	gitclub.team,
-	gitclub.repository,
-	gitclub.issue, 
-	gitclub.user_organization_role, 
-	gitclub.user_team_role,
-	gitclub.user_repository_role,
-	gitclub.team_repository_role;
 
 -- Initial Data
 INSERT INTO gitclub.user(user_id, email, preferred_name, last_edited_by) 
@@ -911,6 +939,13 @@ $$ LANGUAGE plpgsql;
 DO $$
 BEGIN
 
+IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_publication WHERE pubname = 'outbox_pub') 
+THEN
+    CREATE PUBLICATION outbox_pub FOR TABLE 
+        gitclub.outbox_event;
+
+END IF;
+
 IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_publication WHERE pubname = 'gitclub_pub') 
 THEN
 
@@ -926,6 +961,15 @@ THEN
 		gitclub.team_repository_role;
 
 END IF;
+
+IF NOT EXISTS (SELECT 1 from pg_catalog.pg_replication_slots WHERE slot_name = 'outbox_slot') 
+THEN
+
+	-- Replication slot, which will hold the state of the replication stream:
+	PERFORM pg_create_logical_replication_slot('outbox_slot', 'pgoutput');
+
+END IF;
+END;
 
 IF NOT EXISTS (SELECT 1 from pg_catalog.pg_replication_slots WHERE slot_name = 'gitclub_slot') 
 THEN

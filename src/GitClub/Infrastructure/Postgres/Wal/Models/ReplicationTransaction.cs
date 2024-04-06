@@ -7,6 +7,6 @@ namespace GitClub.Infrastructure.Postgres.Wal.Models
     /// </summary>
     public record ReplicationTransaction
     {
-        public List<DataChangeEvent> ReplicationDataEvents { get; } = [];
+        public List<DataChangeEvent> DataChangeEvents { get; } = [];
     }
 }

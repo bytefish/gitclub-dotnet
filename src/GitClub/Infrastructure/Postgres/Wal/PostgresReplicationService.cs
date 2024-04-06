@@ -111,7 +111,7 @@ namespace GitClub.Infrastructure.Postgres.Wal
                 {
                     var relation = relations[insertMessage.Relation.RelationId];
 
-                    transaction.ReplicationDataEvents.Add(new InsertDataChangeEvent
+                    transaction.DataChangeEvents.Add(new InsertDataChangeEvent
                     {
                         Relation = relation,
                         NewValues = await ReadColumnValuesAsync(relation, insertMessage.NewRow, cancellationToken).ConfigureAwait(false)
@@ -121,7 +121,7 @@ namespace GitClub.Infrastructure.Postgres.Wal
                 {
                     var relation = relations[defaultUpdateMessage.Relation.RelationId];
 
-                    transaction.ReplicationDataEvents.Add(new DefaultUpdateDataChangeEvent
+                    transaction.DataChangeEvents.Add(new DefaultUpdateDataChangeEvent
                     {
                         Relation = relation,
                         NewValues = await ReadColumnValuesAsync(relation, defaultUpdateMessage.NewRow, cancellationToken).ConfigureAwait(false),
@@ -131,7 +131,7 @@ namespace GitClub.Infrastructure.Postgres.Wal
                 {
                     var relation = relations[fullUpdateMessage.Relation.RelationId];
 
-                    transaction.ReplicationDataEvents.Add(new FullUpdateDataChangeEvent
+                    transaction.DataChangeEvents.Add(new FullUpdateDataChangeEvent
                     {
                         Relation = relation,
                         NewValues = await ReadColumnValuesAsync(relation, fullUpdateMessage.NewRow, cancellationToken).ConfigureAwait(false),
@@ -142,7 +142,7 @@ namespace GitClub.Infrastructure.Postgres.Wal
                 {
                     var relation = relations[keyDeleteMessage.Relation.RelationId];
 
-                    transaction.ReplicationDataEvents.Add(new KeyDeleteDataChangeEvent
+                    transaction.DataChangeEvents.Add(new KeyDeleteDataChangeEvent
                     {
                         Relation = relation,
                         Keys = await ReadColumnValuesAsync(relation, keyDeleteMessage.Key, cancellationToken).ConfigureAwait(false)
@@ -152,7 +152,7 @@ namespace GitClub.Infrastructure.Postgres.Wal
                 {
                     var relation = relations[fullDeleteMessage.Relation.RelationId];
 
-                    transaction.ReplicationDataEvents.Add(new FullDeleteDataChangeEvent
+                    transaction.DataChangeEvents.Add(new FullDeleteDataChangeEvent
                     {
                         Relation = relation,
                         OldValues = await ReadColumnValuesAsync(relation, fullDeleteMessage.OldRow, cancellationToken).ConfigureAwait(false)

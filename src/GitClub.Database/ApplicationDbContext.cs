@@ -78,10 +78,19 @@ namespace GitClub.Database
         /// Gets or sets the TeamRepositoryRole.
         /// </summary>
         public DbSet<TeamRepositoryRole> TeamRepositoryRoles { get; set; } = null!;
+        
+        /// <summary>
+        /// Gets or sets the TeamRepositoryRole.
+        /// </summary>
+        public DbSet<OutboxEvent> OutboxEvents { get; set; } = null!;
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
             // Sequences
+            modelBuilder.HasSequence<int>("outbox_event_seq", schema: "gitclub")
+                .StartsAt(1)
+                .IncrementsBy(1);
+
             modelBuilder.HasSequence<int>("organization_seq", schema: "gitclub")
                 .StartsAt(1)
                 .IncrementsBy(1);
@@ -111,6 +120,85 @@ namespace GitClub.Database
                 .IncrementsBy(1);
 
             // Tables
+            modelBuilder.Entity<OutboxEvent>(entity =>
+            {
+                entity.ToTable("outbox_event", "gitclub");
+
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Id)
+                    .HasColumnType("INT")
+                    .HasColumnName("outbox_event_id")
+                    .UseHiLo("user_seq", "gitclub")
+                    .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.CorrelationId1)
+                    .HasColumnType("varchar(2000)")
+                    .HasColumnName("correlation_id_1")
+                    .HasMaxLength(2000)
+                    .IsRequired(false);
+                
+                entity.Property(e => e.CorrelationId2)
+                    .HasColumnType("varchar(2000)")
+                    .HasColumnName("correlation_id_2")
+                    .HasMaxLength(2000)
+                    .IsRequired(false);
+                
+                entity.Property(e => e.CorrelationId3)
+                    .HasColumnType("varchar(2000)")
+                    .HasColumnName("correlation_id_3")
+                    .HasMaxLength(2000)
+                    .IsRequired(false);
+                
+                entity.Property(e => e.CorrelationId4)
+                    .HasColumnType("varchar(2000)")
+                    .HasColumnName("correlation_id_4")
+                    .HasMaxLength(2000)
+                    .IsRequired(false);
+                
+                entity.Property(e => e.EventTime)
+                    .HasColumnType("timestamptz")
+                    .HasColumnName("event_time")
+                    .IsRequired(true);
+
+                entity.Property(e => e.EventType)
+                    .HasColumnType("varchar(2000)")
+                    .HasColumnName("event_type")
+                    .HasMaxLength(2000)
+                    .IsRequired(true);
+                
+                entity.Property(e => e.EventSource)
+                    .HasColumnType("varchar(2000)")
+                    .HasColumnName("event_source")
+                    .HasMaxLength(2000)
+                    .IsRequired(true);
+
+                entity.Property(e => e.Payload)
+                    .HasColumnType("jsonb")
+                    .HasColumnName("payload")
+                    .HasMaxLength(2000)
+                    .IsRequired(true);
+
+                entity.Property(e => e.RowVersion)
+                    .HasColumnType("xid")
+                    .HasColumnName("xmin")
+                    .IsRowVersion()
+                    .IsConcurrencyToken()
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+
+                entity.Property(e => e.LastEditedBy)
+                    .HasColumnType("integer")
+                    .HasColumnName("last_edited_by")
+                    .IsRequired(true);
+
+                entity.Property(e => e.SysPeriod)
+                    .HasColumnType("tstzrange")
+                    .HasColumnName("sys_period")
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+            });
+            
             modelBuilder.Entity<User>(entity =>
             {
                 entity.ToTable("user", "gitclub");
