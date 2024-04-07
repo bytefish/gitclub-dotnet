@@ -260,8 +260,10 @@ namespace GitClub.Infrastructure.Outbox.Consumer
 
             RelationTuple[] tuplesToDelete =
             [
-                RelationTuple.Create<Issue, User>(message.IssueId, message.CreatedBy, Relations.Creator),
-                RelationTuple.Create<Issue, Repository>(message.IssueId, message.RepositoryId, Relations.Owner)
+                RelationTuples.Create<Issue, Repository>(message.IssueId, message.RepositoryId, IssueRoleEnum.Owner),
+                ..message.UserIssueRoles
+                    .Select(x => RelationTuples.Create<Issue, User>(x.IssueId, x.UserId, x.Role))
+                    .ToArray()
             ];
 
             await _aclService

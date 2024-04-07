@@ -9,13 +9,15 @@ using Microsoft.EntityFrameworkCore;
 using GitClub.Infrastructure.OpenFga;
 using GitClub.Models;
 using GitClub.Infrastructure.Authentication;
+using GitClub.Infrastructure.Outbox;
+using GitClub.Infrastructure.Outbox.Messages;
 
 namespace GitClub.Services
 {
     public class IssueService
     {
         private readonly ILogger<IssueService> _logger;
-        
+
         private readonly ApplicationDbContext _applicationDbContext;
         private readonly AclService _aclService;
 
@@ -41,19 +43,29 @@ namespace GitClub.Services
                 .AddAsync(issue, cancellationToken)
                 .ConfigureAwait(false);
 
-            await _applicationDbContext
-                .SaveChangesAsync(cancellationToken)
-                .ConfigureAwait(false);
-
-            // Write tuples to Zanzibar
-            var tuplesToWrite = new[]
+            var userIssueRole = new UserIssueRole
             {
-                RelationTuple.Create<Issue, User>(issue.Id, currentUser.UserId, Relations.Creator),
-                RelationTuple.Create<Issue, Repository>(issue.Id, issue.RepositoryId, Relations.Owner)
+                UserId = currentUser.UserId,
+                IssueId = issue.Id,
+                Role = IssueRoleEnum.Creator,
+                LastEditedBy = currentUser.UserId
             };
 
-            await _aclService
-                .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
+            var outboxEvent = OutboxEventUtils.Create(new IssueCreatedMessage
+            {
+                IssueId = issue.Id,
+                RepositoryId = issue.RepositoryId,
+                UserIssueRoles = new[] { userIssueRole }
+                    .Select(x => new AddedUserToIssueMessage { UserId = x.UserId, IssueId = x.IssueId, Role = x.Role })
+                    .ToList()
+            }, lastEditedBy: currentUser.UserId);
+
+            await _applicationDbContext
+                .AddAsync(outboxEvent, cancellationToken)
+                .ConfigureAwait(false);
+
+            await _applicationDbContext
+                .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
 
             return issue;
@@ -136,8 +148,8 @@ namespace GitClub.Services
             }
 
             var query = from organization in _applicationDbContext.Organizations
-                            join repository in _applicationDbContext.Repositories on organization.Id equals repository.OrganizationId
-                            join issue in _applicationDbContext.Issues on repository.Id equals issue.RepositoryId
+                        join repository in _applicationDbContext.Repositories on organization.Id equals repository.OrganizationId
+                        join issue in _applicationDbContext.Issues on repository.Id equals issue.RepositoryId
                         where organization.Id.Equals(organizationId)
                         select issue;
 
@@ -160,7 +172,7 @@ namespace GitClub.Services
             // Get all Repositories we are Readers of:
             var repositories = await _aclService
                 .CheckUserObjectsParallelAsync<Repository>(currentUser.UserId, allRepositories, RepositoryRoleEnum.Reader.AsRelation(), cancellationToken)
-                .ConfigureAwait(false); 
+                .ConfigureAwait(false);
 
             // Get the IDs of allowed Repositories:
             var allowedRepositoryIds = repositories
@@ -186,7 +198,7 @@ namespace GitClub.Services
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-            if(original == null)
+            if (original == null)
             {
                 throw new EntityNotFoundException
                 {
@@ -287,21 +299,39 @@ namespace GitClub.Services
                 };
             }
 
-            await _applicationDbContext.Issues
-                    .Where(t => t.Id == issue.Id)
-                    .ExecuteDeleteAsync(cancellationToken)
+            using (var transaction = await _applicationDbContext.Database
+                .BeginTransactionAsync(cancellationToken)
+                .ConfigureAwait(false))
+            {
+                var userIssueRoles = await _applicationDbContext.UserIssueRoles
+                    .Where(x => x.IssueId == issue.Id)
+                    .ToListAsync(cancellationToken)
                     .ConfigureAwait(false);
 
-            // Delete tuples from Zanzibar
-            var tuplesToDelete = new[]
-            {
-                RelationTuple.Create<Issue, User>(issue.Id, currentUser.UserId, Relations.Creator),
-                RelationTuple.Create<Issue, Repository>(issue.Id, issue.RepositoryId, Relations.Owner)
-            };
+                await _applicationDbContext.UserIssueRoles
+                        .Where(t => t.Id == issue.Id)
+                        .ExecuteDeleteAsync(cancellationToken)
+                        .ConfigureAwait(false);
 
-            await _aclService
-                .AddRelationshipsAsync(tuplesToDelete, cancellationToken)
-                .ConfigureAwait(false);
+                await _applicationDbContext.Issues
+                        .Where(t => t.Id == issue.Id)
+                        .ExecuteDeleteAsync(cancellationToken)
+                        .ConfigureAwait(false);
+
+                var outboxEvent = OutboxEventUtils.Create(new IssueDeletedMessage
+                {
+                    IssueId = issue.Id,
+                    RepositoryId = issue.RepositoryId,
+                    UserIssueRoles = userIssueRoles
+                        .Select(x => new RemovedUserFromIssueMessage { UserId = x.UserId, IssueId = x.IssueId, Role = x.Role })
+                        .ToList()
+
+                }, lastEditedBy: currentUser.UserId);
+
+                await transaction
+                    .CommitAsync(cancellationToken)
+                    .ConfigureAwait(false);
+            }
         }
     }
 }

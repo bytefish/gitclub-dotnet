@@ -21,7 +21,7 @@ namespace GitClub.Infrastructure.Outbox.Messages
         /// <summary>
         /// Gets or sets the ID of the User.
         /// </summary>
-        [JsonPropertyName("createdBy")]
-        public required int CreatedBy { get; set; }
+        [JsonPropertyName("userIssueRoles")]
+        public required List<RemovedUserFromIssueMessage> UserIssueRoles { get; set; }
     }
 }
