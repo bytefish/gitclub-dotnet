@@ -206,7 +206,7 @@ namespace GitClub.Infrastructure.Outbox.Consumer
         {
             _logger.TraceMethodEntry();
 
-            // Nothing to do, all Relations still hold...
+            // The Relations do not change ...
 
             return Task.CompletedTask;
         }
@@ -245,13 +245,15 @@ namespace GitClub.Infrastructure.Outbox.Consumer
             await _aclService
                 .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
                 .ConfigureAwait(false);
-
         }
 
-        private async Task HandleIssueUpdatedAsync(IssueUpdatedMessage message, CancellationToken cancellationToken)
+        private Task HandleIssueUpdatedAsync(IssueUpdatedMessage message, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
+            // The Relations do not change ...
+
+            return Task.CompletedTask;
         }
 
         private async Task HandleIssueDeletedAsync(IssueDeletedMessage message, CancellationToken cancellationToken)
