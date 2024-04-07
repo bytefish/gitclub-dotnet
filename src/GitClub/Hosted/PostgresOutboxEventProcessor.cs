@@ -70,20 +70,35 @@ namespace GitClub.Hosted
 
             var outboxEventStream = new PostgresOutboxEventStream(_logger, Options.Create(outboxEventStreamOptions));
 
-            // Listen to the Outbox Event Stream.
-            await foreach(var outboxEvent in outboxEventStream.StartOutboxEventStream(cancellationToken))
+            while (!cancellationToken.IsCancellationRequested)
             {
-                _logger.LogInformation("Processing OutboxEvent (Id = {OutboxEventId})", outboxEvent.Id);
-
                 try
                 {
-                    await _outboxEventConsumer
-                        .HandleOutboxEventAsync(outboxEvent, cancellationToken)
-                        .ConfigureAwait(false);
-                } 
-                catch(Exception e)
+
+                    // Listen to the Outbox Event Stream.
+                    await foreach (var outboxEvent in outboxEventStream.StartOutboxEventStream(cancellationToken))
+                    {
+                        _logger.LogInformation("Processing OutboxEvent (Id = {OutboxEventId})", outboxEvent.Id);
+
+                        try
+                        {
+                            await _outboxEventConsumer
+                                .HandleOutboxEventAsync(outboxEvent, cancellationToken)
+                                .ConfigureAwait(false);
+                        }
+                        catch (Exception e)
+                        {
+                            _logger.LogError(e, "Failed to handle the OutboxEvent due to an Exception (ID = {OutboxEventId})", outboxEvent.Id);
+                        }
+                    }
+                }
+                catch (Exception e)
                 {
-                    _logger.LogError(e, "Failed to handle the OutboxEvent due to an Exception (ID = {OutboxEventId})", outboxEvent.Id);
+                    _logger.LogError(e, "Logical Replication failed with an Error. Restarting the Stream.");
+
+                    await Task
+                        .Delay(200)
+                        .ConfigureAwait(false);
                 }
             }
         }
