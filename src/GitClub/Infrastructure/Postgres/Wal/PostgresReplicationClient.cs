@@ -20,7 +20,7 @@ namespace GitClub.Infrastructure.Postgres.Wal
         /// <summary>
         /// Logger.
         /// </summary>
-        private readonly ILogger<PostgresReplicationClient> _logger;
+        private readonly ILogger _logger;
 
         /// <summary>
         /// Options to configure the Wal Receiver.
@@ -32,7 +32,7 @@ namespace GitClub.Infrastructure.Postgres.Wal
         /// </summary>
         /// <param name="logger">Logger to log messages</param>
         /// <param name="options">Options to configure the service</param>
-        public PostgresReplicationClient(ILogger<PostgresReplicationClient> logger, IOptions<PostgresReplicationClientOptions> options)
+        public PostgresReplicationClient(ILogger logger, IOptions<PostgresReplicationClientOptions> options)
         {
             _logger = logger;
             _options = options.Value;

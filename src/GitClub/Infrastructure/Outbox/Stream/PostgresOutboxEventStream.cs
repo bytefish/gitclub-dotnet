@@ -2,33 +2,72 @@
 using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.Postgres.Wal;
 using GitClub.Infrastructure.Postgres.Wal.Models;
+using Microsoft.Extensions.Options;
 using NodaTime;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
 namespace GitClub.Infrastructure.Outbox.Stream
 {
+    public class PostgresOutboxEventStreamOptions
+    {
+        /// <summary>
+        /// Gets or sets the ConnectionString for the Replication Stream.
+        /// </summary>
+        public required string ConnectionString { get; set; }
+
+        /// <summary>
+        /// Gets or sets the PublicationName the Service is listening to.
+        /// </summary>
+        public required string PublicationName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ReplicationSlot the Service is listening to.
+        /// </summary>
+        public required string ReplicationSlotName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Table the Outbox Events are written to.
+        /// </summary>
+        public required string OutboxEventTableName { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Schema the Outbox Events are written to.
+        /// </summary>
+        public required string OutboxEventSchemaName { get; set; }
+    }
+
     /// <summary>
     /// Provides a Stream of <see cref="OutboxEvent"/>, that are published by a Postgres database.
     /// </summary>
     public class PostgresOutboxEventStream
     {
-        private readonly ILogger<PostgresOutboxEventStream> _logger;
-        private readonly PostgresReplicationClient _replicationService;
+        private readonly ILogger _logger;
+        private readonly PostgresOutboxEventStreamOptions _options;
 
-        public PostgresOutboxEventStream(ILogger<PostgresOutboxEventStream> logger, PostgresReplicationClient replicationService)
+        public PostgresOutboxEventStream(ILogger logger, IOptions<PostgresOutboxEventStreamOptions> options)
         {
             _logger = logger;
-            _replicationService = replicationService;
+            _options = options.Value;
         }
 
         public async IAsyncEnumerable<OutboxEvent> StartOutboxEventStream([EnumeratorCancellation] CancellationToken cancellationToken)
         {
-            // The Replication Service returns a Stream of Transactions, which include all Data Change Events:
-            var transactions = _replicationService.StartReplicationAsync(cancellationToken);
+            _logger.TraceMethodEntry();
+
+            var replicationClientOptions = new PostgresReplicationClientOptions
+            {
+                ConnectionString = _options.ConnectionString,
+                PublicationName = _options.PublicationName,
+                ReplicationSlotName = _options.ReplicationSlotName
+            };
+
+            var _replicationService = new PostgresReplicationClient(_logger, Options.Create(replicationClientOptions));
 
             // This loop will emit whenever new Transactions are available:
-            await foreach(var transaction in transactions)
+            await foreach (var transaction in _replicationService
+                .StartReplicationAsync(cancellationToken)
+                .ConfigureAwait(false))
             {
                 // We will now inspect the Data Change Events:
                 foreach(var dataChangeEvent in transaction.DataChangeEvents)
@@ -36,17 +75,17 @@ namespace GitClub.Infrastructure.Outbox.Stream
                     _logger.LogDebug($"Processing Data Change Event (Type = {dataChangeEvent.GetType().FullName}, Schema = {dataChangeEvent.Relation.Namespace}, Table = {dataChangeEvent.Relation.RelationName}");
 
                     // This is the wrong namespace ...
-                    if(!string.Equals(dataChangeEvent.Relation.Namespace, "gitclub", StringComparison.InvariantCultureIgnoreCase))
+                    if(!string.Equals(dataChangeEvent.Relation.Namespace, _options.OutboxEventSchemaName, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        _logger.LogDebug($"Expected Namespace \"gitclub\", but was \"{dataChangeEvent.Relation.Namespace}\"");
+                        _logger.LogDebug($"Expected Namespace \"{_options.OutboxEventSchemaName}\", but was \"{dataChangeEvent.Relation.Namespace}\"");
                         
                         continue;
                     }
 
                     // This is the wrong Table ...
-                    if (!string.Equals(dataChangeEvent.Relation.RelationName, "outbox_event", StringComparison.InvariantCultureIgnoreCase))
+                    if (!string.Equals(dataChangeEvent.Relation.RelationName, _options.OutboxEventTableName, StringComparison.InvariantCultureIgnoreCase))
                     {
-                        _logger.LogDebug($"Expected Namespace \"gitclub\", but was \"{dataChangeEvent.Relation.RelationName}\"");
+                        _logger.LogDebug($"Expected Namespace \"{_options.OutboxEventTableName}\", but was \"{dataChangeEvent.Relation.RelationName}\"");
 
                         continue;
                     }

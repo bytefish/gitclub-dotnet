@@ -10,18 +10,19 @@ using System.Reflection.Metadata.Ecma335;
 
 namespace GitClub.Infrastructure.Outbox.Consumer
 {
-    public class OpenFgaOutboxEventConsumer
+    public class OutboxEventConsumer
     {
-        private readonly ILogger<OpenFgaOutboxEventConsumer> _logger;
+        private readonly ILogger<OutboxEventConsumer> _logger;
+
         private readonly AclService _aclService;
 
-        public OpenFgaOutboxEventConsumer(ILogger<OpenFgaOutboxEventConsumer> logger, AclService aclService)
+        public OutboxEventConsumer(ILogger<OutboxEventConsumer> logger, AclService aclService)
         {
             _logger = logger;
             _aclService = aclService;
         }
 
-        private async Task HandleOutboxEventAsync(OutboxEvent outboxEvent, CancellationToken cancellationToken)
+        public async Task HandleOutboxEventAsync(OutboxEvent outboxEvent, CancellationToken cancellationToken)
         {
             var success = OutboxEventUtils.TryGetOutboxEventPayload(outboxEvent, out object? payload);
 
