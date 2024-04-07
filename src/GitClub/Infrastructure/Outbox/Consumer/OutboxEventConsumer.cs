@@ -24,6 +24,8 @@ namespace GitClub.Infrastructure.Outbox.Consumer
 
         public async Task HandleOutboxEventAsync(OutboxEvent outboxEvent, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
+
             var success = OutboxEventUtils.TryGetOutboxEventPayload(outboxEvent, out object? payload);
 
             // Maybe it's better to throw up, if we receive an event, we can't handle? But probably 

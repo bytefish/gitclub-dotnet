@@ -18,19 +18,23 @@ namespace GitClub.Services
     {
         private readonly ILogger<IssueService> _logger;
 
-        private readonly ApplicationDbContext _applicationDbContext;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
         private readonly AclService _aclService;
 
-        public IssueService(ILogger<IssueService> logger, ApplicationDbContext applicationDbContext, AclService aclService)
+        public IssueService(ILogger<IssueService> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory, AclService aclService)
         {
             _logger = logger;
-            _applicationDbContext = applicationDbContext;
+            _dbContextFactory = dbContextFactory;
             _aclService = aclService;
         }
 
         public async Task<Issue> CreateIssueAsync(Issue issue, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
+
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
 
             // Make sure the current user is the last editor:
             issue.LastEditedBy = currentUser.UserId;
@@ -39,7 +43,7 @@ namespace GitClub.Services
             issue.CreatedBy = currentUser.UserId;
 
             // Add the new Task, the HiLo Pattern automatically assigns a new Id using the HiLo Pattern
-            await _applicationDbContext
+            await applicationDbContext
                 .AddAsync(issue, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -60,11 +64,11 @@ namespace GitClub.Services
                     .ToList()
             }, lastEditedBy: currentUser.UserId);
 
-            await _applicationDbContext
+            await applicationDbContext
                 .AddAsync(outboxEvent, cancellationToken)
                 .ConfigureAwait(false);
 
-            await _applicationDbContext
+            await applicationDbContext
                 .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
 
@@ -75,7 +79,11 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            var issue = await _applicationDbContext.Issues.AsNoTracking()
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var issue = await applicationDbContext.Issues.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == issueId, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -121,7 +129,11 @@ namespace GitClub.Services
                 };
             }
 
-            var issues = await _applicationDbContext.Issues
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var issues = await applicationDbContext.Issues
                 .AsNoTracking()
                 .Where(x => x.RepositoryId == repositoryId)
                 .ToListAsync(cancellationToken)
@@ -146,10 +158,14 @@ namespace GitClub.Services
                     EntityId = organizationId,
                 };
             }
+            
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
 
-            var query = from organization in _applicationDbContext.Organizations
-                        join repository in _applicationDbContext.Repositories on organization.Id equals repository.OrganizationId
-                        join issue in _applicationDbContext.Issues on repository.Id equals issue.RepositoryId
+            var query = from organization in applicationDbContext.Organizations
+                        join repository in applicationDbContext.Repositories on organization.Id equals repository.OrganizationId
+                        join issue in applicationDbContext.Issues on repository.Id equals issue.RepositoryId
                         where organization.Id.Equals(organizationId)
                         select issue;
 
@@ -164,8 +180,12 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
             // Get all Repositories:
-            var allRepositories = await _applicationDbContext.Repositories.AsNoTracking()
+            var allRepositories = await applicationDbContext.Repositories.AsNoTracking()
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
 
@@ -181,7 +201,7 @@ namespace GitClub.Services
                 .ToList();
 
             // Load the issues for all allowed Repositories:
-            var issues = await _applicationDbContext.Issues.AsNoTracking()
+            var issues = await applicationDbContext.Issues.AsNoTracking()
                 .Where(x => allowedRepositoryIds.Contains(x.Id))
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -193,7 +213,11 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            var original = await _applicationDbContext.Issues.AsNoTracking()
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var original = await applicationDbContext.Issues.AsNoTracking()
                 .Where(x => x.Id == issueId)
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -220,7 +244,7 @@ namespace GitClub.Services
                 };
             }
 
-            int rowsAffected = await _applicationDbContext.Issues
+            int rowsAffected = await applicationDbContext.Issues
                 .Where(t => t.Id == issueId && t.RowVersion == values.RowVersion)
                 .ExecuteUpdateAsync(setters => setters
                     .SetProperty(x => x.Title, values.Title)
@@ -238,7 +262,7 @@ namespace GitClub.Services
                 };
             }
 
-            var updated = await _applicationDbContext.Issues.AsNoTracking()
+            var updated = await applicationDbContext.Issues.AsNoTracking()
                 .Where(x => x.Id == issueId)
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -272,7 +296,11 @@ namespace GitClub.Services
                 };
             }
 
-            var issue = await _applicationDbContext.Issues.AsNoTracking()
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var issue = await applicationDbContext.Issues.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == issueId, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -299,21 +327,21 @@ namespace GitClub.Services
                 };
             }
 
-            using (var transaction = await _applicationDbContext.Database
+            using (var transaction = await applicationDbContext.Database
                 .BeginTransactionAsync(cancellationToken)
                 .ConfigureAwait(false))
             {
-                var userIssueRoles = await _applicationDbContext.UserIssueRoles
+                var userIssueRoles = await applicationDbContext.UserIssueRoles
                     .Where(x => x.IssueId == issue.Id)
                     .ToListAsync(cancellationToken)
                     .ConfigureAwait(false);
 
-                await _applicationDbContext.UserIssueRoles
+                await applicationDbContext.UserIssueRoles
                         .Where(t => t.Id == issue.Id)
                         .ExecuteDeleteAsync(cancellationToken)
                         .ConfigureAwait(false);
 
-                await _applicationDbContext.Issues
+                await applicationDbContext.Issues
                         .Where(t => t.Id == issue.Id)
                         .ExecuteDeleteAsync(cancellationToken)
                         .ConfigureAwait(false);

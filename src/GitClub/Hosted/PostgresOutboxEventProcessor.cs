@@ -77,22 +77,12 @@ namespace GitClub.Hosted
             // Listen to the Outbox Event Stream.
             await foreach(var outboxEvent in outboxEventStream.StartOutboxEventStream(cancellationToken))
             {
-                _logger.LogInformation("Received Transaction: {Transaction}", JsonSerializer.Serialize(transaction, jsonSerializerOptions));
+                _logger.LogInformation("Processing OutboxEvent (Id = {OutboxEventId})", outboxEvent.Id);
 
                 await _outboxEventConsumer
                     .HandleOutboxEventAsync(outboxEvent, cancellationToken)
                     .ConfigureAwait(false);
             }
-        }
-
-        private JsonSerializerOptions GetJsonSerializerOptions()
-        {
-            var options = new JsonSerializerOptions()
-            {
-                WriteIndented = true
-            };
-
-            return options.ConfigureForNodaTime(DateTimeZoneProviders.Tzdb);
         }
     }
 }

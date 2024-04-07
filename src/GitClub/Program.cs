@@ -20,7 +20,7 @@ using GitClub.Infrastructure.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using GitClub.Hosted;
 using GitClub.Infrastructure.Postgres.Notify;
-using GitClub.Infrastructure.Postgres.Wal;
+using GitClub.Infrastructure.Outbox.Consumer;
 
 // We will log to %LocalAppData%/RebacExperiments to store the Logs, so it doesn't need to be configured 
 // to a different path, when you run it on your machine.
@@ -74,7 +74,7 @@ try
     });
 
     // Database
-    builder.Services.AddDbContext<ApplicationDbContext>((sp, options) =>
+    builder.Services.AddDbContextFactory<ApplicationDbContext>((sp, options) =>
     {
         var dataSource = sp.GetRequiredService<NpgsqlDataSource>();
 
@@ -84,17 +84,19 @@ try
             .UseNpgsql(dataSource, options => options.UseNodaTime());
     });
 
-    // Hosted Services
+    // Postgres Notifications
+    builder.Services.AddSingleton<IPostgresNotificationHandler, LoggingPostgresNotificationHandler>();
+
     builder.Services.Configure<PostgresNotificationServiceOptions>(o =>
     {
         o.ChannelName = "core_db_event";
     });
 
-    builder.Services.AddSingleton<IPostgresNotificationHandler, LoggingPostgresNotificationHandler>();
-
     builder.Services.AddHostedService<PostgresNotificationService>();
 
     // Configures the Postgres Replication Settings.
+    builder.Services.AddSingleton<OutboxEventConsumer>();
+
     builder.Services.Configure<PostgresOutboxEventProcessorOptions>(o =>
     {
         var connectionString = builder.Configuration.GetConnectionString("ApplicationDatabase")!;
@@ -121,7 +123,7 @@ try
         return new OpenFgaClient(configuration);
     });
 
-    builder.Services.AddScoped<AclService>();
+    builder.Services.AddSingleton<AclService>();
 
     // Authentication
     builder.Services.AddScoped<CurrentUser>();
@@ -159,11 +161,11 @@ try
     builder.Services.AddSingleton<ExceptionToApplicationErrorMapper>();
 
     // Application Services
-    builder.Services.AddScoped<UserService>();
-    builder.Services.AddScoped<TeamService>();
-    builder.Services.AddScoped<OrganizationService>();
-    builder.Services.AddScoped<RepositoryService>();
-    builder.Services.AddScoped<IssueService>();
+    builder.Services.AddSingleton<UserService>();
+    builder.Services.AddSingleton<TeamService>();
+    builder.Services.AddSingleton<OrganizationService>();
+    builder.Services.AddSingleton<RepositoryService>();
+    builder.Services.AddSingleton<IssueService>();
 
     // Route Constraints
     builder.Services.Configure<RouteOptions>(options =>

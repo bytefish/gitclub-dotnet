@@ -8,9 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using GitClub.Models;
 using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.OpenFga;
-using OpenFga.Sdk.Model;
 using System.Collections.Concurrent;
-using System.ComponentModel.DataAnnotations;
 using System.Runtime.CompilerServices;
 
 namespace GitClub.Services
@@ -21,13 +19,10 @@ namespace GitClub.Services
 
         private readonly OpenFgaClient _openFgaClient;
 
-        private readonly ApplicationDbContext _applicationDbContext;
-
-        public AclService(ILogger<AclService> logger, OpenFgaClient openFgaClient, ApplicationDbContext applicationDbContext)
+        public AclService(ILogger<AclService> logger, OpenFgaClient openFgaClient)
         {
             _logger = logger;
             _openFgaClient = openFgaClient;
-            _applicationDbContext = applicationDbContext;
         }
 
         public async Task<bool> CheckObjectAsync<TObjectType, TSubjectType>(int objectId, string relation, int subjectId, CancellationToken cancellationToken)
@@ -154,7 +149,7 @@ namespace GitClub.Services
             return allowed;
         }
 
-        public async Task<List<TObjectType>> ListObjectsAsync<TObjectType, TSubjectType>(int subjectId, string relation, CancellationToken cancellationToken)
+        public async Task<List<TObjectType>> ListObjectsAsync<TObjectType, TSubjectType>(ApplicationDbContext applicationDbContext, int subjectId, string relation, CancellationToken cancellationToken)
             where TObjectType : Entity
             where TSubjectType : Entity
         {
@@ -186,7 +181,7 @@ namespace GitClub.Services
                 .Select(x => x.Id)
                 .ToArray();
 
-            var entities = await _applicationDbContext.Set<TObjectType>().AsNoTracking()
+            var entities = await applicationDbContext.Set<TObjectType>().AsNoTracking()
                 .Where(x => objectIds.Contains(x.Id))
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -194,12 +189,12 @@ namespace GitClub.Services
             return entities;
         }
 
-        public async Task<List<TEntityType>> ListUserObjectsAsync<TEntityType>(int userId, string relation, CancellationToken cancellationToken)
+        public async Task<List<TEntityType>> ListUserObjectsAsync<TEntityType>(ApplicationDbContext applicationDbContext, int userId, string relation, CancellationToken cancellationToken)
             where TEntityType : Entity
         {
             _logger.TraceMethodEntry();
 
-            var entities = await ListObjectsAsync<TEntityType, User>(userId, relation, cancellationToken).ConfigureAwait(false);
+            var entities = await ListObjectsAsync<TEntityType, User>(applicationDbContext, userId, relation, cancellationToken).ConfigureAwait(false);
 
             return entities;
         }

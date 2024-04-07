@@ -24,4 +24,8 @@
     <ProjectReference Include="..\GitClub.Database\GitClub.Database.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Infrastructure\Extensions\" />
+  </ItemGroup>
+
 </Project>

@@ -68,7 +68,7 @@ namespace GitClub.Tests
             services.AddLogging();
 
             // Database
-            services.AddDbContext<ApplicationDbContext>(options =>
+            services.AddDbContextFactory<ApplicationDbContext>(options =>
             {
                 var connectionString = Configuration.GetConnectionString("ApplicationDatabase");
 
@@ -94,11 +94,11 @@ namespace GitClub.Tests
             });
 
             // Services
-            services.AddScoped<UserService>();
-            services.AddScoped<OrganizationService>();
-            services.AddScoped<TeamService>();
-            services.AddScoped<RepositoryService>();
-            services.AddScoped<IssueService>();
+            services.AddSingleton<UserService>();
+            services.AddSingleton<OrganizationService>();
+            services.AddSingleton<TeamService>();
+            services.AddSingleton<RepositoryService>();
+            services.AddSingleton<IssueService>();
 
             // OpenFGA
             services.AddSingleton<OpenFgaClient>(sp =>
@@ -111,7 +111,7 @@ namespace GitClub.Tests
                 return new OpenFgaClient(clientConfiguration);
             });
 
-            services.AddScoped<AclService>();
+            services.AddSingleton<AclService>();
 
             ServiceProvider = services.BuildServiceProvider();
         }

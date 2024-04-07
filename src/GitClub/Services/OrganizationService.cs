@@ -9,7 +9,6 @@ using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.OpenFga;
 using GitClub.Infrastructure.Outbox;
 using GitClub.Infrastructure.Outbox.Messages;
-using GitClub.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Data;
 
@@ -19,13 +18,13 @@ namespace GitClub.Services
     {
         private readonly ILogger<OrganizationService> _logger;
 
-        private readonly ApplicationDbContext _applicationDbContext;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
         private readonly AclService _aclService;
 
-        public OrganizationService(ILogger<OrganizationService> logger, ApplicationDbContext applicationDbContext, AclService aclService)
+        public OrganizationService(ILogger<OrganizationService> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory, AclService aclService)
         {
             _logger = logger;
-            _applicationDbContext = applicationDbContext;
+            _dbContextFactory = dbContextFactory;
             _aclService = aclService;
         }
 
@@ -40,9 +39,13 @@ namespace GitClub.Services
                 throw new AuthorizationFailedException("Insufficient Permissions to create an Organization");
             }
 
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
             organization.LastEditedBy = currentUser.UserId;
 
-            await _applicationDbContext
+            await applicationDbContext
                 .AddAsync(organization, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -55,7 +58,7 @@ namespace GitClub.Services
                 LastEditedBy = currentUser.UserId
             };
 
-            await _applicationDbContext
+            await applicationDbContext
                 .AddAsync(userOrganizationRole, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -73,11 +76,11 @@ namespace GitClub.Services
                     .ToList()
             }, lastEditedBy: currentUser.UserId);
 
-            await _applicationDbContext
+            await applicationDbContext
                 .AddAsync(outboxEvent, cancellationToken)
                 .ConfigureAwait(false);
 
-            await _applicationDbContext
+            await applicationDbContext
                 .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
 
@@ -101,7 +104,11 @@ namespace GitClub.Services
                 };
             }
 
-            var organization = await _applicationDbContext.Organizations.AsNoTracking()
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var organization = await applicationDbContext.Organizations.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == organizationId, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -121,8 +128,12 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
             var organizations = await _aclService
-                .ListUserObjectsAsync<Organization>(currentUser.UserId, OrganizationRoleEnum.Member.AsRelation(), cancellationToken)
+                .ListUserObjectsAsync<Organization>(applicationDbContext, currentUser.UserId, OrganizationRoleEnum.Member.AsRelation(), cancellationToken)
                 .ConfigureAwait(false);
 
             return organizations;
@@ -159,7 +170,11 @@ namespace GitClub.Services
                 };
             }
 
-            var original = await _applicationDbContext.Organizations.AsNoTracking()
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var original = await applicationDbContext.Organizations.AsNoTracking()
                 .Where(x => x.Id == organizationId)
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -173,11 +188,11 @@ namespace GitClub.Services
                 };
             }
 
-            using (var transaction = await _applicationDbContext.Database
+            using (var transaction = await applicationDbContext.Database
                 .BeginTransactionAsync(cancellationToken)
                 .ConfigureAwait(false))
             {
-                int rowsAffected = await _applicationDbContext.Organizations.AsNoTracking()
+                int rowsAffected = await applicationDbContext.Organizations.AsNoTracking()
                     .Where(t => t.Id == organizationId && t.RowVersion == values.RowVersion)
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(x => x.Name, values.Name)
@@ -202,7 +217,7 @@ namespace GitClub.Services
                     NewBaseRepositoryRole = values.BaseRepositoryRole
                 }, lastEditedBy: currentUser.UserId);
 
-                await _applicationDbContext
+                await applicationDbContext
                     .AddAsync(outboxEvent, cancellationToken)
                     .ConfigureAwait(false);
 
@@ -211,7 +226,7 @@ namespace GitClub.Services
                     .ConfigureAwait(false);
             }
 
-            var updated = await _applicationDbContext.Organizations.AsNoTracking()
+            var updated = await applicationDbContext.Organizations.AsNoTracking()
                 .Where(x => x.Id == organizationId)
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -245,7 +260,11 @@ namespace GitClub.Services
                 };
             }
 
-            var organization = await _applicationDbContext.Organizations.AsNoTracking()
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var organization = await applicationDbContext.Organizations.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == organizationId, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -292,7 +311,11 @@ namespace GitClub.Services
                 };
             }
 
-            var userOrganizationRoles = await _applicationDbContext.UserOrganizationRoles.AsNoTracking()
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var userOrganizationRoles = await applicationDbContext.UserOrganizationRoles.AsNoTracking()
                 .Where(x => x.OrganizationId == organizationId)
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -317,7 +340,11 @@ namespace GitClub.Services
                 };
             }
 
-            var userOrganizationRoles = await _applicationDbContext.UserOrganizationRoles.AsNoTracking()
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var userOrganizationRoles = await applicationDbContext.UserOrganizationRoles.AsNoTracking()
                 .Where(x => x.OrganizationId == organizationId && x.Role == role)
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -356,7 +383,11 @@ namespace GitClub.Services
                 };
             }
 
-            var userIsAlreadyAssignedToOrganization = await _applicationDbContext.UserOrganizationRoles.AsNoTracking()
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var userIsAlreadyAssignedToOrganization = await applicationDbContext.UserOrganizationRoles.AsNoTracking()
                 .Where(x => x.OrganizationId == organizationId && x.UserId == userId)
                 .AnyAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -378,7 +409,7 @@ namespace GitClub.Services
                 LastEditedBy = currentUser.UserId,
             };
 
-            await _applicationDbContext
+            await applicationDbContext
                 .AddAsync(organizationRole)
                 .ConfigureAwait(false);
 
@@ -389,11 +420,11 @@ namespace GitClub.Services
                 Role = organizationRole.Role,
             }, lastEditedBy: currentUser.UserId);
 
-            await _applicationDbContext
+            await applicationDbContext
                 .AddAsync(outboxEvent, cancellationToken)
                 .ConfigureAwait(false);
 
-            await _applicationDbContext
+            await applicationDbContext
                 .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
 
@@ -431,7 +462,11 @@ namespace GitClub.Services
                 };
             }
 
-            var organizationRole = await _applicationDbContext.UserOrganizationRoles.AsNoTracking()
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var organizationRole = await applicationDbContext.UserOrganizationRoles.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.OrganizationId == organizationId && x.UserId == userId && x.Role == role)
                 .ConfigureAwait(false);
 
@@ -445,14 +480,14 @@ namespace GitClub.Services
                 };
             }
 
-            using (var transaction = await _applicationDbContext.Database
+            using (var transaction = await applicationDbContext.Database
                 .BeginTransactionAsync(cancellationToken)
                 .ConfigureAwait(false))
             {
-                int rowsAffected = await _applicationDbContext.UserOrganizationRoles
-                .Where(x => x.Id == organizationRole.Id)
-                .ExecuteDeleteAsync(cancellationToken)
-                .ConfigureAwait(false);
+                int rowsAffected = await applicationDbContext.UserOrganizationRoles
+                    .Where(x => x.Id == organizationRole.Id)
+                    .ExecuteDeleteAsync(cancellationToken)
+                    .ConfigureAwait(false);
 
                 var outboxEvent = OutboxEventUtils.Create(new RemovedUserFromOrganizationMessage
                 {
@@ -461,11 +496,11 @@ namespace GitClub.Services
                     Role = organizationRole.Role,
                 }, lastEditedBy: currentUser.UserId);
 
-                await _applicationDbContext
+                await applicationDbContext
                     .AddAsync(outboxEvent, cancellationToken)
                     .ConfigureAwait(false);
 
-                await _applicationDbContext
+                await applicationDbContext
                     .SaveChangesAsync(cancellationToken)
                     .ConfigureAwait(false);
 

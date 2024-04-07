@@ -18,13 +18,13 @@ namespace GitClub.Services
         private readonly ILogger<UserService> _logger;
 
         private readonly AclService _aclService;
-        private readonly ApplicationDbContext _applicationDbContext;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
 
-        public UserService(ILogger<UserService> logger, AclService aclService, ApplicationDbContext applicationDbContext)
+        public UserService(ILogger<UserService> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory, AclService aclService)
         {
             _logger = logger;
             _aclService = aclService;
-            _applicationDbContext = applicationDbContext;
+            _dbContextFactory = dbContextFactory;
         }
 
         public async Task<User> CreateUserAsync(User user, CurrentUser currentUser, CancellationToken cancellationToken)
@@ -38,13 +38,17 @@ namespace GitClub.Services
                 throw new AuthorizationFailedException("Insufficient Permissions to create a new user");
             }
 
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
             user.LastEditedBy = currentUser.UserId;
 
-            await _applicationDbContext
+            await applicationDbContext
                 .AddAsync(user, cancellationToken)
                 .ConfigureAwait(false);
 
-            await _applicationDbContext
+            await applicationDbContext
                 .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
 
@@ -70,100 +74,104 @@ namespace GitClub.Services
                 };
             }
 
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
             // Now we can safely update and delete the data in a transaction
-            using (var transaction = await _applicationDbContext.Database
+            using (var transaction = await applicationDbContext.Database
                     .BeginTransactionAsync(cancellationToken)
                     .ConfigureAwait(false))
             {
-                var userIssueRoles = await _applicationDbContext.UserIssueRoles.AsNoTracking()
+                var userIssueRoles = await applicationDbContext.UserIssueRoles.AsNoTracking()
                     .Where(x => x.UserId == userId)
                     .ToListAsync(cancellationToken);
 
-                var userTeamRoles = await _applicationDbContext.UserTeamRoles.AsNoTracking()
+                var userTeamRoles = await applicationDbContext.UserTeamRoles.AsNoTracking()
                     .Where(x => x.UserId == userId)
                     .ToListAsync(cancellationToken);
 
-                var userRepositoryRoles = await _applicationDbContext.UserRepositoryRoles.AsNoTracking()
+                var userRepositoryRoles = await applicationDbContext.UserRepositoryRoles.AsNoTracking()
                     .Where(x => x.UserId == userId)
                     .ToListAsync(cancellationToken);
 
-                var userOrganizationRoles = await _applicationDbContext.UserOrganizationRoles.AsNoTracking()
+                var userOrganizationRoles = await applicationDbContext.UserOrganizationRoles.AsNoTracking()
                     .Where(x => x.UserId == userId)
                     .ToListAsync(cancellationToken);
 
-                await _applicationDbContext.Organizations
+                await applicationDbContext.Organizations
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
 
-                await _applicationDbContext.OrganizationRoles
+                await applicationDbContext.OrganizationRoles
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
 
-                await _applicationDbContext.Repositories
+                await applicationDbContext.Repositories
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
 
-                await _applicationDbContext.RepositoryRoles
+                await applicationDbContext.RepositoryRoles
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
 
-                await _applicationDbContext.Teams
+                await applicationDbContext.Teams
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
 
-                await _applicationDbContext.TeamRoles
+                await applicationDbContext.TeamRoles
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
 
-                await _applicationDbContext.TeamRepositoryRoles
+                await applicationDbContext.TeamRepositoryRoles
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
 
-                await _applicationDbContext.Users
+                await applicationDbContext.Users
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
 
-                await _applicationDbContext.UserRepositoryRoles
+                await applicationDbContext.UserRepositoryRoles
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
 
-                await _applicationDbContext.UserOrganizationRoles
+                await applicationDbContext.UserOrganizationRoles
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
 
-                await _applicationDbContext.UserTeamRoles
+                await applicationDbContext.UserTeamRoles
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
 
-                await _applicationDbContext.Issues
+                await applicationDbContext.Issues
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
                 
-                await _applicationDbContext.UserIssueRoles
+                await applicationDbContext.UserIssueRoles
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
 
                 // We also need to assign the Issue Creator to the GhostUser:
-                await _applicationDbContext.Issues
+                await applicationDbContext.Issues
                     .Where(x => x.CreatedBy == userId)
                     .ExecuteUpdateAsync(s => s
                         .SetProperty(p => p.LastEditedBy, Users.GhostUserId)
                         .SetProperty(p => p.CreatedBy, Users.GhostUserId));
 
                 // Now delete all associations from a User to Organization, Teams and Repositories:
-                await _applicationDbContext.UserOrganizationRoles.AsNoTracking()
+                await applicationDbContext.UserOrganizationRoles.AsNoTracking()
                     .Where(x => x.UserId == userId)
                     .ExecuteDeleteAsync();
 
-                await _applicationDbContext.UserTeamRoles.AsNoTracking()
+                await applicationDbContext.UserTeamRoles.AsNoTracking()
                     .Where(x => x.UserId == userId)
                     .ExecuteDeleteAsync();
 
-                await _applicationDbContext.UserRepositoryRoles.AsNoTracking()
+                await applicationDbContext.UserRepositoryRoles.AsNoTracking()
                     .Where(x => x.UserId == userId)
                     .ExecuteDeleteAsync();
 
-                await _applicationDbContext.UserIssueRoles.AsNoTracking()
+                await applicationDbContext.UserIssueRoles.AsNoTracking()
                     .Where(x => x.UserId == userId)
                     .ExecuteDeleteAsync();
 
@@ -184,11 +192,11 @@ namespace GitClub.Services
                         .ToList(),
                 }, lastEditedBy: currentUser.UserId);
 
-                await _applicationDbContext
+                await applicationDbContext
                     .AddAsync(outboxEvent, cancellationToken)
                     .ConfigureAwait(false);
 
-                await _applicationDbContext
+                await applicationDbContext
                     .SaveChangesAsync(cancellationToken)
                     .ConfigureAwait(false);
                 
@@ -202,7 +210,12 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            var user = await _applicationDbContext.Users.AsNoTracking()
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+
+            var user = await applicationDbContext.Users.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Email == email, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -218,7 +231,11 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
-            var user = await _applicationDbContext.Users
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var user = await applicationDbContext.Users
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Email == email, cancellationToken)
                 .ConfigureAwait(false);

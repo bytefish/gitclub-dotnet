@@ -16,13 +16,13 @@ namespace GitClub.Services
     {
         private readonly ILogger<TeamService> _logger;
 
-        private readonly ApplicationDbContext _applicationDbContext;
+        private readonly IDbContextFactory<ApplicationDbContext> _dbContextFactory;
         private readonly AclService _aclService;
 
-        public TeamService(ILogger<TeamService> logger, ApplicationDbContext applicationDbContext, AclService aclService)
+        public TeamService(ILogger<TeamService> logger, IDbContextFactory<ApplicationDbContext> dbContextFactory, AclService aclService)
         {
             _logger = logger;
-            _applicationDbContext = applicationDbContext;
+            _dbContextFactory = dbContextFactory;
             _aclService = aclService;
         }
 
@@ -44,11 +44,15 @@ namespace GitClub.Services
                 };
             }
 
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
             // Make sure the Current User is the last editor:
             team.LastEditedBy = currentUser.UserId;
 
             // Add the new Team
-            await _applicationDbContext
+            await applicationDbContext
                 .AddAsync(team, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -61,7 +65,7 @@ namespace GitClub.Services
                 LastEditedBy = currentUser.UserId
             };
 
-            await _applicationDbContext
+            await applicationDbContext
                 .AddAsync(userTeamRole, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -79,24 +83,13 @@ namespace GitClub.Services
                         .ToList()
             }, lastEditedBy: currentUser.UserId);
 
-            await _applicationDbContext
+            await applicationDbContext
                 .AddAsync(outboxEvent, cancellationToken)
                 .ConfigureAwait(false);
 
-            await _applicationDbContext
+            await applicationDbContext
                 .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
-
-            //// Add Relations to Zanzibar
-            //var tuplesToWrite = new[]
-            //{
-            //    RelationTuples.Create<Team, Organization>(team.Id, currentUser.UserId, TeamRoleEnum.Owner),
-            //    RelationTuples.Create<Team, User>(team.Id, currentUser.UserId, TeamRoleEnum.Maintainer)
-            //};
-
-            //await _aclService
-            //    .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
-            //    .ConfigureAwait(false);
 
             return team;
         }
@@ -118,7 +111,11 @@ namespace GitClub.Services
                 };
             }
 
-            var team = await _applicationDbContext.Teams
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var team = await applicationDbContext.Teams
                 .AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == teamId, cancellationToken)
                 .ConfigureAwait(false);
@@ -152,7 +149,11 @@ namespace GitClub.Services
                 };
             }
 
-            var teams = await _applicationDbContext.Teams
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var teams = await applicationDbContext.Teams
                 .AsNoTracking()
                 .Where(x => x.OrganizationId == organizationId)
                 .ToListAsync(cancellationToken)
@@ -165,8 +166,12 @@ namespace GitClub.Services
         {
             _logger.TraceMethodEntry();
 
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
             var teams = await _aclService
-                .ListUserObjectsAsync<Team>(user.UserId, TeamRoleEnum.Member.AsRelation(), cancellationToken)
+                .ListUserObjectsAsync<Team>(applicationDbContext, user.UserId, TeamRoleEnum.Member.AsRelation(), cancellationToken)
                 .ConfigureAwait(false);
 
             return teams;
@@ -203,7 +208,11 @@ namespace GitClub.Services
                 };
             }
 
-            var original = await _applicationDbContext.Teams.AsNoTracking()
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var original = await applicationDbContext.Teams.AsNoTracking()
                 .Where(x => x.Id == teamId)
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -217,11 +226,11 @@ namespace GitClub.Services
                 };
             }
 
-            using (var transaction = await _applicationDbContext.Database
+            using (var transaction = await applicationDbContext.Database
                 .BeginTransactionAsync(cancellationToken)
                 .ConfigureAwait(false))
             {
-                int rowsAffected = await _applicationDbContext.Teams
+                int rowsAffected = await applicationDbContext.Teams
                     .Where(t => t.Id == teamId && t.RowVersion == values.RowVersion)
                     .ExecuteUpdateAsync(setters => setters
                         .SetProperty(x => x.Name, values.Name)
@@ -239,18 +248,18 @@ namespace GitClub.Services
 
                 var outboxEvent = OutboxEventUtils.Create(new TeamUpdatedMessage { TeamId = teamId }, lastEditedBy: currentUser.UserId);
 
-                await _applicationDbContext.OutboxEvents
+                await applicationDbContext.OutboxEvents
                     .AddAsync(outboxEvent, cancellationToken)
                     .ConfigureAwait(false);
 
-                await _applicationDbContext.SaveChangesAsync(cancellationToken);
+                await applicationDbContext.SaveChangesAsync(cancellationToken);
 
                 await transaction
                     .CommitAsync(cancellationToken)
                     .ConfigureAwait(false);
             }
 
-            var updated = await _applicationDbContext.Teams.AsNoTracking()
+            var updated = await applicationDbContext.Teams.AsNoTracking()
                 .Where(x => x.Id == teamId)
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -284,7 +293,11 @@ namespace GitClub.Services
                 };
             }
 
-            var team = await _applicationDbContext.Teams.AsNoTracking()
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var team = await applicationDbContext.Teams.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Id == teamId, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -311,21 +324,21 @@ namespace GitClub.Services
                 };
             }
 
-            using (var transaction = await _applicationDbContext.Database
+            using (var transaction = await applicationDbContext.Database
                 .BeginTransactionAsync(cancellationToken)
                 .ConfigureAwait(false))
             {
-                var userTeamRoles = await _applicationDbContext.UserTeamRoles.AsNoTracking()
+                var userTeamRoles = await applicationDbContext.UserTeamRoles.AsNoTracking()
                     .Where(x => x.TeamId == teamId)
                     .ToListAsync(cancellationToken)
                     .ConfigureAwait(false);
 
-                await _applicationDbContext.UserTeamRoles
+                await applicationDbContext.UserTeamRoles
                     .Where(t => t.Id == team.Id)
                     .ExecuteDeleteAsync(cancellationToken)
                     .ConfigureAwait(false);
 
-                await _applicationDbContext.Teams
+                await applicationDbContext.Teams
                         .Where(t => t.Id == team.Id)
                         .ExecuteDeleteAsync(cancellationToken)
                         .ConfigureAwait(false);
@@ -343,20 +356,6 @@ namespace GitClub.Services
                     .CommitAsync(cancellationToken)
                     .ConfigureAwait(false);
             }
-
-            // Delete tuples in Zanzibar
-            //List<RelationTuple> tuplesToDelete = [];
-
-            //foreach (var userTeamRole in userTeamRoles)
-            //{
-            //    var tuple = RelationTuples.Create<Team, User>(userTeamRole.TeamId, userTeamRole.UserId, userTeamRole.Role);
-
-            //    tuplesToDelete.Add(tuple);
-            //}
-
-            //await _aclService
-            //    .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken) 
-            //    .ConfigureAwait(false);
         }
 
         public async Task<List<UserTeamRole>> GetUserTeamRolesByTeamIdAsync(int teamId, CurrentUser currentUser, CancellationToken cancellationToken)
@@ -390,7 +389,11 @@ namespace GitClub.Services
                 };
             }
 
-            var userTeamRoles = await _applicationDbContext.UserTeamRoles
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var userTeamRoles = await applicationDbContext.UserTeamRoles
                 .Where(x => x.TeamId == teamId)
                 .ToListAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -429,7 +432,11 @@ namespace GitClub.Services
                 };
             }
 
-            var userTeamRoleExists = await _applicationDbContext.UserTeamRoles
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var userTeamRoleExists = await applicationDbContext.UserTeamRoles
                 .AnyAsync(x => x.UserId == userId && x.TeamId == teamId, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -450,7 +457,7 @@ namespace GitClub.Services
                 LastEditedBy = currentUser.UserId
             };
 
-            await _applicationDbContext
+            await applicationDbContext
                 .AddAsync(userTeamRole, cancellationToken)
                 .ConfigureAwait(false);
 
@@ -461,24 +468,13 @@ namespace GitClub.Services
                 UserId = userTeamRole.UserId
             }, lastEditedBy: currentUser.UserId);
 
-            await _applicationDbContext.OutboxEvents
+            await applicationDbContext.OutboxEvents
                 .AddAsync(outboxEvent, cancellationToken)
                 .ConfigureAwait(false);
 
-            await _applicationDbContext
+            await applicationDbContext
                 .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
-
-
-            //// Write tuples to Zanzibar
-            //var tuplesToWrite = new[]
-            //{
-            //    RelationTuples.Create<Team, User>(userTeamRole.TeamId, userTeamRole.UserId, userTeamRole.Role, null)
-            //};
-
-            //await _aclService
-            //    .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
-            //    .ConfigureAwait(false);
 
             return userTeamRole;
         }
@@ -514,7 +510,11 @@ namespace GitClub.Services
                 };
             }
 
-            var userTeamRole = await _applicationDbContext.UserTeamRoles.AsNoTracking()
+            using var applicationDbContext = await _dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            var userTeamRole = await applicationDbContext.UserTeamRoles.AsNoTracking()
                 .Where(x => x.TeamId == teamId && x.UserId == userId)
                 .FirstOrDefaultAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -528,11 +528,11 @@ namespace GitClub.Services
                 };
             }
 
-            using (var transaction = await _applicationDbContext.Database
+            using (var transaction = await applicationDbContext.Database
                 .BeginTransactionAsync(cancellationToken)
                 .ConfigureAwait(false))
             {
-                await _applicationDbContext.UserTeamRoles
+                await applicationDbContext.UserTeamRoles
                     .Where(x => x.Id == userTeamRole.Id)
                     .ExecuteDeleteAsync()
                     .ConfigureAwait(false);
@@ -544,11 +544,11 @@ namespace GitClub.Services
                     Role = userTeamRole.Role
                 }, lastEditedBy: currentUser.UserId);
 
-                await _applicationDbContext.OutboxEvents
+                await applicationDbContext.OutboxEvents
                     .AddAsync(outboxEvent, cancellationToken)
                     .ConfigureAwait(false);
 
-                await _applicationDbContext
+                await applicationDbContext
                     .SaveChangesAsync(cancellationToken)
                     .ConfigureAwait(false);
 
