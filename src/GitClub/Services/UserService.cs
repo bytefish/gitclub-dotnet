@@ -6,11 +6,8 @@ using GitClub.Infrastructure.Authentication;
 using GitClub.Infrastructure.Constants;
 using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
-using GitClub.Infrastructure.Messages;
-using GitClub.Infrastructure.OpenFga;
 using GitClub.Infrastructure.Outbox;
 using GitClub.Infrastructure.Outbox.Messages;
-using GitClub.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 
@@ -94,23 +91,6 @@ namespace GitClub.Services
                     .Where(x => x.UserId == userId)
                     .ToListAsync(cancellationToken);
 
-                var outboxEvent = OutboxEventUtils.Create(new UserDeletedMessage
-                {
-                    UserId = userId,
-                    UserIssueRoles = userIssueRoles
-                        .Select(x => new RemovedUserFromIssueMessage { IssueId = x.IssueId, UserId = x.UserId, Role = x.Role })
-                        .ToList(),
-                    UserOrganizationRoles = userOrganizationRoles
-                        .Select(x => new RemovedUserFromOrganizationMessage { OrganizationId = x.OrganizationId, UserId = x.UserId, Role = x.Role })
-                        .ToList(),
-                    UserRepositoryRoles = userRepositoryRoles
-                        .Select(x => new RemovedUserFromRepositoryMessage { RepositoryId = x.RepositoryId, UserId = x.UserId, Role = x.Role })
-                        .ToList(),
-                    UserTeamRoles = userTeamRoles
-                        .Select(x => new RemovedUserFromTeamMessage { TeamId = x.TeamId, UserId = x.UserId, Role = x.Role })
-                        .ToList(),
-                }, lastEditedBy: currentUser.UserId);
-
                 await _applicationDbContext.Organizations
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
@@ -187,6 +167,31 @@ namespace GitClub.Services
                     .Where(x => x.UserId == userId)
                     .ExecuteDeleteAsync();
 
+                var outboxEvent = OutboxEventUtils.Create(new UserDeletedMessage
+                {
+                    UserId = userId,
+                    UserIssueRoles = userIssueRoles
+                        .Select(x => new RemovedUserFromIssueMessage { IssueId = x.IssueId, UserId = x.UserId, Role = x.Role })
+                        .ToList(),
+                    UserOrganizationRoles = userOrganizationRoles
+                        .Select(x => new RemovedUserFromOrganizationMessage { OrganizationId = x.OrganizationId, UserId = x.UserId, Role = x.Role })
+                        .ToList(),
+                    UserRepositoryRoles = userRepositoryRoles
+                        .Select(x => new RemovedUserFromRepositoryMessage { RepositoryId = x.RepositoryId, UserId = x.UserId, Role = x.Role })
+                        .ToList(),
+                    UserTeamRoles = userTeamRoles
+                        .Select(x => new RemovedUserFromTeamMessage { TeamId = x.TeamId, UserId = x.UserId, Role = x.Role })
+                        .ToList(),
+                }, lastEditedBy: currentUser.UserId);
+
+                await _applicationDbContext
+                    .AddAsync(outboxEvent, cancellationToken)
+                    .ConfigureAwait(false);
+
+                await _applicationDbContext
+                    .SaveChangesAsync(cancellationToken)
+                    .ConfigureAwait(false);
+                
                 await transaction
                     .CommitAsync(cancellationToken)
                     .ConfigureAwait(false);

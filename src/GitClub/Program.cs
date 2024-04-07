@@ -95,7 +95,7 @@ try
     builder.Services.AddHostedService<PostgresNotificationService>();
 
     // Configures the Postgres Replication Settings.
-    builder.Services.Configure<PostgresReplicationServiceOptions>(o =>
+    builder.Services.Configure<PostgresReplicationClientOptions>(o =>
     {
         var connectionString = builder.Configuration.GetConnectionString("ApplicationDatabase")!;
 
@@ -104,7 +104,7 @@ try
         o.ReplicationSlotName = "gitclub_slot";
     });
 
-    builder.Services.AddSingleton<PostgresReplicationService>();
+    builder.Services.AddSingleton<PostgresReplicationClient>();
 
     builder.Services.AddHostedService<PostgresReplicationListener>();
 

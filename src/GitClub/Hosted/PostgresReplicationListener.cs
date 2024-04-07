@@ -15,9 +15,9 @@ namespace GitClub.Hosted
     {
         private readonly ILogger<PostgresReplicationListener> _logger;
 
-        private readonly PostgresReplicationService _replicationService;
+        private readonly PostgresReplicationClient _replicationService;
 
-        public PostgresReplicationListener(ILogger<PostgresReplicationListener> logger, PostgresReplicationService replicationService)
+        public PostgresReplicationListener(ILogger<PostgresReplicationListener> logger, PostgresReplicationClient replicationService)
         {
             _logger = logger;
             _replicationService = replicationService;

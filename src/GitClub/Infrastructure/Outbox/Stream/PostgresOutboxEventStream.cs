@@ -1,5 +1,4 @@
 ﻿using GitClub.Database.Models;
-using GitClub.Infrastructure.Extensions;
 using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.Postgres.Wal;
 using GitClub.Infrastructure.Postgres.Wal.Models;
@@ -15,9 +14,9 @@ namespace GitClub.Infrastructure.Outbox.Stream
     public class PostgresOutboxEventStream
     {
         private readonly ILogger<PostgresOutboxEventStream> _logger;
-        private readonly PostgresReplicationService _replicationService;
+        private readonly PostgresReplicationClient _replicationService;
 
-        public PostgresOutboxEventStream(ILogger<PostgresOutboxEventStream> logger, PostgresReplicationService replicationService)
+        public PostgresOutboxEventStream(ILogger<PostgresOutboxEventStream> logger, PostgresReplicationClient replicationService)
         {
             _logger = logger;
             _replicationService = replicationService;

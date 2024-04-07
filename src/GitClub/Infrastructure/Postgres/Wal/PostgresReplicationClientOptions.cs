@@ -7,7 +7,7 @@ namespace GitClub.Infrastructure.Postgres.Wal
     /// <summary>
     /// Options to configure the <see cref="PostgresNotificationService"/>.
     /// </summary>
-    public class PostgresReplicationServiceOptions
+    public class PostgresReplicationClientOptions
     {
         /// <summary>
         /// Gets or sets the ConnectionString for the Replication Stream.

@@ -13,26 +13,26 @@ using System.Runtime.CompilerServices;
 namespace GitClub.Infrastructure.Postgres.Wal
 {
     /// <summary>
-    /// This Service processes Replication Events published by a Postgres publication.
+    /// This Client subscribes to Logical Replication messages sent by a Postgres database.
     /// </summary>
-    public class PostgresReplicationService
+    public class PostgresReplicationClient
     {
         /// <summary>
         /// Logger.
         /// </summary>
-        private readonly ILogger<PostgresReplicationService> _logger;
+        private readonly ILogger<PostgresReplicationClient> _logger;
 
         /// <summary>
         /// Options to configure the Wal Receiver.
         /// </summary>
-        private readonly PostgresReplicationServiceOptions _options;
+        private readonly PostgresReplicationClientOptions _options;
 
         /// <summary>
-        /// Creates a new <see cref="PostgresReplicationService" />.
+        /// Creates a new <see cref="PostgresReplicationClient" />.
         /// </summary>
         /// <param name="logger">Logger to log messages</param>
         /// <param name="options">Options to configure the service</param>
-        public PostgresReplicationService(ILogger<PostgresReplicationService> logger, IOptions<PostgresReplicationServiceOptions> options)
+        public PostgresReplicationClient(ILogger<PostgresReplicationClient> logger, IOptions<PostgresReplicationClientOptions> options)
         {
             _logger = logger;
             _options = options.Value;
