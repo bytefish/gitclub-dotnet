@@ -76,17 +76,17 @@ namespace GitClub.Infrastructure.Outbox.Stream
 
             var outboxEvent = new OutboxEvent
             {
-                Id = values.GetRequiredValue<int>("outbox_event_id"),
-                EventSource = values.GetRequiredValue<string>("event_source"),
-                EventType = values.GetRequiredValue<string>("event_type"),
-                EventTime = values.GetRequiredValue<DateTimeOffset>("event_time"),
-                Payload = values.GetRequiredValue<JsonDocument>("payload"),
-                CorrelationId1 = values.GetOptionalValue<string>("correlation_id_1"),
-                CorrelationId2 = values.GetOptionalValue<string>("correlation_id_2"),
-                CorrelationId3 = values.GetOptionalValue<string>("correlation_id_3"),
-                CorrelationId4 = values.GetOptionalValue<string>("correlation_id_4"),
-                LastEditedBy = values.GetRequiredValue<int>("last_edited_by"),
-                SysPeriod = values.GetRequiredValue<Interval>("sys_period")
+                Id = DictionaryUtils.GetRequiredValue<int>(values, "outbox_event_id"),
+                EventSource = DictionaryUtils.GetRequiredValue<string>(values, "event_source"),
+                EventType = DictionaryUtils.GetRequiredValue<string>(values, "event_type"),
+                EventTime = DictionaryUtils.GetRequiredValue<DateTimeOffset>(values, "event_time"),
+                Payload = DictionaryUtils.GetRequiredValue<JsonDocument>(values, "payload"),
+                CorrelationId1 = DictionaryUtils.GetOptionalValue<string>(values, "correlation_id_1"),
+                CorrelationId2 = DictionaryUtils.GetOptionalValue<string>(values, "correlation_id_2"),
+                CorrelationId3 = DictionaryUtils.GetOptionalValue<string>(values, "correlation_id_3"),
+                CorrelationId4 = DictionaryUtils.GetOptionalValue<string>(values, "correlation_id_4"),
+                LastEditedBy = DictionaryUtils.GetRequiredValue<int>(values, "last_edited_by"),
+                SysPeriod = DictionaryUtils.GetRequiredValue<Interval>(values, "sys_period")
             };
 
             return ValueTask.FromResult(outboxEvent);

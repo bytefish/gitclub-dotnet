@@ -62,6 +62,7 @@ namespace GitClub.Services
             var outboxEvent = OutboxEventUtils.Create(new OrganizationCreatedMessage
             {
                 OrganizationId = organization.Id,
+                BaseRepositoryRole = organization.BaseRepositoryRole,
                 UserOrganizationRoles = new[] { userOrganizationRole }
                     .Select(x => new AddedUserToOrganizationMessage
                     {
@@ -79,17 +80,6 @@ namespace GitClub.Services
             await _applicationDbContext
                 .SaveChangesAsync(cancellationToken)
                 .ConfigureAwait(false);
-
-            // Write Tuples to Zanzibar
-            //var tuplesToWrite = new[]
-            //{
-            //    RelationTuples.Create<Organization, Organization>(organization, organization, organization.BaseRepositoryRole, Relations.Member),
-            //    RelationTuples.Create<Organization, User>(userOrganizationRole.OrganizationId, userOrganizationRole.UserId, userOrganizationRole.Role),
-            //};
-
-            //await _aclService
-            //    .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
-            //    .ConfigureAwait(false);
 
             return organization;
         }
@@ -205,7 +195,12 @@ namespace GitClub.Services
                     };
                 }
 
-                var outboxEvent = OutboxEventUtils.Create(new OrganizationUpdatedMessage { OrganizationId = organizationId }, lastEditedBy: currentUser.UserId);
+                var outboxEvent = OutboxEventUtils.Create(new OrganizationUpdatedMessage 
+                { 
+                    OrganizationId = organizationId,
+                    OldBaseRepositoryRole = original.BaseRepositoryRole,
+                    NewBaseRepositoryRole = values.BaseRepositoryRole
+                }, lastEditedBy: currentUser.UserId);
 
                 await _applicationDbContext
                     .AddAsync(outboxEvent, cancellationToken)
@@ -215,20 +210,6 @@ namespace GitClub.Services
                     .CommitAsync(cancellationToken)
                     .ConfigureAwait(false);
             }
-
-            //var tuplesToWrite = new[] 
-            //{
-            //    RelationTuples.Create<Organization, Organization>(organizationId, organizationId, values.BaseRepositoryRole, Relations.Member)
-            //};
-
-            //var tuplesToDelete = new []
-            //{
-            //    RelationTuples.Create<Organization, Organization>(organizationId, organizationId, original.BaseRepositoryRole, Relations.Member)
-            //};
-
-            //await _aclService
-            //    .WriteAsync(tuplesToWrite, tuplesToDelete, cancellationToken)
-            //    .ConfigureAwait(false);
 
             var updated = await _applicationDbContext.Organizations.AsNoTracking()
                 .Where(x => x.Id == organizationId)
@@ -291,7 +272,7 @@ namespace GitClub.Services
                 };
             }
 
-            throw new NotImplementedException("Cannot delete Organizations");
+            throw new NotImplementedException("Deleting an Organization is not supported at the moment");
         }
 
         public async Task<List<UserOrganizationRole>> GetUserOrganizationRolesByOrganizationIdAsync(int organizationId, CurrentUser currentUser, CancellationToken cancellationToken)
@@ -401,7 +382,7 @@ namespace GitClub.Services
                 .AddAsync(organizationRole)
                 .ConfigureAwait(false);
 
-            var outboxEvent = OutboxEventUtils.Create<AddedUserToOrganizationMessage>(new AddedUserToOrganizationMessage
+            var outboxEvent = OutboxEventUtils.Create(new AddedUserToOrganizationMessage
             {
                 UserId = organizationRole.UserId,
                 OrganizationId = organizationRole.OrganizationId,
@@ -414,16 +395,6 @@ namespace GitClub.Services
 
             await _applicationDbContext
                 .SaveChangesAsync(cancellationToken)
-                .ConfigureAwait(false);
-
-            // Write Tuples to Zanzibar
-            var relationsToWrite = new[]
-            {
-                RelationTuples.Create<Organization, User>(organizationRole.OrganizationId, organizationRole.UserId, organizationRole.Role),
-            };
-
-            await _aclService
-                .AddRelationshipsAsync(relationsToWrite, cancellationToken)
                 .ConfigureAwait(false);
 
             return organizationRole;
@@ -482,16 +453,26 @@ namespace GitClub.Services
                 .Where(x => x.Id == organizationRole.Id)
                 .ExecuteDeleteAsync(cancellationToken)
                 .ConfigureAwait(false);
-            }
-            // Delete Tuple from Zanzibar
-            var relationsToDelete = new[]
-            {
-                RelationTuples.Create<Organization, User>(organizationId, userId, organizationRole.Role),
-            };
 
-            await _aclService
-                .DeleteRelationshipsAsync(relationsToDelete, cancellationToken)
-                .ConfigureAwait(false);
+                var outboxEvent = OutboxEventUtils.Create(new RemovedUserFromOrganizationMessage
+                {
+                    UserId = organizationRole.UserId,
+                    OrganizationId = organizationRole.OrganizationId,
+                    Role = organizationRole.Role,
+                }, lastEditedBy: currentUser.UserId);
+
+                await _applicationDbContext
+                    .AddAsync(outboxEvent, cancellationToken)
+                    .ConfigureAwait(false);
+
+                await _applicationDbContext
+                    .SaveChangesAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                await transaction
+                    .CommitAsync(cancellationToken)
+                    .ConfigureAwait(false);
+            }
         }
     }
 }

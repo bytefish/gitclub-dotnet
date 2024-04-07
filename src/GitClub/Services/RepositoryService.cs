@@ -302,20 +302,20 @@ namespace GitClub.Services
                 };
             }
 
-            var userRepositoryRoles = await _applicationDbContext.UserRepositoryRoles.AsNoTracking()
-                .Where(t => t.Id == repository.Id)
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
-
-            var teamRepositoryRoles = await _applicationDbContext.TeamRepositoryRoles.AsNoTracking()
-                .Where(t => t.Id == repository.Id)
-                .ToListAsync(cancellationToken)
-                .ConfigureAwait(false);
-
             using (var transaction = await _applicationDbContext.Database
                     .BeginTransactionAsync(cancellationToken)
                     .ConfigureAwait(false))
             {
+                var userRepositoryRoles = await _applicationDbContext.UserRepositoryRoles.AsNoTracking()
+                    .Where(t => t.Id == repository.Id)
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
+                var teamRepositoryRoles = await _applicationDbContext.TeamRepositoryRoles.AsNoTracking()
+                    .Where(t => t.Id == repository.Id)
+                    .ToListAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
                 await _applicationDbContext.UserRepositoryRoles
                         .Where(t => t.Id == repository.Id)
                         .ExecuteDeleteAsync(cancellationToken)
@@ -335,10 +335,10 @@ namespace GitClub.Services
                 {
                     RepositoryId = repository.Id,
                     UserRepositoryRoles = userRepositoryRoles
-                        .Select(x => new RemovedUserFromRepositoryMessage { UserId = x.UserId, RepositoryId = x.RepositoryId })
+                        .Select(x => new RemovedUserFromRepositoryMessage { UserId = x.UserId, RepositoryId = x.RepositoryId, Role = x.Role })
                         .ToList(),
                     TeamRepositoryRoles = teamRepositoryRoles
-                        .Select(x => new RemovedTeamFromRepositoryMessage { TeamId = x.TeamId, RepositoryId = x.RepositoryId })
+                        .Select(x => new RemovedTeamFromRepositoryMessage { TeamId = x.TeamId, RepositoryId = x.RepositoryId, Role = x.Role })
                         .ToList()
                 };
 
@@ -477,6 +477,7 @@ namespace GitClub.Services
                 {
                     RepositoryId = userRepositoryRole.RepositoryId,
                     UserId = userRepositoryRole.UserId,
+                    Role = userRepositoryRole.Role
                 }, lastEditedBy: currentUser.UserId);
 
                 await _applicationDbContext
@@ -668,7 +669,8 @@ namespace GitClub.Services
                 var outboxEvent = OutboxEventUtils.Create<RemovedTeamFromRepositoryMessage>(new RemovedTeamFromRepositoryMessage
                 {
                     TeamId = teamRepositoryRole.TeamId,
-                    RepositoryId = teamRepositoryRole.RepositoryId
+                    RepositoryId = teamRepositoryRole.RepositoryId,
+                    Role = teamRepositoryRole.Role
                 }, lastEditedBy: currentUser.UserId);
 
                 await _applicationDbContext.OutboxEvents

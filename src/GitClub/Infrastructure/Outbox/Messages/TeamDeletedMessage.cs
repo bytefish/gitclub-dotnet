@@ -15,6 +15,6 @@ namespace GitClub.Infrastructure.Outbox.Messages
         /// <summary>
         /// Gets or sets the TeamRoles to delete.
         /// </summary>
-        public List<RemovedUserFromTeamMessage> TeamRoles { get; set; } = [];
+        public List<RemovedUserFromTeamMessage> UserTeamRoles { get; set; } = [];
     }
 }

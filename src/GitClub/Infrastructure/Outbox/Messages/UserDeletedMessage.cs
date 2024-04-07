@@ -3,7 +3,7 @@
 using GitClub.Infrastructure.Outbox.Messages;
 using System.Text.Json.Serialization;
 
-namespace GitClub.Infrastructure.Messages
+namespace GitClub.Infrastructure.Outbox.Messages
 {
     /// <summary>
     /// A User has been deleted and all assignments need to be terminated.
@@ -18,20 +18,26 @@ namespace GitClub.Infrastructure.Messages
         /// <summary>
         /// Gets or sets the Organization Roles to delete.
         /// </summary>
-        [JsonPropertyName("organizationRoles")]
-        public List<RemovedUserFromOrganizationMessage> OrganizationRoles { get; set; } = [];
+        [JsonPropertyName("userIssueRoles")]
+        public List<RemovedUserFromIssueMessage> UserIssueRoles { get; set; } = [];
+        
+        /// <summary>
+        /// Gets or sets the Organization Roles to delete.
+        /// </summary>
+        [JsonPropertyName("userOrganizationRoles")]
+        public List<RemovedUserFromOrganizationMessage> UserOrganizationRoles { get; set; } = [];
 
         /// <summary>
         /// Gets or sets the Organization Roles to delete.
         /// </summary>
-        [JsonPropertyName("teamRoles")]
-        public List<RemovedUserFromTeamMessage> TeamRoles { get; set; } = [];
+        [JsonPropertyName("userTeamRoles")]
+        public List<RemovedUserFromTeamMessage> UserTeamRoles { get; set; } = [];
 
         /// <summary>
         /// Gets or sets the Organization Roles to delete.
         /// </summary>
-        [JsonPropertyName("repositoryRoles")]
-        public List<RemovedUserFromRepositoryMessage> RepositoryRoles { get; set; } = [];
+        [JsonPropertyName("userRepositoryRoles")]
+        public List<RemovedUserFromRepositoryMessage> UserRepositoryRoles { get; set; } = [];
 
     }
 }

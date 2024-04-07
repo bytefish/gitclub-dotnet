@@ -1,5 +1,6 @@
 ﻿using GitClub.Database.Models;
 using GitClub.Infrastructure.Authentication;
+using GitClub.Infrastructure.Constants;
 using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.OpenFga;
 using GitClub.Infrastructure.Outbox.Messages;
@@ -73,6 +74,9 @@ namespace GitClub.Infrastructure.Outbox.Consumer
                 case IssueDeletedMessage issueDeletedMessage:
                     await HandleIssueDeletedAsync(issueDeletedMessage, cancellationToken).ConfigureAwait(false);
                     break;
+                case UserDeletedMessage userDeletedMessage:
+                    await HandleUserDeletedAsync(userDeletedMessage, cancellationToken).ConfigureAwait(false);
+                    break;
                 case AddedUserToOrganizationMessage addedUserToOrganizationMessage:
                     await HandleAddedUserToOrganizationAsync(addedUserToOrganizationMessage, cancellationToken).ConfigureAwait(false);
                     break;
@@ -89,46 +93,103 @@ namespace GitClub.Infrastructure.Outbox.Consumer
                     await HandleRemovedUserFromTeamAsync(removedUserFromTeamMessage, cancellationToken).ConfigureAwait(false);
                     break;
                 case RemovedUserFromRepositoryMessage removedUserFromRepositoryMessage:
-                    await HandleRemovedUserFromRepoAsync(removedUserFromRepositoryMessage, cancellationToken).ConfigureAwait(false);
+                    await HandleRemovedUserFromRepositoryAsync(removedUserFromRepositoryMessage, cancellationToken).ConfigureAwait(false);
                     break;
             }
         }
 
         private async Task HandleOrganizationCreatedAsync(OrganizationCreatedMessage message, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
+
+            RelationTuple[] tuplesToWrite =
+            [
+                RelationTuples.Create<Organization, Organization>(message.OrganizationId, message.OrganizationId, message.BaseRepositoryRole, Relations.Member),
+                ..message.UserOrganizationRoles
+                    .Select(x => RelationTuples.Create<Organization, User>(x.OrganizationId, x.UserId, x.Role))
+                    .ToArray()                
+            ];
+
+            await _aclService
+                .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
+                .ConfigureAwait(false);
 
         }
 
         private async Task HandleOrganizationUpdatedAsync(OrganizationUpdatedMessage message, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
 
+            RelationTuple[] tuplesToWrite =
+            [
+                RelationTuples.Create<Organization, Organization>(message.OrganizationId, message.OrganizationId, message.NewBaseRepositoryRole, Relations.Member)
+            ];
+
+            RelationTuple[] tuplesToDelete =
+            [
+                RelationTuples.Create<Organization, Organization>(message.OrganizationId, message.OrganizationId, message.OldBaseRepositoryRole, Relations.Member)
+            ];
+
+            await _aclService
+                .WriteAsync(tuplesToWrite, tuplesToDelete, cancellationToken)
+                .ConfigureAwait(false);
         }
 
-        private async Task HandleOrganizationDeletedAsync(OrganizationDeletedMessage message, CancellationToken cancellationToken)
+        private Task HandleOrganizationDeletedAsync(OrganizationDeletedMessage message, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
 
+            // We do not support it right now, all Relations still hold...
+
+            return Task.CompletedTask;
         }
 
         private async Task HandleTeamCreatedAsync(TeamCreatedMessage message, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
 
+            RelationTuple[] tuplesToDelete =
+            [
+                ..message.UserTeamRoles
+                    .Select(x => RelationTuples.Create<Team, User>(x.TeamId, x.UserId, x.Role))
+                    .ToArray()
+            ];
+
+            await _aclService
+                .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         private async Task HandleTeamDeletedAsync(TeamDeletedMessage message, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
 
+            RelationTuple[] tuplesToDelete =
+            [
+                ..message.UserTeamRoles
+                    .Select(x => RelationTuples.Create<Team, User>(x.TeamId, x.UserId, x.Role))
+                    .ToArray()
+            ];
+
+            await _aclService
+                .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
+                .ConfigureAwait(false);
         }
 
-        private async Task HandleTeamUpdatedAsync(TeamUpdatedMessage message, CancellationToken cancellationToken)
+        private Task HandleTeamUpdatedAsync(TeamUpdatedMessage message, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
 
+            // Nothing to do, all Relations still hold...
+
+            return Task.CompletedTask;
         }
 
         private async Task HandleRepositoryCreatedAsync(RepositoryCreatedMessage message, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
-            RelationTuple[] tuplesToWrite = 
+            RelationTuple[] tuplesToWrite =
             [
                 RelationTuples.Create<Repository, Organization>(message.RepositoryId, message.OrganizationId, RepositoryRoleEnum.Owner),
                 ..message.UserRepositoryRoles
@@ -145,27 +206,89 @@ namespace GitClub.Infrastructure.Outbox.Consumer
         {
             _logger.TraceMethodEntry();
 
+            // Nothing to do, all Relations still hold...
+
             return Task.CompletedTask;
         }
 
         private async Task HandleRepositoryDeletedAsync(RepositoryDeletedMessage message, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
 
+            RelationTuple[] tuplesToDelete = 
+            [
+                ..message.UserRepositoryRoles
+                    .Select(x => RelationTuples.Create<Repository, User>(x.RepositoryId, x.UserId, x.Role))
+                    .ToArray(),
+                ..message.TeamRepositoryRoles
+                    .Select(x => RelationTuples.Create<Repository, Team>(x.RepositoryId, x.TeamId, x.Role))
+                    .ToArray()
+            ];
+
+            await _aclService
+                .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         private async Task HandleIssueCreatedAsync(IssueCreatedMessage message, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
+
+            RelationTuple[] tuplesToWrite =
+            [
+                RelationTuples.Create<Issue, Repository>(message.IssueId, message.RepositoryId, IssueRoleEnum.Owner),
+                ..message.UserIssueRoles
+                    .Select(x => RelationTuples.Create<Issue, User>(x.IssueId, x.UserId, x.Role))
+                    .ToArray()
+            ];
+        
+            await _aclService
+                .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
+                .ConfigureAwait(false);
 
         }
 
         private async Task HandleIssueUpdatedAsync(IssueUpdatedMessage message, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
 
         }
 
         private async Task HandleIssueDeletedAsync(IssueDeletedMessage message, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
 
+            RelationTuple[] tuplesToDelete =
+            [
+                RelationTuple.Create<Issue, User>(message.IssueId, message.CreatedBy, Relations.Creator),
+                RelationTuple.Create<Issue, Repository>(message.IssueId, message.RepositoryId, Relations.Owner)
+            ];
+
+            await _aclService
+                .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
+                .ConfigureAwait(false);
+        }
+
+        private async Task HandleUserDeletedAsync(UserDeletedMessage message, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            RelationTuple[] tuplesToDelete =
+            [
+                ..message.UserIssueRoles
+                    .Select(x => RelationTuples.Create<Issue, User>(x.IssueId, x.UserId, x.Role))
+                    .ToArray(),
+                ..message.UserTeamRoles
+                    .Select(x => RelationTuples.Create<Team, User>(x.TeamId, x.UserId, x.Role))
+                    .ToArray(),
+                ..message.UserOrganizationRoles
+                    .Select(x => RelationTuples.Create<Organization, User>(x.OrganizationId, x.UserId, x.Role))
+                    .ToArray(),
+             ];
+
+            await _aclService
+                .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         private async Task HandleAddedUserToOrganizationAsync(AddedUserToOrganizationMessage message, CancellationToken cancellationToken)
@@ -174,40 +297,82 @@ namespace GitClub.Infrastructure.Outbox.Consumer
 
             RelationTuple[] tuplesToWrite =
             [
-                RelationTuples.Create<Repository, Organization>(message.RepositoryId, message.OrganizationId, RepositoryRoleEnum.Owner),
-                ..message.UserRepositoryRoles
-                    .Select(x => RelationTuples.Create<Repository, User>(x.RepositoryId, x.UserId, x.Role))
-                    .ToArray()
+                RelationTuples.Create<Organization, User>(message.OrganizationId, message.UserId, message.Role)
             ];
 
             await _aclService
                 .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
                 .ConfigureAwait(false);
-
         }
 
         private async Task HandleAddedUserToTeamAsync(AddedUserToTeamMessage message, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
 
+            RelationTuple[] tuplesToWrite =
+            [
+                RelationTuples.Create<Team, User>(message.TeamId, message.UserId, message.Role)
+            ];
+
+            await _aclService
+                .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         private async Task HandleAddedUserToRepositoryAsync(AddedUserToRepositoryMessage message, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
 
+            RelationTuple[] tuplesToWrite =
+            [
+                RelationTuples.Create<Repository, User>(message.RepositoryId, message.UserId, message.Role)
+            ];
+
+            await _aclService
+                .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         private async Task HandleRemovedUserFromOrganizationAsync(RemovedUserFromOrganizationMessage message, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
 
+            RelationTuple[] tuplesToDelete =
+            [
+                RelationTuples.Create<Organization, User>(message.OrganizationId, message.UserId, message.Role)
+            ];
+
+            await _aclService
+                .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
+                .ConfigureAwait(false);
         }
 
         private async Task HandleRemovedUserFromTeamAsync(RemovedUserFromTeamMessage message, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
 
+            RelationTuple[] tuplesToDelete =
+            [
+                RelationTuples.Create<Team, User>(message.TeamId, message.UserId, message.Role)
+            ];
+
+            await _aclService
+                .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
+                .ConfigureAwait(false);
         }
 
-        private async Task HandleRemovedUserFromRepoAsync(RemovedUserFromRepositoryMessage message, CancellationToken cancellationToken)
+        private async Task HandleRemovedUserFromRepositoryAsync(RemovedUserFromRepositoryMessage message, CancellationToken cancellationToken)
         {
+            _logger.TraceMethodEntry();
+
+            RelationTuple[] tuplesToDelete =
+            [
+                RelationTuples.Create<Repository, User>(message.RepositoryId, message.UserId, message.Role)
+            ];
+
+            await _aclService
+                .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
+                .ConfigureAwait(false);
 
         }
     }

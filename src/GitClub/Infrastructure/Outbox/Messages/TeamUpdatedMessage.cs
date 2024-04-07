@@ -2,7 +2,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace GitClub.Infrastructure.Messages
+namespace GitClub.Infrastructure.Outbox.Messages
 {
     public class TeamUpdatedMessage
     {

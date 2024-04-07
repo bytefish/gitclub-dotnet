@@ -2,7 +2,7 @@
 
 using System.Text.Json.Serialization;
 
-namespace GitClub.Infrastructure.Messages
+namespace GitClub.Infrastructure.Outbox.Messages
 {
     public class IssueDeletedMessage
     {
@@ -11,5 +11,17 @@ namespace GitClub.Infrastructure.Messages
         /// </summary>
         [JsonPropertyName("issueId")]
         public required int IssueId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Repository ID.
+        /// </summary>
+        [JsonPropertyName("repositoryId")]
+        public required int RepositoryId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the ID of the User.
+        /// </summary>
+        [JsonPropertyName("createdBy")]
+        public required int CreatedBy { get; set; }
     }
 }

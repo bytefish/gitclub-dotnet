@@ -48,6 +48,11 @@ namespace GitClub.Infrastructure.Constants
         public static readonly string Creator = "creator";
         
         /// <summary>
+        /// Assignee.
+        /// </summary>
+        public static readonly string Assignee = "assignee";
+        
+        /// <summary>
         /// Billing Manager.
         /// </summary>
         public static readonly string BillingManager = "billing_manager";

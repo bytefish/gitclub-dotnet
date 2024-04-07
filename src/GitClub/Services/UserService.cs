@@ -6,7 +6,10 @@ using GitClub.Infrastructure.Authentication;
 using GitClub.Infrastructure.Constants;
 using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
+using GitClub.Infrastructure.Messages;
 using GitClub.Infrastructure.OpenFga;
+using GitClub.Infrastructure.Outbox;
+using GitClub.Infrastructure.Outbox.Messages;
 using GitClub.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -70,30 +73,44 @@ namespace GitClub.Services
                 };
             }
 
-            // Get all related data to delete:
-            var createdIssues = await _applicationDbContext.Issues.AsNoTracking()
-                .Where(x => x.CreatedBy == userId)
-                .ToListAsync(cancellationToken);
-
-            var userTeamRoles = await _applicationDbContext.UserTeamRoles.AsNoTracking()
-                .Where(x => x.UserId == userId)
-                .ToListAsync(cancellationToken);
-
-            var userRepositoryRoles = await _applicationDbContext.UserRepositoryRoles.AsNoTracking()
-                .Where(x => x.UserId == userId)
-                .ToListAsync(cancellationToken);
-
-            var userOrganizationRoles = await _applicationDbContext.UserOrganizationRoles.AsNoTracking()
-                .Where(x => x.UserId == userId)
-                .ToListAsync(cancellationToken);
-
             // Now we can safely update and delete the data in a transaction
-            using (var transaction =
-                await _applicationDbContext.Database
+            using (var transaction = await _applicationDbContext.Database
                     .BeginTransactionAsync(cancellationToken)
                     .ConfigureAwait(false))
             {
-                // Update all LastEditedBy References to the Ghost User
+                var userIssueRoles = await _applicationDbContext.UserIssueRoles.AsNoTracking()
+                    .Where(x => x.UserId == userId)
+                    .ToListAsync(cancellationToken);
+
+                var userTeamRoles = await _applicationDbContext.UserTeamRoles.AsNoTracking()
+                    .Where(x => x.UserId == userId)
+                    .ToListAsync(cancellationToken);
+
+                var userRepositoryRoles = await _applicationDbContext.UserRepositoryRoles.AsNoTracking()
+                    .Where(x => x.UserId == userId)
+                    .ToListAsync(cancellationToken);
+
+                var userOrganizationRoles = await _applicationDbContext.UserOrganizationRoles.AsNoTracking()
+                    .Where(x => x.UserId == userId)
+                    .ToListAsync(cancellationToken);
+
+                var outboxEvent = OutboxEventUtils.Create(new UserDeletedMessage
+                {
+                    UserId = userId,
+                    UserIssueRoles = userIssueRoles
+                        .Select(x => new RemovedUserFromIssueMessage { IssueId = x.IssueId, UserId = x.UserId, Role = x.Role })
+                        .ToList(),
+                    UserOrganizationRoles = userOrganizationRoles
+                        .Select(x => new RemovedUserFromOrganizationMessage { OrganizationId = x.OrganizationId, UserId = x.UserId, Role = x.Role })
+                        .ToList(),
+                    UserRepositoryRoles = userRepositoryRoles
+                        .Select(x => new RemovedUserFromRepositoryMessage { RepositoryId = x.RepositoryId, UserId = x.UserId, Role = x.Role })
+                        .ToList(),
+                    UserTeamRoles = userTeamRoles
+                        .Select(x => new RemovedUserFromTeamMessage { TeamId = x.TeamId, UserId = x.UserId, Role = x.Role })
+                        .ToList(),
+                }, lastEditedBy: currentUser.UserId);
+
                 await _applicationDbContext.Organizations
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
@@ -141,6 +158,10 @@ namespace GitClub.Services
                 await _applicationDbContext.Issues
                     .Where(x => x.LastEditedBy == userId)
                     .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
+                
+                await _applicationDbContext.UserIssueRoles
+                    .Where(x => x.LastEditedBy == userId)
+                    .ExecuteUpdateAsync(s => s.SetProperty(p => p.LastEditedBy, Users.GhostUserId));
 
                 // We also need to assign the Issue Creator to the GhostUser:
                 await _applicationDbContext.Issues
@@ -162,45 +183,14 @@ namespace GitClub.Services
                     .Where(x => x.UserId == userId)
                     .ExecuteDeleteAsync();
 
+                await _applicationDbContext.UserIssueRoles.AsNoTracking()
+                    .Where(x => x.UserId == userId)
+                    .ExecuteDeleteAsync();
+
                 await transaction
                     .CommitAsync(cancellationToken)
                     .ConfigureAwait(false);
             }
-
-            // And delete all tuples for the user in Zanzibar
-            List<RelationTuple> tuplesToDelete = [];
-
-            foreach (var createdIssue in createdIssues)
-            {
-                var tuple = RelationTuple.Create<Issue, User>(createdIssue.Id, createdIssue.CreatedBy, Relations.Creator);
-
-                tuplesToDelete.Add(tuple);
-            }
-
-            foreach (var userOrganizationRole in userOrganizationRoles)
-            {
-                var tuple = RelationTuples.Create<Organization, User>(userOrganizationRole.OrganizationId, userOrganizationRole.UserId, userOrganizationRole.Role);
-
-                tuplesToDelete.Add(tuple);
-            }
-
-            foreach (var userTeamRole in userTeamRoles)
-            {
-                var tuple = RelationTuples.Create<Team, User>(userTeamRole.TeamId, userTeamRole.UserId, userTeamRole.Role);
-
-                tuplesToDelete.Add(tuple);
-            }
-
-            foreach (var userRepositoryRole in userRepositoryRoles)
-            {
-                var tuple = RelationTuples.Create<Repository, User>(userRepositoryRole.RepositoryId, userRepositoryRole.UserId, userRepositoryRole.Role);
-
-                tuplesToDelete.Add(tuple);
-            }
-
-            await _aclService
-                .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
-                .ConfigureAwait(false);
         }
 
         public async Task<User> GetUserByEmailAsync(string email, CancellationToken cancellationToken)

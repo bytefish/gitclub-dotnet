@@ -22,7 +22,7 @@ namespace GitClub.Infrastructure.Outbox.Messages
         /// Gets or sets the Team Roles for Users, when creating the Team.
         /// </summary>
         [JsonPropertyName("teamRoles")]
-        public required List<AddedUserToTeamMessage> TeamRoles { get; set; }
+        public required List<AddedUserToTeamMessage> UserTeamRoles { get; set; }
 
     }
 }

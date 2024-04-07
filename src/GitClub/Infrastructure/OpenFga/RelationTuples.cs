@@ -32,8 +32,22 @@ namespace GitClub.Infrastructure.OpenFga
         {
             return RelationTuple.Create(@object, subject, role.AsRelation(), subjectRelation);
         }
+        
+        public static RelationTuple Create<TObjectType, TSubjectType>(TObjectType @object, TSubjectType subject, IssueRoleEnum role, string? subjectRelation = null)
+            where TObjectType : Entity
+            where TSubjectType : Entity
+        {
+            return RelationTuple.Create(@object, subject, role.AsRelation(), subjectRelation);
+        }
 
         public static RelationTuple Create<TObjectType, TSubjectType>(int objectId, int subjectId, TeamRoleEnum role, string? subjectRelation = null)
+            where TObjectType : Entity
+            where TSubjectType : Entity
+        {
+            return RelationTuple.Create<TObjectType, TSubjectType>(objectId, subjectId, role.AsRelation(), subjectRelation);
+        }
+
+        public static RelationTuple Create<TObjectType, TSubjectType>(int objectId, int subjectId, IssueRoleEnum role, string? subjectRelation = null)
             where TObjectType : Entity
             where TSubjectType : Entity
         {

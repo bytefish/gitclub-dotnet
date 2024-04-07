@@ -1,8 +1,9 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using GitClub.Database.Models;
 using System.Text.Json.Serialization;
 
-namespace GitClub.Infrastructure.Messages
+namespace GitClub.Infrastructure.Outbox.Messages
 {
     /// <summary>
     /// A User has been removed from a Team.
@@ -20,6 +21,12 @@ namespace GitClub.Infrastructure.Messages
         /// </summary>
         [JsonPropertyName("teamId")]
         public required int TeamId { get; set; }
+
+        /// <summary>
+        /// Gets or sets the Team ID.
+        /// </summary>
+        [JsonPropertyName("role")]
+        public required TeamRoleEnum Role { get; set; }
 
     }
 }

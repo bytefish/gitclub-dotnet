@@ -5,10 +5,7 @@ using System.Text.Json.Serialization;
 
 namespace GitClub.Infrastructure.Outbox.Messages
 {
-    /// <summary>
-    /// A User has been added to an Organization in a given role.
-    /// </summary>
-    public class AddedUserToRepositoryMessage
+    public class RemovedUserFromIssueMessage
     {
         /// <summary>
         /// Gets or sets the User ID.
@@ -19,13 +16,15 @@ namespace GitClub.Infrastructure.Outbox.Messages
         /// <summary>
         /// Gets or sets the Organization ID.
         /// </summary>
-        [JsonPropertyName("repositoryId")]
-        public required int RepositoryId { get; set; }
+        [JsonPropertyName("issueId")]
+        public required int IssueId { get; set; }
 
         /// <summary>
-        /// Gets or sets the Role of the user.
+        /// Gets or sets the Role.
         /// </summary>
         [JsonPropertyName("role")]
-        public required RepositoryRoleEnum Role { get; set; }
+        public required IssueRoleEnum Role { get; set; }
+
+        
     }
 }

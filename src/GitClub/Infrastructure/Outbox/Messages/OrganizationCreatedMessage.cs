@@ -13,6 +13,12 @@ namespace GitClub.Infrastructure.Outbox.Messages
         [JsonPropertyName("organizationId")]
         public required int OrganizationId { get; set; }
 
+        /// <summary>
+        /// Gets or sets the Base RepositoryRole for Users.
+        /// </summary>
+        [JsonPropertyName("baseRepositoryRole")]
+        public required BaseRepositoryRoleEnum BaseRepositoryRole { get; set; }
+
         [JsonPropertyName("userOrganizationRoles")]
         public List<AddedUserToOrganizationMessage> UserOrganizationRoles { get; set; } = [];
     }

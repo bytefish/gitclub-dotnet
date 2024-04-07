@@ -1,8 +1,8 @@
 ﻿using System.Diagnostics.CodeAnalysis;
 
-namespace GitClub.Infrastructure.Outbox.Stream
+namespace GitClub.Infrastructure.Outbox
 {
-    public static class DictionaryExtensions
+    public static class DictionaryUtils
     {
         /// <summary>
         /// Tries to get a value from a <see cref="IDictionary{TKey, TValue}"> and tries 
@@ -15,7 +15,7 @@ namespace GitClub.Infrastructure.Outbox.Stream
         /// <param name="defaultValue">The default value returned, when <paramref name="key"/> does not exist</param>
         /// <returns>The value as <typeparamref name="T"/></returns>
         /// <exception cref="InvalidOperationException">Throws, if the cast isn't possible</exception>
-        public static T? GetOptionalValue<T>(this IDictionary<string, object?> values, string key, T? defaultValue = default(T))
+        public static T? GetOptionalValue<T>(IDictionary<string, object?> values, string key, T? defaultValue = default)
         {
             if (!values.ContainsKey(key))
             {
@@ -46,7 +46,7 @@ namespace GitClub.Infrastructure.Outbox.Stream
         /// <param name="key">The key to get</param>
         /// <returns>The value as <typeparamref name="T"/></returns>
         /// <exception cref="InvalidOperationException">Throws, if the key doesn't exist or a cast isn't possible</exception>
-        public static T GetRequiredValue<T>(this IDictionary<string, object?> values, string key)
+        public static T GetRequiredValue<T>(IDictionary<string, object?> values, string key)
         {
             if (!values.ContainsKey(key))
             {
@@ -83,9 +83,8 @@ namespace GitClub.Infrastructure.Outbox.Stream
                 return true;
             }
 
-            value = default(T);
+            value = default;
             return obj is null && default(T) is null;
         }
     }
-}
 }

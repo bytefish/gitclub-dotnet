@@ -22,6 +22,7 @@ type Issue
   relations
     define owner: [Repository]
     define creator: [User]
+    define assignee: [User]
     define reader: creator or reader from owner
     define writer: creator or writer from owner
   

@@ -30,6 +30,16 @@ namespace GitClub.Database
         public DbSet<Issue> Issues { get; set; } = null!;
 
         /// <summary>
+        /// Gets or sets the Issue Roles.
+        /// </summary>
+        public DbSet<IssueRole> IssueRoles { get; set; } = null!;
+
+        /// <summary>
+        /// Gets or sets the Issue Roles.
+        /// </summary>
+        public DbSet<UserIssueRole> UserIssueRoles { get; set; } = null!;
+
+        /// <summary>
         /// Gets or sets the Organizations.
         /// </summary>
         public DbSet<Organization> Organizations { get; set; } = null!;
@@ -67,8 +77,8 @@ namespace GitClub.Database
         /// <summary>
         /// Gets or sets the TeamRoles.
         /// </summary>
-        public DbSet<Team> TeamRoles { get; set; } = null!;
-
+        public DbSet<TeamRole> TeamRoles { get; set; } = null!;
+        
         /// <summary>
         /// Gets or sets the TeamRoles.
         /// </summary>
@@ -116,6 +126,10 @@ namespace GitClub.Database
                 .IncrementsBy(1);
 
             modelBuilder.HasSequence<int>("user_repository_role_seq", schema: "gitclub")
+                .StartsAt(1)
+                .IncrementsBy(1);
+            
+            modelBuilder.HasSequence<int>("user_issue_role_seq", schema: "gitclub")
                 .StartsAt(1)
                 .IncrementsBy(1);
 
@@ -428,6 +442,49 @@ namespace GitClub.Database
                     .ValueGeneratedOnAddOrUpdate();
             });
 
+            modelBuilder.Entity<IssueRole>(entity =>
+            {
+                entity.ToTable("issue_role", "gitclub");
+
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Id)
+                    .HasColumnType("integer")
+                    .HasColumnName("issue_role_id");
+
+                entity.Property(e => e.Name)
+                    .HasColumnType("varchar(255)")
+                    .HasColumnName("name")
+                    .HasMaxLength(255)
+                    .IsRequired(true);
+
+                entity.Property(e => e.Description)
+                    .HasColumnType("varchar(2000)")
+                    .HasColumnName("description")
+                    .HasMaxLength(2000)
+                    .IsRequired(true);
+
+                entity.Property(e => e.RowVersion)
+                    .HasColumnType("xid")
+                    .HasColumnName("xmin")
+                    .IsRowVersion()
+                    .IsConcurrencyToken()
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+
+                entity.Property(e => e.LastEditedBy)
+                    .HasColumnType("integer")
+                    .HasColumnName("last_edited_by")
+                    .IsRequired(true);
+
+                entity.Property(e => e.SysPeriod)
+                    .HasColumnType("tstzrange")
+                    .HasColumnName("sys_period")
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+            });
+
+
             modelBuilder.Entity<Organization>(entity =>
             {
                 entity.ToTable("organization", "gitclub");
@@ -730,6 +787,54 @@ namespace GitClub.Database
                 entity.Property(e => e.Role)
                     .HasColumnType("integer")
                     .HasColumnName("team_role_id")
+                    .HasConversion<int>()
+                    .IsRequired(true);
+
+                entity.Property(e => e.RowVersion)
+                    .HasColumnType("xid")
+                    .HasColumnName("xmin")
+                    .IsRowVersion()
+                    .IsConcurrencyToken()
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+
+                entity.Property(e => e.LastEditedBy)
+                    .HasColumnType("integer")
+                    .HasColumnName("last_edited_by")
+                    .IsRequired(true);
+
+                entity.Property(e => e.SysPeriod)
+                    .HasColumnType("tstzrange")
+                    .HasColumnName("sys_period")
+                    .IsRequired(false)
+                    .ValueGeneratedOnAddOrUpdate();
+            });
+
+            modelBuilder.Entity<UserIssueRole>(entity =>
+            {
+                entity.ToTable("user_issue_role", "gitclub");
+
+                entity.HasKey(e => e.Id);
+
+                entity.Property(e => e.Id)
+                    .HasColumnType("integer")
+                    .HasColumnName("user_issue_role_id")
+                    .UseHiLo("user_issue_role_seq", "gitclub")
+                    .ValueGeneratedOnAdd();
+
+                entity.Property(e => e.UserId)
+                    .HasColumnType("integer")
+                    .HasColumnName("user_id")
+                    .IsRequired(true);
+
+                entity.Property(e => e.IssueId)
+                    .HasColumnType("integer")
+                    .HasColumnName("issue_id")
+                    .IsRequired(true);
+
+                entity.Property(e => e.Role)
+                    .HasColumnType("integer")
+                    .HasColumnName("issue_role_id")
                     .HasConversion<int>()
                     .IsRequired(true);
 

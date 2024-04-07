@@ -69,7 +69,7 @@ namespace GitClub.Services
             {
                 OrganizationId = team.OrganizationId,
                 TeamId = team.Id,
-                TeamRoles = new[] { userTeamRole }
+                UserTeamRoles = new[] { userTeamRole }
                         .Select(x => new AddedUserToTeamMessage
                         {
                             TeamId = team.Id,
@@ -334,8 +334,8 @@ namespace GitClub.Services
                 var outboxEvent = OutboxEventUtils.Create(new TeamDeletedMessage
                 {
                     TeamId = team.Id,
-                    TeamRoles = userTeamRoles
-                        .Select(x => new RemovedUserFromTeamMessage { TeamId = x.TeamId, UserId = x.UserId })
+                    UserTeamRoles = userTeamRoles
+                        .Select(x => new RemovedUserFromTeamMessage { TeamId = x.TeamId, UserId = x.UserId, Role = x.Role })
                         .ToList()
                 }, lastEditedBy: currentUser.UserId);
 
@@ -540,7 +540,8 @@ namespace GitClub.Services
                 var outboxEvent = OutboxEventUtils.Create(new RemovedUserFromTeamMessage
                 {
                     TeamId = userTeamRole.TeamId,
-                    UserId = userTeamRole.UserId
+                    UserId = userTeamRole.UserId,
+                    Role = userTeamRole.Role
                 }, lastEditedBy: currentUser.UserId);
 
                 await _applicationDbContext.OutboxEvents
@@ -555,16 +556,6 @@ namespace GitClub.Services
                     .CommitAsync(cancellationToken)
                     .ConfigureAwait(false);
             }
-
-            //// Delete Tuples from Zanzibar
-            //var tuplesToDelete = new[]
-            //{
-            //    RelationTuples.Create<Team, User>(userTeamRole.TeamId, userTeamRole.UserId, userTeamRole.Role, null)
-            //};
-
-            //await _aclService
-            //    .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
-            //    .ConfigureAwait(false);
         }
     }
 }

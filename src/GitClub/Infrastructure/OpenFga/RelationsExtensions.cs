@@ -68,6 +68,17 @@ namespace GitClub.Infrastructure.OpenFga
             };
         }
 
+        public static string AsRelation(this IssueRoleEnum source)
+        {
+            return source switch
+            {
+                IssueRoleEnum.Owner => Relations.Owner,
+                IssueRoleEnum.Creator => Relations.Creator,
+                IssueRoleEnum.Assignee => Relations.Assignee,
+                _ => throw new ArgumentException($"Could not translate '{source}'", nameof(source))
+            };
+        }
+
         public static string AsRelation(this OrganizationRoleEnum source)
         {
             return source switch

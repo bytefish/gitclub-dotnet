@@ -3,7 +3,7 @@
 using GitClub.Database.Models;
 using System.Text.Json.Serialization;
 
-namespace GitClub.Infrastructure.Messages
+namespace GitClub.Infrastructure.Outbox.Messages
 {
     /// <summary>
     /// A User has been added to a Team.

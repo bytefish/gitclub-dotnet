@@ -54,6 +54,12 @@ CREATE SEQUENCE IF NOT EXISTS gitclub.user_repository_role_seq
     NO MAXVALUE
     CACHE 1;    
 
+CREATE SEQUENCE IF NOT EXISTS gitclub.issue_repository_role_seq
+    start 38187
+    increment 1
+    NO MAXVALUE
+    CACHE 1;    
+
 CREATE SEQUENCE IF NOT EXISTS gitclub.team_repository_role_seq
     start 38187
     increment 1
@@ -102,6 +108,19 @@ CREATE TABLE IF NOT EXISTS gitclub.repository_role (
     CONSTRAINT repository_role_pkey
         PRIMARY KEY (repository_role_id),
     CONSTRAINT repository_role_last_edited_by_fkey 
+        FOREIGN KEY (last_edited_by)
+        REFERENCES gitclub.user(user_id)
+);
+
+CREATE TABLE IF NOT EXISTS gitclub.issue_role (
+    issue_role_id integer,
+    name varchar(255) not null,
+    description varchar(2000) not null,
+    last_edited_by integer not null,
+    sys_period tstzrange not null default tstzrange(current_timestamp, null),
+    CONSTRAINT issue_role_pkey
+        PRIMARY KEY (issue_role_id),
+    CONSTRAINT issue_role_last_edited_by_fkey 
         FOREIGN KEY (last_edited_by)
         REFERENCES gitclub.user(user_id)
 );
@@ -272,6 +291,29 @@ CREATE TABLE IF NOT EXISTS gitclub.user_repository_role (
         REFERENCES gitclub.user(user_id)
 );
 
+CREATE TABLE IF NOT EXISTS gitclub.user_issue_role (
+    user_issue_role_id integer default nextval('gitclub.user_issue_role_seq'),
+    user_id integer not null,
+    issue_id integer not null,
+    issue_role_id integer not null,
+    last_edited_by integer not null,
+    sys_period tstzrange not null default tstzrange(current_timestamp, null),
+    CONSTRAINT user_issue_role_pkey
+        PRIMARY KEY (user_issue_role_id),
+    CONSTRAINT user_issue_role_user_id_fkey 
+        FOREIGN KEY (user_id)
+        REFERENCES gitclub.user(user_id),
+    CONSTRAINT user_issue_role_repository_role_id_fkey 
+        FOREIGN KEY (issue_role_id)
+        REFERENCES gitclub.issue_role(issue_role_id),
+    CONSTRAINT user_issue_role_issue_id_fkey 
+        FOREIGN KEY (issue_id)
+        REFERENCES gitclub.issue(issue_id),
+    CONSTRAINT user_issue_role_last_edited_by_fkey 
+        FOREIGN KEY (last_edited_by)
+        REFERENCES gitclub.user(user_id)
+);
+
 CREATE TABLE IF NOT EXISTS gitclub.team_repository_role (
     team_repository_role_id integer default nextval('gitclub.team_repository_role_seq'),
     team_id integer not null,
@@ -330,6 +372,9 @@ CREATE UNIQUE INDEX IF NOT EXISTS repository_role_name_key
 CREATE UNIQUE INDEX IF NOT EXISTS team_role_name_key 
     ON gitclub.team_role(name);
 
+CREATE UNIQUE INDEX IF NOT EXISTS issue_role_name_key 
+    ON gitclub.issue_role(name);
+
 CREATE UNIQUE INDEX IF NOT EXISTS user_team_role_user_id_team_id_key 
     ON gitclub.user_team_role(user_id, team_id);
 
@@ -376,6 +421,10 @@ CREATE TABLE IF NOT EXISTS gitclub.team_role_history (
     LIKE gitclub.team_role
 );
 
+CREATE TABLE IF NOT EXISTS gitclub.issue_role_history (
+    LIKE gitclub.issue_role
+);
+
 CREATE TABLE IF NOT EXISTS gitclub.base_repository_role_history (
     LIKE gitclub.base_repository_role
 );
@@ -398,6 +447,10 @@ CREATE TABLE IF NOT EXISTS gitclub.user_repository_role_history (
 
 CREATE TABLE IF NOT EXISTS gitclub.user_team_role_history (
     LIKE gitclub.user_team_role
+);
+
+CREATE TABLE IF NOT EXISTS gitclub.user_issue_role_history (
+    LIKE gitclub.user_issue_role
 );
 
 CREATE TABLE IF NOT EXISTS gitclub.team_repository_role_history (
@@ -672,6 +725,18 @@ FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
   'sys_period', 'gitclub.issue_history', true
 );
 
+CREATE OR REPLACE TRIGGER issue_role_versioning_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON gitclub.issue_role
+FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
+  'sys_period', 'gitclub.issue_role_history', true
+);
+
+CREATE OR REPLACE TRIGGER user_issue_role_versioning_trigger
+BEFORE INSERT OR UPDATE OR DELETE ON gitclub.user_issue_role
+FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
+  'sys_period', 'gitclub.user_issue_role_history', true
+);
+
 CREATE OR REPLACE TRIGGER team_versioning_trigger
 BEFORE INSERT OR UPDATE OR DELETE ON gitclub.team
 FOR EACH ROW EXECUTE PROCEDURE gitclub.versioning(
@@ -857,6 +922,13 @@ INSERT INTO gitclub.repository_role(repository_role_id, name, description, last_
         (4, 'Maintainer', 'Maintainer Role on Repository', 1),
         (5, 'Administrator', 'Administrator Role on Repository', 1),
         (6, 'Owner', 'Owner Role on Repository', 1)
+    ON CONFLICT DO NOTHING;
+
+INSERT INTO gitclub.issue_role(issue_role_id, name, description, last_edited_by) 
+    VALUES 
+        (1, 'Creator', 'Creator Role on Issue', 1), 
+        (2, 'Assignee', 'Assignee Role on Issue', 1),
+        (3, 'Owner', 'Owner Role on Issue', 1),
     ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.organization_role(organization_role_id, name, description, last_edited_by) 
