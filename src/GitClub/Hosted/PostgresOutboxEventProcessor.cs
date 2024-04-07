@@ -79,9 +79,16 @@ namespace GitClub.Hosted
             {
                 _logger.LogInformation("Processing OutboxEvent (Id = {OutboxEventId})", outboxEvent.Id);
 
-                await _outboxEventConsumer
-                    .HandleOutboxEventAsync(outboxEvent, cancellationToken)
-                    .ConfigureAwait(false);
+                try
+                {
+                    await _outboxEventConsumer
+                        .HandleOutboxEventAsync(outboxEvent, cancellationToken)
+                        .ConfigureAwait(false);
+                } 
+                catch(Exception e)
+                {
+                    _logger.LogError(e, "Failed to handle the OutboxEvent due to an Exception (ID = {OutboxEventId})", outboxEvent.Id);
+                }
             }
         }
     }

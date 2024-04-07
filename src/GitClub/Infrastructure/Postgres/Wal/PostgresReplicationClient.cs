@@ -192,11 +192,15 @@ namespace GitClub.Infrastructure.Postgres.Wal
                 // unknown types.
                 //
                 // This is going to throw, if Npgsql fails to read the values.
-                var value = await replicationValue.Get(cancellationToken).ConfigureAwait(false);
+                var value = await replicationValue
+                    .Get(cancellationToken)
+                    .ConfigureAwait(false);
 
                 // If we fail to add the value to the Results, there is not much we can do. Log it 
                 // and go ahead.
-                if (!results.TryAdd(column, value))
+                var v = replicationValue.IsDBNull ? null : value;
+
+                if (!results.TryAdd(column, v))
                 {
                     _logger.LogInformation("Failed to map ReplicationValue for Column {ColumnName}", column);
                 }

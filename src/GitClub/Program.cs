@@ -102,8 +102,8 @@ try
         var connectionString = builder.Configuration.GetConnectionString("ApplicationDatabase")!;
 
         o.ConnectionString = connectionString;
-        o.PublicationName = "gitclub_pub";
-        o.ReplicationSlotName = "gitclub_slot";
+        o.PublicationName = "outbox_pub";
+        o.ReplicationSlotName = "outbox_slot";
         o.OutboxEventSchemaName = "gitclub";
         o.OutboxEventTableName = "outbox_event";
     });

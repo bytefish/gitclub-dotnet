@@ -54,7 +54,7 @@ CREATE SEQUENCE IF NOT EXISTS gitclub.user_repository_role_seq
     NO MAXVALUE
     CACHE 1;    
 
-CREATE SEQUENCE IF NOT EXISTS gitclub.issue_repository_role_seq
+CREATE SEQUENCE IF NOT EXISTS gitclub.user_issue_role_seq
     start 38187
     increment 1
     NO MAXVALUE
@@ -339,10 +339,10 @@ CREATE TABLE IF NOT EXISTS gitclub.team_repository_role (
 
 CREATE TABLE IF NOT EXISTS gitclub.outbox_event (
     outbox_event_id integer default nextval('gitclub.outbox_event_seq'),
-    correlation_id_1 varchar(2000) not null,
-    correlation_id_2 varchar(2000) not null,
-    correlation_id_3 varchar(2000) not null,
-    correlation_id_4 varchar(2000) not null,
+    correlation_id_1 varchar(2000) null,
+    correlation_id_2 varchar(2000) null,
+    correlation_id_3 varchar(2000) null,
+    correlation_id_4 varchar(2000) null,
     event_time timestamptz not null,
     event_source varchar(2000) not null,
     event_type varchar(255) not null,
@@ -872,6 +872,14 @@ CREATE OR REPLACE TRIGGER user_team_role_notify_trigger
 AFTER INSERT OR UPDATE OR DELETE ON gitclub.user_team_role
 FOR EACH ROW EXECUTE PROCEDURE notify_trigger('core_db_event');
 
+CREATE OR REPLACE TRIGGER user_issue_role_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.user_issue_role
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger('core_db_event');
+
+CREATE OR REPLACE TRIGGER issue_role_notify_trigger
+AFTER INSERT OR UPDATE OR DELETE ON gitclub.issue_role
+FOR EACH ROW EXECUTE PROCEDURE notify_trigger('core_db_event');
+
 CREATE OR REPLACE TRIGGER outbox_event_notify_trigger
 AFTER INSERT OR UPDATE OR DELETE ON gitclub.outbox_event
 FOR EACH ROW EXECUTE PROCEDURE notify_trigger('core_db_event');
@@ -897,6 +905,7 @@ BEGIN
 	-- Delete historic data
 	DELETE FROM gitclub.user_organization_role_history;
 	DELETE FROM gitclub.user_team_role_history;
+	DELETE FROM gitclub.user_issue_role_history;
 	DELETE FROM gitclub.user_repository_role_history;
 	DELETE FROM gitclub.team_repository_role_history;
 	DELETE FROM gitclub.issue_history;
@@ -928,7 +937,7 @@ INSERT INTO gitclub.issue_role(issue_role_id, name, description, last_edited_by)
     VALUES 
         (1, 'Creator', 'Creator Role on Issue', 1), 
         (2, 'Assignee', 'Assignee Role on Issue', 1),
-        (3, 'Owner', 'Owner Role on Issue', 1),
+        (3, 'Owner', 'Owner Role on Issue', 1)
     ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.organization_role(organization_role_id, name, description, last_edited_by) 
@@ -1007,49 +1016,20 @@ INSERT INTO gitclub.user_repository_role(user_repository_role_id, user_id, repos
 END;
 $$ LANGUAGE plpgsql;
 
--- Enable Logical Replication.
+-- Create Publications
 DO $$
+
 BEGIN
 
 IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_publication WHERE pubname = 'outbox_pub') 
 THEN
     CREATE PUBLICATION outbox_pub FOR TABLE 
         gitclub.outbox_event;
-
 END IF;
 
-IF NOT EXISTS (SELECT 1 FROM pg_catalog.pg_publication WHERE pubname = 'gitclub_pub') 
-THEN
-
-	CREATE PUBLICATION gitclub_pub FOR TABLE 
-		gitclub.user,
-		gitclub.organization, 
-		gitclub.team,
-		gitclub.repository,
-		gitclub.issue, 
-		gitclub.user_organization_role, 
-		gitclub.user_team_role,
-		gitclub.user_repository_role,
-		gitclub.team_repository_role;
-
-END IF;
-
-IF NOT EXISTS (SELECT 1 from pg_catalog.pg_replication_slots WHERE slot_name = 'outbox_slot') 
-THEN
-
-	-- Replication slot, which will hold the state of the replication stream:
-	PERFORM pg_create_logical_replication_slot('outbox_slot', 'pgoutput');
-
-END IF;
 END;
-
-IF NOT EXISTS (SELECT 1 from pg_catalog.pg_replication_slots WHERE slot_name = 'gitclub_slot') 
-THEN
-
-	-- Replication slot, which will hold the state of the replication stream:
-	PERFORM pg_create_logical_replication_slot('gitclub_slot', 'pgoutput');
-
-END IF;
-END;
-
 $$ LANGUAGE plpgsql;
+
+-- Create Slots
+SELECT 'init' FROM pg_create_logical_replication_slot('outbox_slot', 'pgoutput');
+

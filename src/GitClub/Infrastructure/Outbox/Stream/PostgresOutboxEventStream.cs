@@ -4,6 +4,8 @@ using GitClub.Infrastructure.Postgres.Wal;
 using GitClub.Infrastructure.Postgres.Wal.Models;
 using Microsoft.Extensions.Options;
 using NodaTime;
+using NodaTime.Serialization.SystemTextJson;
+using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
 
@@ -43,12 +45,15 @@ namespace GitClub.Infrastructure.Outbox.Stream
     public class PostgresOutboxEventStream
     {
         private readonly ILogger _logger;
+
+        private JsonSerializerOptions _jsonSerializerOptions;
         private readonly PostgresOutboxEventStreamOptions _options;
 
         public PostgresOutboxEventStream(ILogger logger, IOptions<PostgresOutboxEventStreamOptions> options)
         {
             _logger = logger;
             _options = options.Value;
+            _jsonSerializerOptions = new JsonSerializerOptions().ConfigureForNodaTime(DateTimeZoneProviders.Tzdb);
         }
 
         public async IAsyncEnumerable<OutboxEvent> StartOutboxEventStream([EnumeratorCancellation] CancellationToken cancellationToken)
@@ -101,24 +106,53 @@ namespace GitClub.Infrastructure.Outbox.Stream
                     if (dataChangeEvent is InsertDataChangeEvent insertDataChangeEvent)
                     {
                         var outboxEvent = await MapToOutboxEventAsync(insertDataChangeEvent.Relation, insertDataChangeEvent.NewValues, cancellationToken).ConfigureAwait(false);
-
-                        yield return outboxEvent;
+                        
+                        if(outboxEvent != null)
+                        {
+                            yield return outboxEvent;
+                        }
                     }
                 }
             }
         }
 
-        public ValueTask<OutboxEvent> MapToOutboxEventAsync(Relation relation, IDictionary<string, object?> values, CancellationToken cancellationToken)
+        private async ValueTask<OutboxEvent?> MapToOutboxEventAsync(Relation relation, IDictionary<string, object?> values, CancellationToken cancellationToken)
+        {
+            try
+            {
+                var result = await InternalMapToOutboxEventAsync(relation, values, cancellationToken).ConfigureAwait(false);
+
+                return result;
+            } 
+            catch(Exception e)
+            {
+                _logger.LogError(e, "Failed to deserialize OutboxEvent due to an Exception");
+
+                return null;
+            }
+        }
+
+
+        private ValueTask<OutboxEvent?> InternalMapToOutboxEventAsync(Relation relation, IDictionary<string, object?> values, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
+
+            var jsonDocument = GetAsJsonDocument(values, "payload");
+
+            if(jsonDocument == null)
+            {
+                _logger.LogWarning("Failed to deserialize Event Payload as JsonDocument");
+
+                return ValueTask.FromResult<OutboxEvent?>(null);
+            }
 
             var outboxEvent = new OutboxEvent
             {
                 Id = DictionaryUtils.GetRequiredValue<int>(values, "outbox_event_id"),
                 EventSource = DictionaryUtils.GetRequiredValue<string>(values, "event_source"),
                 EventType = DictionaryUtils.GetRequiredValue<string>(values, "event_type"),
-                EventTime = DictionaryUtils.GetRequiredValue<DateTimeOffset>(values, "event_time"),
-                Payload = DictionaryUtils.GetRequiredValue<JsonDocument>(values, "payload"),
+                EventTime = DictionaryUtils.GetRequiredValue<Instant>(values, "event_time").ToDateTimeOffset(),
+                Payload = jsonDocument,
                 CorrelationId1 = DictionaryUtils.GetOptionalValue<string>(values, "correlation_id_1"),
                 CorrelationId2 = DictionaryUtils.GetOptionalValue<string>(values, "correlation_id_2"),
                 CorrelationId3 = DictionaryUtils.GetOptionalValue<string>(values, "correlation_id_3"),
@@ -127,7 +161,14 @@ namespace GitClub.Infrastructure.Outbox.Stream
                 SysPeriod = DictionaryUtils.GetRequiredValue<Interval>(values, "sys_period")
             };
 
-            return ValueTask.FromResult(outboxEvent);
+            return ValueTask.FromResult<OutboxEvent?>(outboxEvent);
+
+            JsonDocument? GetAsJsonDocument(IDictionary<string, object?> values, string key)
+            {
+                var json = DictionaryUtils.GetRequiredValue<string>(values, key);
+
+                return JsonSerializer.Deserialize<JsonDocument>(json, _jsonSerializerOptions);
+            }
         }
     }
 }

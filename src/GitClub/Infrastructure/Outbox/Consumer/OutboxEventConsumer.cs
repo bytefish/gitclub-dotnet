@@ -26,6 +26,14 @@ namespace GitClub.Infrastructure.Outbox.Consumer
         {
             _logger.TraceMethodEntry();
 
+
+            if(outboxEvent.Payload == null)
+            {
+                _logger.LogWarning("Event doesn't contain a JSON Payload");
+
+                return;
+            }
+
             var success = OutboxEventUtils.TryGetOutboxEventPayload(outboxEvent, out object? payload);
 
             // Maybe it's better to throw up, if we receive an event, we can't handle? But probably 
@@ -151,7 +159,7 @@ namespace GitClub.Infrastructure.Outbox.Consumer
         {
             _logger.TraceMethodEntry();
 
-            RelationTuple[] tuplesToDelete =
+            RelationTuple[] tuplesToWrite =
             [
                 ..message.UserTeamRoles
                     .Select(x => RelationTuples.Create<Team, User>(x.TeamId, x.UserId, x.Role))
@@ -159,7 +167,7 @@ namespace GitClub.Infrastructure.Outbox.Consumer
             ];
 
             await _aclService
-                .DeleteRelationshipsAsync(tuplesToDelete, cancellationToken)
+                .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
                 .ConfigureAwait(false);
         }
 
