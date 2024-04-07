@@ -221,6 +221,10 @@ namespace GitClub.Services
                     .AddAsync(outboxEvent, cancellationToken)
                     .ConfigureAwait(false);
 
+                await applicationDbContext
+                    .SaveChangesAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
                 await transaction
                     .CommitAsync(cancellationToken)
                     .ConfigureAwait(false);

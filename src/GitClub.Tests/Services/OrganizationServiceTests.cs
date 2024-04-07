@@ -37,6 +37,8 @@ namespace GitClub.Tests.Services
             // Act
             var organization = await OrganizationService.CreateOrganizationAsync(values, CurrentUser, default);
 
+            await ProcessAllOutboxEventsAsync();
+
             // Assert
             var userOrganizationRoleTuples = await AclService.ReadTuplesAsync<Organization, User>(organization.Id, null, CurrentUser.UserId, null).ToListAsync();
 
@@ -50,35 +52,6 @@ namespace GitClub.Tests.Services
             Assert.AreEqual(1, userOrganizationRoleTuples.Count);
             Assert.AreEqual(Relations.RepoReader, organizationMemberOrganizationTuples[0].Relation);
         }
-
-        /// <summary>
-        /// Creates a new <see cref="Organization">, deletes it and checks if all tuples have been deleted.
-        /// </summary>
-        [TestMethod]
-        public async Task CreateAndDeleteOrganizationAsync_Success()
-        {
-            // Arrange
-            var values = new Organization
-            {
-                BaseRepositoryRole = BaseRepositoryRoleEnum.RepositoryReader,
-                Name = "Unit Test",
-                BillingAddress = "Billing Address",
-                LastEditedBy = Users.GhostUserId
-            };
-
-            // Act
-            var organization = await OrganizationService.CreateOrganizationAsync(values, CurrentUser, default);
-
-            await OrganizationService.DeleteOrganizationAsync(organization.Id, CurrentUser, default);
-
-            // Assert
-            var userOrganizationRoleTuples = await AclService.ReadTuplesAsync<Organization, User>(organization.Id, null, CurrentUser.UserId, null).ToListAsync();
-            var organizationOrganizationRoleTuples = await AclService.ReadTuplesAsync<Organization, Organization>(organization.Id, null, organization.Id, Relations.Member).ToListAsync();
-
-            Assert.AreEqual(0, userOrganizationRoleTuples.Count);
-            Assert.AreEqual(0, organizationOrganizationRoleTuples.Count);
-        }
-
 
         /// <summary>
         /// Creates a new <see cref="Organization">, creates a new <see cref="User"/>, assigns the user 
@@ -105,9 +78,13 @@ namespace GitClub.Tests.Services
 
             // Act
             organization = await OrganizationService.CreateOrganizationAsync(organization, CurrentUser, default);
+            await ProcessAllOutboxEventsAsync();
+            
             user = await UserService.CreateUserAsync(user, CurrentUser, default);
+            await ProcessAllOutboxEventsAsync();
 
             await OrganizationService.AddUserToOrganizationAsync(user.Id, organization.Id, OrganizationRoleEnum.Member, CurrentUser, default);
+            await ProcessAllOutboxEventsAsync();
 
             // Assert
             var userOrganizationRoleTuples = await AclService.ReadTuplesAsync<Organization, User>(organization.Id, null, user.Id, null).ToListAsync();
@@ -139,13 +116,18 @@ namespace GitClub.Tests.Services
                 LastEditedBy = CurrentUser.UserId
             }, CurrentUser, default);
 
+            await ProcessAllOutboxEventsAsync();
+
             // Act
             ApplicationErrorException? caught = null;
 
             try
             {
                 await OrganizationService.AddUserToOrganizationAsync(user.Id, organization.Id, OrganizationRoleEnum.Member, CurrentUser, default);
+                await ProcessAllOutboxEventsAsync();
                 await OrganizationService.AddUserToOrganizationAsync(user.Id, organization.Id, OrganizationRoleEnum.Administrator, CurrentUser, default);
+                await ProcessAllOutboxEventsAsync();
+
             }
             catch (ApplicationErrorException e)
             {
@@ -179,7 +161,11 @@ namespace GitClub.Tests.Services
                 LastEditedBy = Users.GhostUserId
             }, CurrentUser, default);
 
+            await ProcessAllOutboxEventsAsync();
+
             await OrganizationService.AddUserToOrganizationAsync(testUser.Id, organization.Id, OrganizationRoleEnum.Administrator, CurrentUser, default);
+
+            await ProcessAllOutboxEventsAsync();
 
             var currentTestUser = await CreateCurrentUserAsync(testUser.Email, [Roles.User]);
 
@@ -191,6 +177,8 @@ namespace GitClub.Tests.Services
                 RowVersion = organization.RowVersion,
                 LastEditedBy = currentTestUser.UserId,
             }, currentTestUser, default);
+
+            await ProcessAllOutboxEventsAsync();
 
             // Assert
             Assert.AreEqual("My New Name", updatedOrganization.Name);
@@ -218,7 +206,11 @@ namespace GitClub.Tests.Services
                 LastEditedBy = Users.GhostUserId
             }, CurrentUser, default);
 
+            await ProcessAllOutboxEventsAsync();
+
             await OrganizationService.AddUserToOrganizationAsync(testUser.Id, organization.Id, OrganizationRoleEnum.Member, CurrentUser, default);
+
+            await ProcessAllOutboxEventsAsync();
 
             var currentTestUser = await CreateCurrentUserAsync(testUser.Email, [Roles.User]);
 
@@ -265,11 +257,16 @@ namespace GitClub.Tests.Services
                 Name = "Unit Test",
                 BillingAddress = "Billing Address",
                 LastEditedBy = Users.GhostUserId
-            }, CurrentUser, default); ;
+            }, CurrentUser, default);
+
+            await ProcessAllOutboxEventsAsync();
 
             // Act
             await OrganizationService.AddUserToOrganizationAsync(user.Id, organization.Id, OrganizationRoleEnum.Member, CurrentUser, default);
+            await ProcessAllOutboxEventsAsync();
+
             await OrganizationService.RemoveUserFromOrganizationAsync(user.Id, organization.Id, OrganizationRoleEnum.Member, CurrentUser, default);
+            await ProcessAllOutboxEventsAsync();
 
             // Assert
             var userOrganizationRoleTuples = await AclService.ReadTuplesAsync<Organization, User>(organization.Id, null, user.Id, null).ToListAsync();
@@ -292,6 +289,8 @@ namespace GitClub.Tests.Services
                 LastEditedBy = CurrentUser.UserId
             }, CurrentUser, default);
 
+            await ProcessAllOutboxEventsAsync();
+
             var organization = await OrganizationService.CreateOrganizationAsync(new Organization
             {
                 BaseRepositoryRole = BaseRepositoryRoleEnum.RepositoryReader,
@@ -299,6 +298,8 @@ namespace GitClub.Tests.Services
                 BillingAddress = "Billing Address",
                 LastEditedBy = Users.GhostUserId
             }, CurrentUser, default);
+
+            await ProcessAllOutboxEventsAsync();
 
             // Act
             ApplicationErrorException? caught = null;

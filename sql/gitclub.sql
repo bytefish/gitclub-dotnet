@@ -914,6 +914,7 @@ BEGIN
 	DELETE FROM gitclub.organization_history;
 	DELETE FROM gitclub.user_history WHERE user_id != 1;
 	
+    
 END; $cleanup_tests_func$ 
 LANGUAGE plpgsql;
 

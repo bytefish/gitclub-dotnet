@@ -397,12 +397,12 @@ namespace GitClub.Services
                 .AddAsync(userRepositoryRole)
                 .ConfigureAwait(false);
 
-            var outboxEvent = new AddedUserToRepositoryMessage
+            var outboxEvent = OutboxEventUtils.Create(new AddedUserToRepositoryMessage
             {
                 RepositoryId = userRepositoryRole.RepositoryId,
                 UserId = userRepositoryRole.UserId,
                 Role = userRepositoryRole.Role
-            };
+            }, lastEditedBy: currentUser.UserId);
 
             await applicationDbContext
                 .AddAsync(outboxEvent)

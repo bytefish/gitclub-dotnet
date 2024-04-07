@@ -5,6 +5,7 @@ using GitClub.Infrastructure;
 using GitClub.Infrastructure.Authentication;
 using GitClub.Infrastructure.Constants;
 using GitClub.Services;
+using GitClub.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -25,101 +26,24 @@ namespace GitClub.Tests
     public abstract class IntegrationTestBase
     {
         /// <summary>
-        /// Configuration.
+        /// Current GitClub Application.
         /// </summary>
-        protected IConfiguration Configuration { get; set; } = null!;
+        private GitClubApplication Application { get; set; } = null!;
 
         /// <summary>
-        /// Service Provider.
+        /// Configuration.
         /// </summary>
-        protected ServiceProvider ServiceProvider { get; set; } = null!;
+        private IConfiguration Configuration => Application.Services.GetRequiredService<IConfiguration>();
 
         /// <summary>
         /// Service Scope.
         /// </summary>
-        protected IServiceScope ServiceScope { get; set; } = null!;
-
-        public IntegrationTestBase()
-        {
-            CreateConfiguration();
-            CreateServiceProvider();
-        }
-
-        /// <summary>
-        /// Read the appsettings.json for the Test.
-        /// </summary>
-        /// <returns></returns>
-        private void CreateConfiguration()
-        {
-            Configuration = new ConfigurationBuilder()
-                .AddJsonFile("appsettings.json")
-                .Build();
-        }
-
-        /// <summary>
-        /// Creates the ServiceProvider for the Tests.
-        /// </summary>
-        /// <exception cref="InvalidOperationException"></exception>
-        private void CreateServiceProvider()
-        {
-            var services = new ServiceCollection();
-
-            // Logging
-            services.AddLogging();
-
-            // Database
-            services.AddDbContextFactory<ApplicationDbContext>(options =>
-            {
-                var connectionString = Configuration.GetConnectionString("ApplicationDatabase");
-
-                if (connectionString == null)
-                {
-                    throw new InvalidOperationException("No ConnectionString named 'ApplicationDatabase' was found");
-                }
-
-                // Since version 7.0, NpgsqlDataSource is the recommended way to use Npgsql. When using NpsgqlDataSource,
-                // NodaTime currently has to be configured twice - once at the EF level, and once at the underlying ADO.NET
-                // level (there are plans to improve this):
-                var dataSourceBuilder = new NpgsqlDataSourceBuilder(connectionString);
-
-                // Call UseNodaTime() when building your data source:
-                dataSourceBuilder.UseNodaTime();
-
-                var dataSource = dataSourceBuilder.Build();
-
-                // Then, when configuring EF Core with UseNpgsql(), call UseNodaTime() there as well:
-                options
-                    .EnableSensitiveDataLogging()
-                    .UseNpgsql(dataSource, options => options.UseNodaTime());
-            });
-
-            // Services
-            services.AddSingleton<UserService>();
-            services.AddSingleton<OrganizationService>();
-            services.AddSingleton<TeamService>();
-            services.AddSingleton<RepositoryService>();
-            services.AddSingleton<IssueService>();
-
-            // OpenFGA
-            services.AddSingleton<OpenFgaClient>(sp =>
-            {
-                var clientConfiguration = new ClientConfiguration
-                {
-                    ApiUrl = Configuration.GetValue<string>("OpenFGA:ApiUrl")!,
-                };
-
-                return new OpenFgaClient(clientConfiguration);
-            });
-
-            services.AddSingleton<AclService>();
-
-            ServiceProvider = services.BuildServiceProvider();
-        }
+        protected IServiceProvider Services => Application.Services;
 
         [TestInitialize]
         public virtual async Task TestInitializeAsync()
         {
-            ServiceScope = ServiceProvider.CreateScope();
+            Application = new GitClubApplication();
 
             await PreparePostgresAsync(default);
             await PrepareOpenFgaAsync(default);
@@ -129,12 +53,12 @@ namespace GitClub.Tests
 
         protected async Task<CurrentUser> CreateCurrentUserAsync(string email, string[] roles)
         {
-            var claims = await ServiceProvider.GetRequiredService<UserService>().GetClaimsAsync(
+            var claims = await Application.Services.GetRequiredService<UserService>().GetClaimsAsync(
                 email: email,
                 roles: roles,
                 cancellationToken: default);
 
-            var user = await ServiceProvider.GetRequiredService<UserService>().GetUserByEmailAsync(
+            var user = await Application.Services.GetRequiredService<UserService>().GetUserByEmailAsync(
                 email: email,
                 cancellationToken: default);
 
@@ -145,9 +69,24 @@ namespace GitClub.Tests
             };
         }
 
+        protected async Task ProcessAllOutboxEventsAsync()
+        {
+            var outboxEventProcessor = GetRequiredService<OutboxEventProcessor>();
+
+            await outboxEventProcessor
+                .ProcessAllOutboxEvents(default)
+                .ConfigureAwait(false);
+        }
+
         private async Task PreparePostgresAsync(CancellationToken cancellationToken)
         {
-            await GetRequiredService<ApplicationDbContext>().Database
+            var dbContextFactory = GetRequiredService<IDbContextFactory<ApplicationDbContext>>();
+            
+            using var applicationDbContext = await dbContextFactory
+                .CreateDbContextAsync(cancellationToken)
+                .ConfigureAwait(false);
+
+            await applicationDbContext.Database
                 .ExecuteSqlRawAsync("call gitclub.cleanup_tests()", cancellationToken)
                 .ConfigureAwait(false);
         }
@@ -155,6 +94,7 @@ namespace GitClub.Tests
         private async Task PrepareOpenFgaAsync(CancellationToken cancellationToken)
         {
             // This is the OpenFGA Store under Test:
+            //01HP82R96XEJX1Q9YWA9XRQ4PM
             var sourceStoreId = Configuration.GetValue<string>("OpenFGA:StoreId")!;
 
             // We always want to run Integration Tests on the latest Authorization Model:
@@ -217,7 +157,7 @@ namespace GitClub.Tests
                 .ConfigureAwait(false);
 
             // Dispose the Scope and all Scoped Services associated with the test:
-            ServiceScope.Dispose();
+            await Application.DisposeAsync();
         }
 
         /// <summary>
@@ -228,7 +168,7 @@ namespace GitClub.Tests
         protected TService GetRequiredService<TService>()
             where TService : notnull
         {
-            return ServiceScope.ServiceProvider.GetRequiredService<TService>();
+            return Services.GetRequiredService<TService>();
         }
 
         /// <summary>

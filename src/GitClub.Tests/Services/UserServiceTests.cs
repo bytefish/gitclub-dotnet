@@ -35,12 +35,16 @@ namespace GitClub.Tests.Services
                 LastEditedBy = Users.GhostUserId
             }, CurrentUser, default);
 
+            await ProcessAllOutboxEventsAsync();
+
             var team = await TeamService.CreateTeamAsync(new Team
             {
                 OrganizationId = organization.Id,
                 Name = "Rockstar Unit Test Team",
                 LastEditedBy = Users.GhostUserId
             }, CurrentUser, default);
+
+            await ProcessAllOutboxEventsAsync();
 
             var user = await UserService.CreateUserAsync(new User
             {
@@ -56,6 +60,8 @@ namespace GitClub.Tests.Services
                 LastEditedBy = Users.GhostUserId
             }, CurrentUser, default);
 
+            await ProcessAllOutboxEventsAsync();
+
             var issue = await IssueService.CreateIssueAsync(new Issue
             {
                 RepositoryId = repository.Id,
@@ -66,14 +72,22 @@ namespace GitClub.Tests.Services
                 LastEditedBy = user.Id
             }, CurrentUser, default);
 
+            await ProcessAllOutboxEventsAsync();
+
             await OrganizationService
                 .AddUserToOrganizationAsync(user.Id, organization.Id, OrganizationRoleEnum.Administrator, CurrentUser, default);
-            
+
+            await ProcessAllOutboxEventsAsync();
+
             await TeamService
                 .AddUserToTeamAsync(user.Id, team.Id, TeamRoleEnum.Maintainer, CurrentUser, default);
 
+            await ProcessAllOutboxEventsAsync();
+
             await RepositoryService
                 .AddUserToRepositoryAsync(user.Id, repository.Id, RepositoryRoleEnum.Triager, CurrentUser, default);
+
+            await ProcessAllOutboxEventsAsync();
 
             // Act
             await UserService.DeleteUserByUserIdAsync(user.Id, CurrentUser, default);

@@ -356,6 +356,14 @@ namespace GitClub.Services
 
                 }, lastEditedBy: currentUser.UserId);
 
+                await applicationDbContext.OutboxEvents
+                    .AddAsync(outboxEvent, cancellationToken)
+                    .ConfigureAwait(false);
+
+                await applicationDbContext
+                    .SaveChangesAsync(cancellationToken)
+                    .ConfigureAwait(false);
+
                 await transaction
                     .CommitAsync(cancellationToken)
                     .ConfigureAwait(false);

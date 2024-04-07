@@ -252,7 +252,9 @@ namespace GitClub.Services
                     .AddAsync(outboxEvent, cancellationToken)
                     .ConfigureAwait(false);
 
-                await applicationDbContext.SaveChangesAsync(cancellationToken);
+                await applicationDbContext
+                    .SaveChangesAsync(cancellationToken)
+                    .ConfigureAwait(false);
 
                 await transaction
                     .CommitAsync(cancellationToken)
@@ -351,6 +353,14 @@ namespace GitClub.Services
                         .Select(x => new RemovedUserFromTeamMessage { TeamId = x.TeamId, UserId = x.UserId, Role = x.Role })
                         .ToList()
                 }, lastEditedBy: currentUser.UserId);
+
+                await applicationDbContext
+                    .AddAsync(outboxEvent, cancellationToken)
+                    .ConfigureAwait(false);
+
+                await applicationDbContext
+                    .SaveChangesAsync(cancellationToken)
+                    .ConfigureAwait(false);
 
                 await transaction
                     .CommitAsync(cancellationToken)
@@ -468,7 +478,7 @@ namespace GitClub.Services
                 UserId = userTeamRole.UserId
             }, lastEditedBy: currentUser.UserId);
 
-            await applicationDbContext.OutboxEvents
+            await applicationDbContext
                 .AddAsync(outboxEvent, cancellationToken)
                 .ConfigureAwait(false);
 

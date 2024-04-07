@@ -281,3 +281,5 @@ finally
     await Task.Delay(TimeSpan.FromMilliseconds(500));
     await Log.CloseAndFlushAsync();
 }
+
+public partial class Program { }
