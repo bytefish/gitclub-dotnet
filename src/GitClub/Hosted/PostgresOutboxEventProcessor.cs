@@ -3,11 +3,7 @@
 using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.Outbox.Consumer;
 using GitClub.Infrastructure.Outbox.Stream;
-using GitClub.Infrastructure.Postgres.Wal;
 using Microsoft.Extensions.Options;
-using NodaTime;
-using NodaTime.Serialization.SystemTextJson;
-using System.Text.Json;
 
 namespace GitClub.Hosted
 {
