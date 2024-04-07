@@ -21,10 +21,16 @@ namespace GitClub.Tests
             {
             services.AddLogging();
 
-                // Remove the Postgres Outbox Event Processor, because it is 
-                // hard to test with all the timing dependencies.
+                // Remove the Postgres Outbox Event Processor.
                 {
                     var descriptor = services.First(x => x.ImplementationType == typeof(PostgresOutboxEventProcessor));
+
+                    services.Remove(descriptor);
+                }
+
+                // Remove the Postgres Notification Processor.
+                {
+                    var descriptor = services.First(x => x.ImplementationType == typeof(PostgresNotificationProcessor));
 
                     services.Remove(descriptor);
                 }

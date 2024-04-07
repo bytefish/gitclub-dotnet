@@ -5,7 +5,7 @@ using GitClub.Hosted;
 namespace GitClub.Infrastructure.Postgres.Wal
 {
     /// <summary>
-    /// Options to configure the <see cref="PostgresNotificationService"/>.
+    /// Options to configure the <see cref="PostgresNotificationProcessor"/>.
     /// </summary>
     public class PostgresReplicationClientOptions
     {

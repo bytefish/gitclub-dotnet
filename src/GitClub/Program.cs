@@ -87,12 +87,12 @@ try
     // Postgres Notifications
     builder.Services.AddSingleton<IPostgresNotificationHandler, LoggingPostgresNotificationHandler>();
 
-    builder.Services.Configure<PostgresNotificationServiceOptions>(o =>
+    builder.Services.Configure<PostgresNotificationProcessorOptions>(o =>
     {
         o.ChannelName = "core_db_event";
     });
 
-    builder.Services.AddHostedService<PostgresNotificationService>();
+    builder.Services.AddHostedService<PostgresNotificationProcessor>();
 
     // Configures the Postgres Replication Settings.
     builder.Services.AddSingleton<OutboxEventConsumer>();

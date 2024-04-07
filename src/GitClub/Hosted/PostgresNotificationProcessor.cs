@@ -8,9 +8,9 @@ using System.Threading.Channels;
 namespace GitClub.Hosted
 {
     /// <summary>
-    /// Options to configure the <see cref="PostgresNotificationService"/>.
+    /// Options to configure the <see cref="PostgresNotificationProcessorOptions"/>.
     /// </summary>
-    public class PostgresNotificationServiceOptions
+    public class PostgresNotificationProcessorOptions
     {
         /// <summary>
         /// Gets or sets the Channel the Service is listening to.
@@ -26,15 +26,15 @@ namespace GitClub.Hosted
     /// <summary>
     /// This Service waits for Notifications received on a given Postgres Channel name.
     /// </summary>
-    public class PostgresNotificationService : BackgroundService
+    public class PostgresNotificationProcessor : BackgroundService
     {
-        private readonly ILogger<PostgresNotificationService> _logger;
+        private readonly ILogger<PostgresNotificationProcessor> _logger;
 
-        private readonly PostgresNotificationServiceOptions _options;
+        private readonly PostgresNotificationProcessorOptions _options;
         private readonly IPostgresNotificationHandler _postgresNotificationHandler;
         private readonly NpgsqlDataSource _npgsqlDataSource;
 
-        public PostgresNotificationService(ILogger<PostgresNotificationService> logger, IOptions<PostgresNotificationServiceOptions> options, NpgsqlDataSource npgsqlDataSource, IPostgresNotificationHandler postgresNotificationHandler)
+        public PostgresNotificationProcessor(ILogger<PostgresNotificationProcessor> logger, IOptions<PostgresNotificationProcessorOptions> options, NpgsqlDataSource npgsqlDataSource, IPostgresNotificationHandler postgresNotificationHandler)
         {
             _logger = logger;
             _options = options.Value;

@@ -91,6 +91,7 @@ namespace GitClub.Tests.Services
 
             // Act
             await UserService.DeleteUserByUserIdAsync(user.Id, CurrentUser, default);
+            await ProcessAllOutboxEventsAsync();
 
             // Assert
         }
