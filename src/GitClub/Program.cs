@@ -85,29 +85,28 @@ try
     });
 
     // Hosted Services
-    builder.Services.AddSingleton<IPostgresNotificationHandler, LoggingPostgresNotificationHandler>();
-
     builder.Services.Configure<PostgresNotificationServiceOptions>(o =>
     {
         o.ChannelName = "core_db_event";
     });
 
+    builder.Services.AddSingleton<IPostgresNotificationHandler, LoggingPostgresNotificationHandler>();
+
     builder.Services.AddHostedService<PostgresNotificationService>();
 
     // Configures the Postgres Replication Settings.
-    builder.Services.Configure<PostgresReplicationClientOptions>(o =>
+    builder.Services.Configure<PostgresOutboxEventProcessorOptions>(o =>
     {
         var connectionString = builder.Configuration.GetConnectionString("ApplicationDatabase")!;
 
         o.ConnectionString = connectionString;
         o.PublicationName = "gitclub_pub";
         o.ReplicationSlotName = "gitclub_slot";
+        o.OutboxEventSchemaName = "gitclub";
+        o.OutboxEventTableName = "outbox_event";
     });
-
-    builder.Services.AddSingleton<PostgresReplicationClient>();
-
-    builder.Services.AddHostedService<PostgresReplicationListener>();
-
+    
+    builder.Services.AddHostedService<PostgresOutboxEventProcessor>();
 
     // OpenFGA
     builder.Services.AddSingleton<OpenFgaClient>(sp =>
