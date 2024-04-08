@@ -1,4 +1,6 @@
-﻿using GitClub.Database.Models;
+﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using GitClub.Database.Models;
 using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.Postgres.Wal;
 using GitClub.Infrastructure.Postgres.Wal.Models;
@@ -46,14 +48,15 @@ namespace GitClub.Infrastructure.Outbox.Stream
     {
         private readonly ILogger _logger;
 
-        private JsonSerializerOptions _jsonSerializerOptions;
         private readonly PostgresOutboxEventStreamOptions _options;
+        private readonly JsonSerializerOptions _jsonSerializerOptions;
 
         public PostgresOutboxEventStream(ILogger logger, IOptions<PostgresOutboxEventStreamOptions> options)
         {
             _logger = logger;
             _options = options.Value;
-            _jsonSerializerOptions = new JsonSerializerOptions().ConfigureForNodaTime(DateTimeZoneProviders.Tzdb);
+            _jsonSerializerOptions = new JsonSerializerOptions()
+                .ConfigureForNodaTime(DateTimeZoneProviders.Tzdb);
         }
 
         public async IAsyncEnumerable<OutboxEvent> StartOutboxEventStream([EnumeratorCancellation] CancellationToken cancellationToken)
@@ -95,6 +98,7 @@ namespace GitClub.Infrastructure.Outbox.Stream
                         continue;
                     }
 
+                    // This is not an insert ...
                     if(dataChangeEvent is not InsertDataChangeEvent)
                     {
                         _logger.LogDebug($"Expected a \"{typeof(DataChangeEvent).Name}\", but was \"{dataChangeEvent.GetType().Name}\"");
@@ -107,15 +111,35 @@ namespace GitClub.Infrastructure.Outbox.Stream
                     {
                         var outboxEvent = await MapToOutboxEventAsync(insertDataChangeEvent.Relation, insertDataChangeEvent.NewValues, cancellationToken).ConfigureAwait(false);
                         
-                        if(outboxEvent != null)
+                        // If we failed to map the OutboxEvent something exceptional happened, and the Logs 
+                        // need to be inspected. There is no chance to recover from this and it needs to be 
+                        // analyzed by someone.
+                        //
+                        // Log a warning, so alarms go off in your monitoring.
+                        if(outboxEvent == null)
                         {
-                            yield return outboxEvent;
+                            var insertDataChangeEventAsJson = JsonSerializer.Serialize(insertDataChangeEvent, _jsonSerializerOptions);
+
+                            _logger.LogWarning("Received an OutboxEvent, but failed to correctly map it. Event was {SerializedOutboxEvent}", insertDataChangeEventAsJson);
+
+                            continue;
                         }
+                        
+                        yield return outboxEvent;
                     }
                 }
             }
         }
 
+        /// <summary>
+        /// Tries to map the <see cref="Relation"/> and <see cref="IDictionary{TKey, TValue}"/>, that has been 
+        /// extracted from the Postgres Replication Stream, into an <see cref="OutboxEvent"/>. We don't want the 
+        /// service to fail, if this conversion fails, so wrap it inside a try-catch.
+        /// </summary>
+        /// <param name="relation">Relation for the OutboxEvent</param>
+        /// <param name="values">Column Values received by the Postgres ReplicationTuple</param>
+        /// <param name="cancellationToken">Cancellation Token to stop asynchronous processing</param>
+        /// <returns>An <see cref="OutboxEvent">, or <see cref="null"/> if the mapping failed</returns>
         private async ValueTask<OutboxEvent?> MapToOutboxEventAsync(Relation relation, IDictionary<string, object?> values, CancellationToken cancellationToken)
         {
             try
@@ -132,7 +156,15 @@ namespace GitClub.Infrastructure.Outbox.Stream
             }
         }
 
-
+        /// <summary>
+        /// Maps the <see cref="Relation"/> and <see cref="IDictionary{TKey, TValue}"/>, that has been extracted from 
+        /// the Postgres Replication Stream, into an <see cref="OutboxEvent"/>. This throws if anything with the mapping 
+        /// goes wrong.
+        /// </summary>
+        /// <param name="relation">Relation for the OutboxEvent</param>
+        /// <param name="values">Column Values received by the Postgres ReplicationTuple</param>
+        /// <param name="cancellationToken">Cancellation Token to stop asynchronous processing</param>
+        /// <returns>An <see cref="OutboxEvent">, or <see cref="null"/> if the mapping failed</returns>
         private ValueTask<OutboxEvent?> InternalMapToOutboxEventAsync(Relation relation, IDictionary<string, object?> values, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();

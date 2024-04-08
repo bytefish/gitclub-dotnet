@@ -1032,5 +1032,5 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Create Slots
-SELECT 'init' FROM pg_create_logical_replication_slot('outbox_slot', 'pgoutput');
+SELECT 'outbox_slot_init' FROM pg_create_logical_replication_slot('outbox_slot', 'pgoutput');
 

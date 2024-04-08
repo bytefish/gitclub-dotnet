@@ -74,8 +74,6 @@ namespace GitClub.Hosted
             {
                 try
                 {
-
-                    // Listen to the Outbox Event Stream.
                     await foreach (var outboxEvent in outboxEventStream.StartOutboxEventStream(cancellationToken))
                     {
                         _logger.LogInformation("Processing OutboxEvent (Id = {OutboxEventId})", outboxEvent.Id);

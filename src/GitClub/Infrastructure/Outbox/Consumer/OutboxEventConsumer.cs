@@ -1,12 +1,12 @@
-﻿using GitClub.Database.Models;
-using GitClub.Infrastructure.Authentication;
+﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using GitClub.Database.Models;
 using GitClub.Infrastructure.Constants;
 using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.OpenFga;
 using GitClub.Infrastructure.Outbox.Messages;
 using GitClub.Models;
 using GitClub.Services;
-using System.Reflection.Metadata.Ecma335;
 
 namespace GitClub.Infrastructure.Outbox.Consumer
 {

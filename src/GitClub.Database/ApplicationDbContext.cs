@@ -98,39 +98,39 @@ namespace GitClub.Database
         {
             // Sequences
             modelBuilder.HasSequence<int>("outbox_event_seq", schema: "gitclub")
-                .StartsAt(1)
+                .StartsAt(38187)
                 .IncrementsBy(1);
 
             modelBuilder.HasSequence<int>("organization_seq", schema: "gitclub")
-                .StartsAt(1)
+                .StartsAt(38187)
                 .IncrementsBy(1);
 
             modelBuilder.HasSequence<int>("team_seq", schema: "gitclub")
-                .StartsAt(1)
+                .StartsAt(38187)
                 .IncrementsBy(1);
 
             modelBuilder.HasSequence<int>("user_seq", schema: "gitclub")
-                .StartsAt(1)
+                .StartsAt(38187)
                 .IncrementsBy(1);
 
             modelBuilder.HasSequence<int>("issue_seq", schema: "gitclub")
-                .StartsAt(1)
+                .StartsAt(38187)
                 .IncrementsBy(1);
 
             modelBuilder.HasSequence<int>("repository_seq", schema: "gitclub")
-                .StartsAt(1)
+                .StartsAt(38187)
                 .IncrementsBy(1);
 
             modelBuilder.HasSequence<int>("user_organization_role_seq", schema: "gitclub")
-                .StartsAt(1)
+                .StartsAt(38187)
                 .IncrementsBy(1);
 
             modelBuilder.HasSequence<int>("user_repository_role_seq", schema: "gitclub")
-                .StartsAt(1)
+                .StartsAt(38187)
                 .IncrementsBy(1);
             
             modelBuilder.HasSequence<int>("user_issue_role_seq", schema: "gitclub")
-                .StartsAt(1)
+                .StartsAt(38187)
                 .IncrementsBy(1);
 
             // Tables

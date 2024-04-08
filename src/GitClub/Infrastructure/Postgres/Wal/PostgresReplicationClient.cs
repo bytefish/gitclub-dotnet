@@ -165,7 +165,8 @@ namespace GitClub.Infrastructure.Postgres.Wal
                     throw new InvalidOperationException($"Could not handle Message Type {message.GetType().Name}");
                 }
 
-                // Acknowledge the message.
+                // Acknowledge the message. This should probably depend on wether a Transaction has finally been acknowledged
+                // or not and is going to be something for future implementations.
                 replicationConnection.SetReplicationStatus(message.WalEnd);
             }
         }
@@ -174,38 +175,52 @@ namespace GitClub.Infrastructure.Postgres.Wal
         {
             _logger.TraceMethodEntry();
 
+            // A normal dictionary could be sufficient, but I am not 
+            // versed enough in asynchronous programming to know possible 
+            // race conditions... so I'll just use the concurrent one.
             var results = new ConcurrentDictionary<string, object?>();
 
-            // We need to track the current Column:
+            // The ReplicationTuple does not contain a list of column names, but  
+            // only a RelationId. So we need to provide the columns from the associated
+            // Relation.
+            // 
+            // We then need to iterate each of the columns, because that's the idea 
+            // behind a ReplicationTuple.
             int columnIdx = 0;
 
-            // Each "ReplicationTuple" consists of multiple "ReplicationValues", that we could iterate over.
+            // A "ReplicationTuple" implements an IAsyncEnumerable, so we need to iterate
+            // it with a "await foreach", which yields the ReplicationValues with the
+            // data.
             await foreach (var replicationValue in replicationTuple)
             {
                 // These "ReplicationValues" do not carry the column name, so we resolve the column name
                 // from the associated relation. This is going to throw, if we cannot find the column name, 
-                // but it should throw... because it is exceptional.
+                // but in my opinion it should throw... because it is highly problematic.
                 var column = relation.ColumnNames[columnIdx];
 
-                // Get the column value and let Npgsql decide, how to map the value. You could register
-                // type mappers for the LogicalReplicationConnection, so you can also automagically map 
-                // unknown types.
+                // Get the column value and let Npgsql decide, how to map the value. You have seen, how the
+                // NodaTime TypeConverters have been registered to a LogicalReplicationConnection, so you can
+                // also automagically map unknown types.
                 //
-                // This is going to throw, if Npgsql fails to read the values.
+                // This is going to throw, if Npgsql fails to read the values. But again, it should throw.
                 var value = await replicationValue
                     .Get(cancellationToken)
                     .ConfigureAwait(false);
 
-                // If we fail to add the value to the Results, there is not much we can do. Log it 
-                // and go ahead.
+                // While it looks like we could use the value directly, just don't... the value may include 
+                // a DBNull for values, instead of a "null". This will pollute upper layers using the client,
+                // so check them and turn it into a "null":
                 var v = replicationValue.IsDBNull ? null : value;
 
+                // It should never happen, that we fail to add a value. But what do I know? We guard against 
+                // it and throw, if things go wrong. This is important, so upper layers don't need to operate 
+                // on false assumptions.
                 if (!results.TryAdd(column, v))
                 {
-                    _logger.LogInformation("Failed to map ReplicationValue for Column {ColumnName}", column);
+                    throw new InvalidOperationException($"Failed to map ReplicationValue for Column '{column}'");
                 }
 
-                // Process next column
+                // Increase the column index, so we process the next column.
                 columnIdx++;
             }
 
