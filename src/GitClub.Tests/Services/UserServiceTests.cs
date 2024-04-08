@@ -216,6 +216,21 @@ namespace GitClub.Tests.Services
 
             Assert.AreEqual(0, tuples_Repository.Count);
 
+            var isMemberOfOrganization = await AclService
+                .CheckUserObjectAsync<Organization>(user.Id, repository.Id, OrganizationRoleEnum.Member, default);
+
+            Assert.AreEqual(false, isMemberOfOrganization);
+
+            var isMemberOfTeam = await AclService
+                .CheckUserObjectAsync<Team>(user.Id, team.Id, TeamRoleEnum.Member, default);
+
+            Assert.AreEqual(false, isMemberOfTeam);
+
+            var canReadRepository = await AclService
+                .CheckUserObjectAsync<Repository>(user.Id, repository.Id, RepositoryRoleEnum.Reader, default);
+
+            Assert.AreEqual(false, canReadRepository);
+
             var canReadIssue = await AclService
                 .CheckUserObjectAsync<Issue>(user.Id, issue.Id, IssueRoleEnum.Reader, default);
 
