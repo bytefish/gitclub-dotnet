@@ -87,7 +87,9 @@ namespace GitClub.Tests.Services
             await ProcessAllOutboxEventsAsync();
 
             // Assert
-            var userOrganizationRoleTuples = await AclService.ReadTuplesAsync<Organization, User>(organization.Id, null, user.Id, null).ToListAsync();
+            var userOrganizationRoleTuples = await AclService
+                .ReadTuplesAsync<Organization, User>(organization.Id, null, user.Id, null)
+                .ToListAsync();
 
             Assert.AreEqual(1, userOrganizationRoleTuples.Count);
             Assert.AreEqual(Relations.Member, userOrganizationRoleTuples[0].Relation);
@@ -269,7 +271,9 @@ namespace GitClub.Tests.Services
             await ProcessAllOutboxEventsAsync();
 
             // Assert
-            var userOrganizationRoleTuples = await AclService.ReadTuplesAsync<Organization, User>(organization.Id, null, user.Id, null).ToListAsync();
+            var userOrganizationRoleTuples = await AclService
+                .ReadTuplesAsync<Organization, User>(organization.Id, null, user.Id, null)
+                .ToListAsync();
 
             Assert.AreEqual(0, userOrganizationRoleTuples.Count);
         }

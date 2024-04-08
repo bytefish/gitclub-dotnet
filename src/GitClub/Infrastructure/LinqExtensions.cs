@@ -1,4 +1,4 @@
-﻿using static System.Runtime.InteropServices.JavaScript.JSType;
+﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
 namespace GitClub.Infrastructure
 {
