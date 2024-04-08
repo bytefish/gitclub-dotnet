@@ -938,7 +938,9 @@ INSERT INTO gitclub.issue_role(issue_role_id, name, description, last_edited_by)
     VALUES 
         (1, 'Creator', 'Creator Role on Issue', 1), 
         (2, 'Assignee', 'Assignee Role on Issue', 1),
-        (3, 'Owner', 'Owner Role on Issue', 1)
+        (3, 'Owner', 'Owner Role on Issue', 1),
+        (4, 'Reader', 'Reader Role on Issue', 1),
+        (5, 'Writer', 'Writer Role on Issue', 1)
     ON CONFLICT DO NOTHING;
 
 INSERT INTO gitclub.organization_role(organization_role_id, name, description, last_edited_by) 

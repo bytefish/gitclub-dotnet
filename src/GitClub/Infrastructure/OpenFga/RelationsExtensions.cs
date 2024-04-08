@@ -57,6 +57,18 @@ namespace GitClub.Infrastructure.OpenFga
             return allowed;
         }
 
+        public static async Task<bool> CheckUserObjectAsync<TObjectType>(this AclService aclService, int userId, int objectId, IssueRoleEnum role, CancellationToken cancellationToken)
+            where TObjectType : Entity
+        {
+            var relation = role.AsRelation();
+
+            var allowed = await aclService
+                .CheckObjectAsync<TObjectType, User>(objectId, relation, userId, cancellationToken)
+                .ConfigureAwait(false);
+
+            return allowed;
+        }
+
         public static string AsRelation(this TeamRoleEnum source)
         {
             return source switch
@@ -75,6 +87,8 @@ namespace GitClub.Infrastructure.OpenFga
                 IssueRoleEnum.Owner => Relations.Owner,
                 IssueRoleEnum.Creator => Relations.Creator,
                 IssueRoleEnum.Assignee => Relations.Assignee,
+                IssueRoleEnum.Reader => Relations.Reader,
+                IssueRoleEnum.Writer => Relations.Writer,
                 _ => throw new ArgumentException($"Could not translate '{source}'", nameof(source))
             };
         }

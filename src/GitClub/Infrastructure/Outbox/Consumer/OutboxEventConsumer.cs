@@ -296,6 +296,9 @@ namespace GitClub.Infrastructure.Outbox.Consumer
                 ..message.UserTeamRoles
                     .Select(x => RelationTuples.Create<Team, User>(x.TeamId, x.UserId, x.Role))
                     .ToArray(),
+                ..message.UserRepositoryRoles
+                    .Select(x => RelationTuples.Create<Repository, User>(x.RepositoryId, x.UserId, x.Role))
+                    .ToArray(),
                 ..message.UserOrganizationRoles
                     .Select(x => RelationTuples.Create<Organization, User>(x.OrganizationId, x.UserId, x.Role))
                     .ToArray(),
