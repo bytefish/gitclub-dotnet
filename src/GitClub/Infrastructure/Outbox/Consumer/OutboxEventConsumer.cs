@@ -41,7 +41,7 @@ namespace GitClub.Infrastructure.Outbox.Consumer
             // on with life ...
             if (!success)
             {
-                _logger.LogWarning("Failed to get Data from OutboxEvent");
+                _logger.LogWarning("Failed to get Data from OutboxEvent (Id = {OutboxEventId}, EventType = {OutboxEventType})", outboxEvent.Id, outboxEvent.EventType);
 
                 return;
             }
