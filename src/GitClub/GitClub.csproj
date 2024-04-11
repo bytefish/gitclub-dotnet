@@ -26,6 +26,7 @@
 
   <ItemGroup>
     <Folder Include="Infrastructure\Extensions\" />
+    <Folder Include="Infrastructure\Postgres\" />
   </ItemGroup>
 
 </Project>

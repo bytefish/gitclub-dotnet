@@ -10,7 +10,7 @@ using GitClub.Services;
 
 namespace GitClub.Infrastructure.Outbox.Consumer
 {
-    public class OutboxEventConsumer
+    public class OutboxEventConsumer : IOutboxEventConsumer
     {
         private readonly ILogger<OutboxEventConsumer> _logger;
 
@@ -22,12 +22,12 @@ namespace GitClub.Infrastructure.Outbox.Consumer
             _aclService = aclService;
         }
 
-        public async Task HandleOutboxEventAsync(OutboxEvent outboxEvent, CancellationToken cancellationToken)
+        public async Task ConsumeOutboxEventAsync(OutboxEvent outboxEvent, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
 
-            if(outboxEvent.Payload == null)
+            if (outboxEvent.Payload == null)
             {
                 _logger.LogWarning("Event doesn't contain a JSON Payload");
 
@@ -118,7 +118,7 @@ namespace GitClub.Infrastructure.Outbox.Consumer
                 RelationTuples.Create<Organization, Organization>(message.OrganizationId, message.OrganizationId, message.BaseRepositoryRole, Relations.Member),
                 ..message.UserOrganizationRoles
                     .Select(x => RelationTuples.Create<Organization, User>(x.OrganizationId, x.UserId, x.Role))
-                    .ToArray()                
+                    .ToArray()
             ];
 
             await _aclService
@@ -226,7 +226,7 @@ namespace GitClub.Infrastructure.Outbox.Consumer
         {
             _logger.TraceMethodEntry();
 
-            RelationTuple[] tuplesToDelete = 
+            RelationTuple[] tuplesToDelete =
             [
                 ..message.UserRepositoryRoles
                     .Select(x => RelationTuples.Create<Repository, User>(x.RepositoryId, x.UserId, x.Role))
@@ -252,7 +252,7 @@ namespace GitClub.Infrastructure.Outbox.Consumer
                     .Select(x => RelationTuples.Create<Issue, User>(x.IssueId, x.UserId, x.Role))
                     .ToArray()
             ];
-        
+
             await _aclService
                 .AddRelationshipsAsync(tuplesToWrite, cancellationToken)
                 .ConfigureAwait(false);

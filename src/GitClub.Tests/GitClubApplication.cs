@@ -28,13 +28,6 @@ namespace GitClub.Tests
                     services.Remove(descriptor);
                 }
 
-                // Remove the Postgres Notification Processor.
-                {
-                    var descriptor = services.First(x => x.ImplementationType == typeof(PostgresNotificationProcessor));
-
-                    services.Remove(descriptor);
-                }
-
                 // Add a OutboxEventProcessor we can trigger manually.
                 services.AddSingleton<OutboxEventProcessor>();
             });

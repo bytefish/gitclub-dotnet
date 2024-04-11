@@ -31,7 +31,7 @@ namespace GitClub.Tests.Infrastructure
             foreach(var outboxEvent in outboxEvents)
             {
                 await _outboxEventConsumer
-                    .HandleOutboxEventAsync(outboxEvent, cancellationToken)
+                    .ConsumeOutboxEventAsync(outboxEvent, cancellationToken)
                     .ConfigureAwait(false);
 
                 await applicationDbContext.OutboxEvents

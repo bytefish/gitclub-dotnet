@@ -2,7 +2,7 @@
 
 using GitClub.Infrastructure.Logging;
 using GitClub.Infrastructure.Outbox.Consumer;
-using GitClub.Infrastructure.Outbox.Stream;
+using GitClub.Infrastructure.Outbox.Postgres;
 using Microsoft.Extensions.Options;
 
 namespace GitClub.Hosted
@@ -59,7 +59,7 @@ namespace GitClub.Hosted
             // We could also inject the Stream, but I think it's better to do it 
             // this way, in case we have multiple consumers. I also played with 
             // putting it in a static method... feels wrong.
-            var outboxEventStreamOptions = new PostgresOutboxEventStreamOptions
+            var outboxSubscriberOptions = new PostgresOutboxSubscriberOptions
             {
                 ConnectionString = _options.ConnectionString,
                 PublicationName = _options.PublicationName,
@@ -68,20 +68,20 @@ namespace GitClub.Hosted
                 OutboxEventTableName = _options.OutboxEventTableName
             };
 
-            var outboxEventStream = new PostgresOutboxEventStream(_logger, Options.Create(outboxEventStreamOptions));
+            var outboxEventStream = new PostgresOutboxSubscriber(_logger, Options.Create(outboxSubscriberOptions));
 
             while (!cancellationToken.IsCancellationRequested)
             {
                 try
                 {
-                    await foreach (var outboxEvent in outboxEventStream.StartOutboxEventStream(cancellationToken))
+                    await foreach (var outboxEvent in outboxEventStream.StartOutboxEventStreamAsync(cancellationToken))
                     {
                         _logger.LogInformation("Processing OutboxEvent (Id = {OutboxEventId})", outboxEvent.Id);
 
                         try
                         {
                             await _outboxEventConsumer
-                                .HandleOutboxEventAsync(outboxEvent, cancellationToken)
+                                .ConsumeOutboxEventAsync(outboxEvent, cancellationToken)
                                 .ConfigureAwait(false);
                         }
                         catch (Exception e)

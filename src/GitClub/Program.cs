@@ -19,7 +19,6 @@ using GitClub.Database.Models;
 using GitClub.Infrastructure.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using GitClub.Hosted;
-using GitClub.Infrastructure.Postgres.Notify;
 using GitClub.Infrastructure.Outbox.Consumer;
 
 // We will log to %LocalAppData%/RebacExperiments to store the Logs, so it doesn't need to be configured 
@@ -84,17 +83,7 @@ try
             .UseNpgsql(dataSource, options => options.UseNodaTime());
     });
 
-    // Postgres Notifications
-    builder.Services.AddSingleton<IPostgresNotificationHandler, LoggingPostgresNotificationHandler>();
-
-    builder.Services.Configure<PostgresNotificationProcessorOptions>(o =>
-    {
-        o.ChannelName = "core_db_event";
-    });
-
-    builder.Services.AddHostedService<PostgresNotificationProcessor>();
-
-    // Configures the Postgres Replication Settings.
+    // Configures the Postgres Outbox Event Settings.
     builder.Services.AddSingleton<OutboxEventConsumer>();
 
     builder.Services.Configure<PostgresOutboxEventProcessorOptions>(o =>
