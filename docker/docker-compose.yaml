@@ -18,6 +18,11 @@ services:
       - "./postgres/postgres.conf:/usr/local/etc/postgres/postgres.conf"
       - ../sql/openfga.sql:/docker-entrypoint-initdb.d/1-openfga.sql
       - ../sql/gitclub.sql:/docker-entrypoint-initdb.d/2-gitclub.sql
+      - ../sql/gitclub-versioning.sql:/docker-entrypoint-initdb.d/3-gitclub-versioning.sql
+      - ../sql/gitclub-notifications.sql:/docker-entrypoint-initdb.d/4-gitclub-notifications.sql
+      - ../sql/gitclub-replication.sql:/docker-entrypoint-initdb.d/5-gitclub-replication.sql
+      - ../sql/gitclub-tests.sql:/docker-entrypoint-initdb.d/6-gitclub-tests.sql
+      - ../sql/gitclub-data.sql:/docker-entrypoint-initdb.d/7-gitclub-data.sql
     command: "postgres -c config_file=/usr/local/etc/postgres/postgres.conf"
     healthcheck:
       test: [ "CMD-SHELL", "pg_isready -U postgres" ]
