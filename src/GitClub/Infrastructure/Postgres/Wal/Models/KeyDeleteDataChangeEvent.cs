@@ -10,6 +10,6 @@ namespace GitClub.Infrastructure.Postgres.Wal.Models
         /// <summary>
         /// Gets or sets the keys having been deleted.
         /// </summary>
-        public required IDictionary<string, object?> Keys { get; set; }
+        public required Dictionary<string, object?> Keys { get; set; }
     }
 }

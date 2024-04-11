@@ -10,6 +10,6 @@ namespace GitClub.Infrastructure.Postgres.Wal.Models
         /// <summary>
         /// Gets or sets the old column values.
         /// </summary>
-        public required IDictionary<string, object?> OldValues { get; set; }
+        public required Dictionary<string, object?> OldValues { get; set; }
     }
 }

@@ -34,7 +34,7 @@ namespace GitClub.Infrastructure.Outbox.Consumer
                 return;
             }
 
-            var success = OutboxEventUtils.TryGetOutboxEventPayload(outboxEvent, out object? payload);
+            var success = outboxEvent.TryGetOutboxEventPayload(out object? payload);
 
             // Maybe it's better to throw up, if we receive an event, we can't handle? But probably 
             // this wasn't meant for our Service at all? We don't know, so we log a Warning and go 

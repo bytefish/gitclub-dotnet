@@ -37,7 +37,7 @@ namespace GitClub.Infrastructure.Outbox
         /// <param name="outboxEvent">Outbox Event with typed Payload</param>
         /// <param name="result">The Payload deserialized to the Event Type</param>
         /// <returns><see cref="true"/>, if the payload can be deserialized; else <see cref="false"></returns>
-        public static bool TryGetOutboxEventPayload(OutboxEvent outboxEvent, out object? result)
+        public static bool TryGetOutboxEventPayload(this OutboxEvent outboxEvent, out object? result)
         {
             result = null;
 
@@ -53,5 +53,6 @@ namespace GitClub.Infrastructure.Outbox
 
             return true;
         }
+
     }
 }

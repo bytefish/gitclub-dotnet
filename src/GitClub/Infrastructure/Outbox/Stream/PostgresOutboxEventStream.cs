@@ -7,6 +7,8 @@ using GitClub.Infrastructure.Postgres.Wal.Models;
 using Microsoft.Extensions.Options;
 using NodaTime;
 using NodaTime.Serialization.SystemTextJson;
+using Npgsql.Replication.PgOutput.Messages;
+using Npgsql.Replication.PgOutput;
 using System.Diagnostics.CodeAnalysis;
 using System.Runtime.CompilerServices;
 using System.Text.Json;
@@ -109,7 +111,7 @@ namespace GitClub.Infrastructure.Outbox.Stream
                     // This is the correct message
                     if (dataChangeEvent is InsertDataChangeEvent insertDataChangeEvent)
                     {
-                        var outboxEvent = await MapToOutboxEventAsync(insertDataChangeEvent.Relation, insertDataChangeEvent.NewValues, cancellationToken).ConfigureAwait(false);
+                        var outboxEvent = await ConvertToOutboxEventAsync(insertDataChangeEvent.NewValues, cancellationToken).ConfigureAwait(false);
                         
                         // If we failed to map the OutboxEvent something exceptional happened, and the Logs 
                         // need to be inspected. There is no chance to recover from this and it needs to be 
@@ -131,76 +133,57 @@ namespace GitClub.Infrastructure.Outbox.Stream
             }
         }
 
-        /// <summary>
-        /// Tries to map the <see cref="Relation"/> and <see cref="IDictionary{TKey, TValue}"/>, that has been 
-        /// extracted from the Postgres Replication Stream, into an <see cref="OutboxEvent"/>. We don't want the 
-        /// service to fail, if this conversion fails, so wrap it inside a try-catch.
-        /// </summary>
-        /// <param name="relation">Relation for the OutboxEvent</param>
-        /// <param name="values">Column Values received by the Postgres ReplicationTuple</param>
-        /// <param name="cancellationToken">Cancellation Token to stop asynchronous processing</param>
-        /// <returns>An <see cref="OutboxEvent">, or <see cref="null"/> if the mapping failed</returns>
-        private async ValueTask<OutboxEvent?> MapToOutboxEventAsync(Relation relation, IDictionary<string, object?> values, CancellationToken cancellationToken)
-        {
-            try
-            {
-                var result = await InternalMapToOutboxEventAsync(relation, values, cancellationToken).ConfigureAwait(false);
-
-                return result;
-            } 
-            catch(Exception e)
-            {
-                _logger.LogError(e, "Failed to deserialize OutboxEvent due to an Exception");
-
-                return null;
-            }
-        }
-
-        /// <summary>
-        /// Maps the <see cref="Relation"/> and <see cref="IDictionary{TKey, TValue}"/>, that has been extracted from 
-        /// the Postgres Replication Stream, into an <see cref="OutboxEvent"/>. This throws if anything with the mapping 
-        /// goes wrong.
-        /// </summary>
-        /// <param name="relation">Relation for the OutboxEvent</param>
-        /// <param name="values">Column Values received by the Postgres ReplicationTuple</param>
-        /// <param name="cancellationToken">Cancellation Token to stop asynchronous processing</param>
-        /// <returns>An <see cref="OutboxEvent">, or <see cref="null"/> if the mapping failed</returns>
-        private ValueTask<OutboxEvent?> InternalMapToOutboxEventAsync(Relation relation, IDictionary<string, object?> values, CancellationToken cancellationToken)
+        ValueTask<OutboxEvent> ConvertToOutboxEventAsync(Dictionary<string, object?> values, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
-            var jsonDocument = GetAsJsonDocument(values, "payload");
-
-            if(jsonDocument == null)
-            {
-                _logger.LogWarning("Failed to deserialize Event Payload as JsonDocument");
-
-                return ValueTask.FromResult<OutboxEvent?>(null);
-            }
+            var payload = GetRequiredValue<string>(values, "payload");
 
             var outboxEvent = new OutboxEvent
             {
-                Id = DictionaryUtils.GetRequiredValue<int>(values, "outbox_event_id"),
-                EventSource = DictionaryUtils.GetRequiredValue<string>(values, "event_source"),
-                EventType = DictionaryUtils.GetRequiredValue<string>(values, "event_type"),
-                EventTime = DictionaryUtils.GetRequiredValue<Instant>(values, "event_time").ToDateTimeOffset(),
-                Payload = jsonDocument,
-                CorrelationId1 = DictionaryUtils.GetOptionalValue<string>(values, "correlation_id_1"),
-                CorrelationId2 = DictionaryUtils.GetOptionalValue<string>(values, "correlation_id_2"),
-                CorrelationId3 = DictionaryUtils.GetOptionalValue<string>(values, "correlation_id_3"),
-                CorrelationId4 = DictionaryUtils.GetOptionalValue<string>(values, "correlation_id_4"),
-                LastEditedBy = DictionaryUtils.GetRequiredValue<int>(values, "last_edited_by"),
-                SysPeriod = DictionaryUtils.GetRequiredValue<Interval>(values, "sys_period")
+                Id = GetRequiredValue<int>(values, "outbox_event_id"),
+                CorrelationId1 = GetOptionalValue<string>(values, "correlation_id_1"),
+                CorrelationId2 = GetOptionalValue<string>(values, "correlation_id_2"),
+                CorrelationId3 = GetOptionalValue<string>(values, "correlation_id_3"),
+                CorrelationId4 = GetOptionalValue<string>(values, "correlation_id_4"),
+                EventType = GetRequiredValue<string>(values, "event_type"),
+                EventSource = GetRequiredValue<string>(values, "event_source"),
+                EventTime = GetRequiredValue<DateTimeOffset>(values, "event_time"),
+                Payload = JsonSerializer.Deserialize<JsonDocument>(payload)!,
+                LastEditedBy = GetRequiredValue<int>(values, "last_edited_by")
             };
 
-            return ValueTask.FromResult<OutboxEvent?>(outboxEvent);
+            return ValueTask.FromResult(outboxEvent);
+        }
 
-            JsonDocument? GetAsJsonDocument(IDictionary<string, object?> values, string key)
+        T GetRequiredValue<T>(Dictionary<string, object?> values, string key)
+        {
+            if (!values.ContainsKey(key))
             {
-                var json = DictionaryUtils.GetRequiredValue<string>(values, key);
-
-                return JsonSerializer.Deserialize<JsonDocument>(json, _jsonSerializerOptions);
+                throw new InvalidOperationException($"Value is required for key '{key}'");
             }
+
+            if (values[key] is not T t)
+            {
+                throw new InvalidOperationException($"Value is not Type '{typeof(T).Name}'");
+            }
+
+            return t;
+        }
+
+        T? GetOptionalValue<T>(Dictionary<string, object?> values, string key, T? defaultValue = default)
+        {
+            if (!values.ContainsKey(key))
+            {
+                return defaultValue;
+            }
+
+            if (values[key] is T t)
+            {
+                return t;
+            }
+
+            return defaultValue;
         }
     }
 }

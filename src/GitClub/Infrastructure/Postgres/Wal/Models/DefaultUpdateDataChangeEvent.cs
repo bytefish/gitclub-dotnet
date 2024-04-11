@@ -7,6 +7,6 @@ namespace GitClub.Infrastructure.Postgres.Wal.Models
     /// </summary>
     public record DefaultUpdateDataChangeEvent : DataChangeEvent
     {
-        public required IDictionary<string, object?> NewValues { get; set; }
+        public required Dictionary<string, object?> NewValues { get; set; }
     }
 }
