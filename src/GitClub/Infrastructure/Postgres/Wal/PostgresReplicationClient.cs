@@ -114,7 +114,7 @@ namespace GitClub.Infrastructure.Postgres.Wal
                     transaction.DataChangeEvents.Add(new InsertDataChangeEvent
                     {
                         Relation = relation,
-                        NewValues = await ReadColumnValuesAsync(relation, insertMessage.NewRow, cancellationToken).ConfigureAwait(false)
+                        NewValues = await ConvertToDictionaryAsync(relation, insertMessage.NewRow, cancellationToken).ConfigureAwait(false)
                     });
                 }
                 else if (message is DefaultUpdateMessage defaultUpdateMessage)
@@ -124,7 +124,7 @@ namespace GitClub.Infrastructure.Postgres.Wal
                     transaction.DataChangeEvents.Add(new DefaultUpdateDataChangeEvent
                     {
                         Relation = relation,
-                        NewValues = await ReadColumnValuesAsync(relation, defaultUpdateMessage.NewRow, cancellationToken).ConfigureAwait(false),
+                        NewValues = await ConvertToDictionaryAsync(relation, defaultUpdateMessage.NewRow, cancellationToken).ConfigureAwait(false),
                     });
                 }
                 else if (message is FullUpdateMessage fullUpdateMessage)
@@ -134,8 +134,8 @@ namespace GitClub.Infrastructure.Postgres.Wal
                     transaction.DataChangeEvents.Add(new FullUpdateDataChangeEvent
                     {
                         Relation = relation,
-                        NewValues = await ReadColumnValuesAsync(relation, fullUpdateMessage.NewRow, cancellationToken).ConfigureAwait(false),
-                        OldValues = await ReadColumnValuesAsync(relation, fullUpdateMessage.OldRow, cancellationToken).ConfigureAwait(false)
+                        NewValues = await ConvertToDictionaryAsync(relation, fullUpdateMessage.NewRow, cancellationToken).ConfigureAwait(false),
+                        OldValues = await ConvertToDictionaryAsync(relation, fullUpdateMessage.OldRow, cancellationToken).ConfigureAwait(false)
                     });
                 }
                 else if (message is KeyDeleteMessage keyDeleteMessage)
@@ -145,7 +145,7 @@ namespace GitClub.Infrastructure.Postgres.Wal
                     transaction.DataChangeEvents.Add(new KeyDeleteDataChangeEvent
                     {
                         Relation = relation,
-                        Keys = await ReadColumnValuesAsync(relation, keyDeleteMessage.Key, cancellationToken).ConfigureAwait(false)
+                        Keys = await ConvertToDictionaryAsync(relation, keyDeleteMessage.Key, cancellationToken).ConfigureAwait(false)
                     });
                 }
                 else if (message is FullDeleteMessage fullDeleteMessage)
@@ -155,7 +155,7 @@ namespace GitClub.Infrastructure.Postgres.Wal
                     transaction.DataChangeEvents.Add(new FullDeleteDataChangeEvent
                     {
                         Relation = relation,
-                        OldValues = await ReadColumnValuesAsync(relation, fullDeleteMessage.OldRow, cancellationToken).ConfigureAwait(false)
+                        OldValues = await ConvertToDictionaryAsync(relation, fullDeleteMessage.OldRow, cancellationToken).ConfigureAwait(false)
                     });
                 }
                 else
@@ -171,60 +171,39 @@ namespace GitClub.Infrastructure.Postgres.Wal
             }
         }
 
-        private async ValueTask<IDictionary<string, object?>> ReadColumnValuesAsync(Relation relation, ReplicationTuple replicationTuple, CancellationToken cancellationToken)
+        async ValueTask<Dictionary<string, object?>> ConvertToDictionaryAsync(Relation relation, ReplicationTuple replicationTuple, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
 
-            // A normal dictionary could be sufficient, but I am not 
-            // versed enough in asynchronous programming to know possible 
-            // race conditions... so I'll just use the concurrent one.
-            var results = new ConcurrentDictionary<string, object?>();
+            var result = new Dictionary<string, object?>();
 
-            // The ReplicationTuple does not contain a list of column names, but  
-            // only a RelationId. So we need to provide the columns from the associated
-            // Relation.
-            // 
-            // We then need to iterate each of the columns, because that's the idea 
-            // behind a ReplicationTuple.
             int columnIdx = 0;
 
-            // A "ReplicationTuple" implements an IAsyncEnumerable, so we need to iterate
-            // it with a "await foreach", which yields the ReplicationValues with the
-            // data.
             await foreach (var replicationValue in replicationTuple)
             {
-                // These "ReplicationValues" do not carry the column name, so we resolve the column name
-                // from the associated relation. This is going to throw, if we cannot find the column name, 
-                // but in my opinion it should throw... because it is highly problematic.
-                var column = relation.ColumnNames[columnIdx];
+                var columnName = relation.ColumnNames[columnIdx++];
 
-                // Get the column value and let Npgsql decide, how to map the value. You have seen, how the
-                // NodaTime TypeConverters have been registered to a LogicalReplicationConnection, so you can
-                // also automagically map unknown types.
-                //
-                // This is going to throw, if Npgsql fails to read the values. But again, it should throw.
-                var value = await replicationValue
-                    .Get(cancellationToken)
-                    .ConfigureAwait(false);
-
-                // While it looks like we could use the value directly, just don't... the value may include 
-                // a DBNull for values, instead of a "null". This will pollute upper layers using the client,
-                // so check them and turn it into a "null":
-                var v = replicationValue.IsDBNull ? null : value;
-
-                // It should never happen, that we fail to add a value. But what do I know? We guard against 
-                // it and throw, if things go wrong. This is important, so upper layers don't need to operate 
-                // on false assumptions.
-                if (!results.TryAdd(column, v))
-                {
-                    throw new InvalidOperationException($"Failed to map ReplicationValue for Column '{column}'");
-                }
-
-                // Increase the column index, so we process the next column.
-                columnIdx++;
+                result[columnName] = await GetValue(replicationValue, cancellationToken);
             }
 
-            return results;
+            return result;
+        }
+
+        async Task<object?> GetValue(ReplicationValue replicationValue, CancellationToken cancellationToken)
+        {
+            _logger.TraceMethodEntry();
+
+            var value = await replicationValue
+                .Get(cancellationToken)
+                .ConfigureAwait(false);
+
+            if (replicationValue.IsDBNull)
+            {
+                return null;
+            }
+
+            return value;
+
         }
     }
 }
