@@ -1,9 +1,10 @@
-﻿using GitClub.Hosted;
+﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using GitClub.Hosted;
 using GitClub.Tests.Infrastructure;
 using Microsoft.AspNetCore.Mvc.Testing;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Hosting;
 
 namespace GitClub.Tests

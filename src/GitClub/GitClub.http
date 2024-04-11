@@ -57,7 +57,7 @@ POST {{GitClub_HostAddress}}/Teams
 Content-Type: application/json
 
 {
-    "name": "Rockstar Developers #32",
+    "name": "Rockstar Developers #31",
     "organizationId": 1,
     "lastEditedBy": 1
 }

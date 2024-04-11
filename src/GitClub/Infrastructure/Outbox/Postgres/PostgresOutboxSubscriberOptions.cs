@@ -1,10 +1,5 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-
-// Licensed under the MIT license. See LICENSE file in the project root for full license information.
-
-using GitClub.Hosted;
-
 namespace GitClub.Infrastructure.Outbox.Postgres
 {
     /// <summary>

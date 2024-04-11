@@ -1,4 +1,6 @@
-﻿using GitClub.Infrastructure.Logging;
+﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using GitClub.Infrastructure.Logging;
 using Microsoft.Extensions.Options;
 using Npgsql.Replication.PgOutput.Messages;
 using Npgsql.Replication.PgOutput;
@@ -7,6 +9,7 @@ using Npgsql;
 using System.Runtime.CompilerServices;
 using GitClub.Database.Models;
 using System.Text.Json;
+using NodaTime;
 
 namespace GitClub.Infrastructure.Outbox.Postgres
 {
@@ -79,8 +82,7 @@ namespace GitClub.Infrastructure.Outbox.Postgres
                 {
                     if (IsOutboxTable(insertMessage))
                     {
-                        var outboxEvent = await ConvertToOutboxEventAsync(insertMessage, cancellationToken)
-                            .ConfigureAwait(false);
+                        var outboxEvent = await ConvertToOutboxEventAsync(insertMessage, cancellationToken).ConfigureAwait(false);
 
                         yield return outboxEvent;
                     }
@@ -154,7 +156,7 @@ namespace GitClub.Infrastructure.Outbox.Postgres
                 CorrelationId4 = GetOptionalValue<string>(values, "correlation_id_4"),
                 EventType = GetRequiredValue<string>(values, "event_type"),
                 EventSource = GetRequiredValue<string>(values, "event_source"),
-                EventTime = GetRequiredValue<DateTimeOffset>(values, "event_time"),
+                EventTime = GetRequiredValue<Instant>(values, "event_time").ToDateTimeOffset(),
                 Payload = JsonSerializer.Deserialize<JsonDocument>(payload)!,
                 LastEditedBy = GetRequiredValue<int>(values, "last_edited_by")
             };

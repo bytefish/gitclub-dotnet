@@ -94,6 +94,7 @@ namespace GitClub.Hosted
                 {
                     _logger.LogError(e, "Logical Replication failed with an Error. Restarting the Stream.");
 
+                    // Probably add some better Retry options ...
                     await Task
                         .Delay(200)
                         .ConfigureAwait(false);
