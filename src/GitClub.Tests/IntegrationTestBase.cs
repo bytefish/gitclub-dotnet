@@ -2,6 +2,8 @@
 
 using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
+using DotNet.Testcontainers.Containers;
+using DotNet.Testcontainers.Networks;
 using GitClub.Database;
 using GitClub.Infrastructure;
 using GitClub.Infrastructure.Authentication;
@@ -25,6 +27,7 @@ namespace GitClub.Tests
     /// so you get a "fresh" set of services registered as "Scoped" for each and every new test. It's questionable, if 
     /// this holds for every test.
     /// </summary>
+    [TestClass]
     public abstract class IntegrationTestBase
     {
         /// <summary>
@@ -42,112 +45,16 @@ namespace GitClub.Tests
         /// </summary>
         protected IServiceProvider Services => Application.Services;
 
-        [ClassInitialize(InheritanceBehavior.BeforeEachDerivedClass)]
-        public static async Task ClassInitializeAsync(TestContext context)
+        [AssemblyInitialize]
+        public static async Task AssemblyInitializeAsync(TestContext context)
         {
-            await StartDockerContainers(default);
+            await DockerContainers.StartAllContainersAsync();
         }
 
-        private static async Task StartDockerContainers(CancellationToken cancellationToken)
+        [AssemblyCleanup]
+        public static async Task AssemblyCleanupAsync()
         {
-            var openfga_network = new NetworkBuilder()
-                .WithName("openfga")
-                .WithDriver(NetworkDriver.Bridge)
-                .Build();
-
-            var postgres = new ContainerBuilder()
-                .WithName("postgres")
-                .WithImage("postgres:16")
-                .WithNetwork(openfga_network)
-                .WithPortBinding(hostPort: 5432, containerPort: 5432)
-                // Mount Postgres Configuration and SQL Scripts 
-                .WithBindMount(Path.Combine(Directory.GetCurrentDirectory(), "Resources/docker/postgres.conf"), "/usr/local/etc/postgres/postgres.conf")
-                .WithBindMount(Path.Combine(Directory.GetCurrentDirectory(), "Resources/sql/openfga.sql"), "/docker-entrypoint-initdb.d/1-openfga.sql")
-                .WithBindMount(Path.Combine(Directory.GetCurrentDirectory(), "Resources/sql/gitclub.sql"), "/docker-entrypoint-initdb.d/2-gitclub.sql")
-                .WithBindMount(Path.Combine(Directory.GetCurrentDirectory(), "Resources/sql/gitclub-versioning.sql"), "/docker-entrypoint-initdb.d/3-gitclub-versioning.sql")
-                .WithBindMount(Path.Combine(Directory.GetCurrentDirectory(), "Resources/sql/gitclub-notifications.sql"), "/docker-entrypoint-initdb.d/4-gitclub-notifications.sql")
-                .WithBindMount(Path.Combine(Directory.GetCurrentDirectory(), "Resources/sql/gitclub-replication.sql"), "/docker-entrypoint-initdb.d/5-gitclub-replication.sql")
-                .WithBindMount(Path.Combine(Directory.GetCurrentDirectory(), "Resources/sql/gitclub-tests.sql"), "/docker-entrypoint-initdb.d/6-gitclub-tests.sql")
-                .WithBindMount(Path.Combine(Directory.GetCurrentDirectory(), "Resources/sql/gitclub-data.sql"), "/docker-entrypoint-initdb.d/7-gitclub-data.sql")
-                // Set Username and Password
-                .WithEnvironment(new Dictionary<string, string>
-                {
-                    {"POSTGRES_USER", "postgres" },
-                    {"POSTGRES_PASSWORD", "password" },
-                })
-                // Start Postgres with the given postgres.conf.
-                .WithCommand([
-                    "postgres",
-                    "-c",
-                    "config_file=/usr/local/etc/postgres/postgres.conf"
-                ])
-                // Wait until the Port is exposed.
-                .WithWaitStrategy(Wait
-                    .ForUnixContainer()
-                    .UntilPortIsAvailable(5432))
-                .Build();
-
-            var openfga_migrate = new ContainerBuilder()
-                .WithName("openfga-migration")
-                .WithImage("openfga/openfga:latest")
-                .DependsOn(postgres)
-                .WithNetwork(openfga_network)
-                .WithEnvironment(new Dictionary<string, string>
-                {
-                    {"OPENFGA_DATASTORE_ENGINE", "postgres" },
-                    {"OPENFGA_DATASTORE_URI", "postgres://postgres:password@postgres:5432/postgres?sslmode=disable&search_path=openfga" }
-                })
-                .WithCommand("migrate")
-                .Build();
-
-            var openfga_server = new ContainerBuilder()
-                .WithName("openfga-server")
-                .WithImage("openfga/openfga:latest")
-                .DependsOn(openfga_migrate)
-                .WithNetwork(openfga_network)
-                .WithCommand("run")
-                .WithPortBinding(hostPort: 8080, containerPort: 8080)
-                .WithPortBinding(hostPort: 8081, containerPort: 8081)
-                .WithPortBinding(hostPort: 3000, containerPort: 3000)
-                .WithEnvironment(new Dictionary<string, string>
-                {
-                    {"OPENFGA_DATASTORE_ENGINE", "postgres" },
-                    {"OPENFGA_DATASTORE_URI", "postgres://postgres:password@postgres:5432/postgres?sslmode=disable&search_path=openfga" }
-                })
-                .Build();
-
-            var openfga_model = new ContainerBuilder()
-                .WithName("openfga-model")
-                .WithImage("openfga/cli:latest")
-                .DependsOn(openfga_server)
-                .WithNetwork(openfga_network)
-                .WithEnvironment(new Dictionary<string, string>
-                {
-                    {"FGA_STORE_ID", "01HP82R96XEJX1Q9YWA9XRQ4PM" }
-                })
-                .WithBindMount(Path.Combine(Directory.GetCurrentDirectory(), "Resources/fga/gitclub.fga.yaml"), "/gitclub.fga.yaml")
-                .WithBindMount(Path.Combine(Directory.GetCurrentDirectory(), "Resources/fga/gitclub-model.fga"), "/gitclub-model.fga")
-                .WithBindMount(Path.Combine(Directory.GetCurrentDirectory(), "Resources/fga/gitclub-tuples.yaml"), "/gitclub-tuples.yaml")
-                .WithCommand([
-                    "store",
-                    "import",
-                    "--api-url", "http://openfga-server:8080",
-                    "--file", "/gitclub.fga.yaml",
-                    "--store-id", "01HP82R96XEJX1Q9YWA9XRQ4PM"
-                ])   
-                .Build();
-
-            await postgres.StartAsync()
-                .ConfigureAwait(false);
-
-            await openfga_migrate.StartAsync()
-                .ConfigureAwait(false);
-
-            await openfga_server.StartAsync()
-                .ConfigureAwait(false);
-
-            await openfga_model.StartAsync()
-                .ConfigureAwait(false);
+            await DockerContainers.StopAllContainersAsync();
         }
 
         [TestInitialize]
