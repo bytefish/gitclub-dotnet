@@ -26,6 +26,7 @@
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="MSTest.TestAdapter" Version="3.1.1" />
     <PackageReference Include="MSTest.TestFramework" Version="3.1.1" />
+    <PackageReference Include="Testcontainers" Version="3.8.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -34,6 +35,48 @@
 
   <ItemGroup>
     <Using Include="Microsoft.VisualStudio.TestTools.UnitTesting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Resources\docker\" />
+    <Folder Include="Resources\fga\" />
+    <Folder Include="Resources\sql\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="..\..\docker\postgres\postgres.conf" Link="Resources\docker\postgres.conf">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\fga\gitclub-model.fga" Link="Resources\fga\gitclub-model.fga">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\fga\gitclub-tuples.yaml" Link="Resources\fga\gitclub-tuples.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\fga\gitclub.fga.yaml" Link="Resources\fga\gitclub.fga.yaml">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\sql\gitclub-data.sql" Link="Resources\sql\gitclub-data.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\sql\gitclub-notifications.sql" Link="Resources\sql\gitclub-notifications.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\sql\gitclub-replication.sql" Link="Resources\sql\gitclub-replication.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\sql\gitclub-tests.sql" Link="Resources\sql\gitclub-tests.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\sql\gitclub-versioning.sql" Link="Resources\sql\gitclub-versioning.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\sql\gitclub.sql" Link="Resources\sql\gitclub.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Include="..\..\sql\openfga.sql" Link="Resources\sql\openfga.sql">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
