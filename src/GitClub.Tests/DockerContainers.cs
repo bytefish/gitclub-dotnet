@@ -1,12 +1,9 @@
-﻿using DotNet.Testcontainers.Builders;
+﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+using DotNet.Testcontainers.Builders;
 using DotNet.Testcontainers.Configurations;
 using DotNet.Testcontainers.Containers;
 using DotNet.Testcontainers.Networks;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace GitClub.Tests
 {
