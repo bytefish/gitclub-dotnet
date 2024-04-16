@@ -68,6 +68,12 @@ namespace GitClub.Tests
             CurrentUser = await CreateCurrentUserAsync(email: "philipp@bytefish.de", roles: [Roles.Administrator, Roles.User]);
         }
 
+        /// <summary>
+        /// Creates a <see cref="CurrentUser">, which can be passed to methods.
+        /// </summary>
+        /// <param name="email">E-Mail of the Current User</param>
+        /// <param name="roles">Roles of the Current User</param>
+        /// <returns>A <see cref="CurrentUser"/> with the given mail and role claims</returns>
         protected async Task<CurrentUser> CreateCurrentUserAsync(string email, string[] roles)
         {
             var claims = await Application.Services.GetRequiredService<UserService>().GetClaimsAsync(
@@ -86,6 +92,9 @@ namespace GitClub.Tests
             };
         }
 
+        /// <summary>
+        /// Processes all Outbox Events in the Database.
+        /// </summary>
         protected async Task ProcessAllOutboxEventsAsync()
         {
             var outboxEventProcessor = GetRequiredService<OutboxEventProcessor>();
@@ -95,6 +104,11 @@ namespace GitClub.Tests
                 .ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Prepares the Postgres Database, so we have a clean test ground.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation Token</param>
+        /// <returns>An awaitable Task</returns>
         private async Task PreparePostgresAsync(CancellationToken cancellationToken)
         {
             var dbContextFactory = GetRequiredService<IDbContextFactory<ApplicationDbContext>>();
@@ -108,10 +122,14 @@ namespace GitClub.Tests
                 .ConfigureAwait(false);
         }
 
+        /// <summary>
+        /// Prepares the OpenFGA Server, so we always have a fresh store for a Unit Test.
+        /// </summary>
+        /// <param name="cancellationToken">Cancellation Token</param>
+        /// <returns>An awaitable Task</returns>
         private async Task PrepareOpenFgaAsync(CancellationToken cancellationToken)
         {
             // This is the OpenFGA Store under Test:
-            //01HP82R96XEJX1Q9YWA9XRQ4PM
             var sourceStoreId = Configuration.GetValue<string>("OpenFGA:StoreId")!;
 
             // We always want to run Integration Tests on the latest Authorization Model:

@@ -40,8 +40,8 @@ namespace GitClub.Tests
             // Start Postgres with the given postgres.conf.
             .WithCommand([
                 "postgres",
-                    "-c",
-                    "config_file=/usr/local/etc/postgres/postgres.conf"
+                "-c",
+                "config_file=/usr/local/etc/postgres/postgres.conf"
             ])
             // Wait until the Port is exposed.
             .WithWaitStrategy(Wait
@@ -56,8 +56,8 @@ namespace GitClub.Tests
             .WithNetwork(OpenFgaNetwork)
             .WithEnvironment(new Dictionary<string, string>
             {
-                    {"OPENFGA_DATASTORE_ENGINE", "postgres" },
-                    {"OPENFGA_DATASTORE_URI", "postgres://postgres:password@postgres:5432/postgres?sslmode=disable&search_path=openfga" }
+                {"OPENFGA_DATASTORE_ENGINE", "postgres" },
+                {"OPENFGA_DATASTORE_URI", "postgres://postgres:password@postgres:5432/postgres?sslmode=disable&search_path=openfga" }
             })
             .WithCommand("migrate")
             .Build();
@@ -73,8 +73,8 @@ namespace GitClub.Tests
             .WithPortBinding(hostPort: 3000, containerPort: 3000)
             .WithEnvironment(new Dictionary<string, string>
             {
-                    {"OPENFGA_DATASTORE_ENGINE", "postgres" },
-                    {"OPENFGA_DATASTORE_URI", "postgres://postgres:password@postgres:5432/postgres?sslmode=disable&search_path=openfga" }
+                {"OPENFGA_DATASTORE_ENGINE", "postgres" },
+                {"OPENFGA_DATASTORE_URI", "postgres://postgres:password@postgres:5432/postgres?sslmode=disable&search_path=openfga" }
             })
             .WithWaitStrategy(Wait
                 .ForUnixContainer()
@@ -95,10 +95,10 @@ namespace GitClub.Tests
             .WithBindMount(Path.Combine(Directory.GetCurrentDirectory(), "Resources/fga/gitclub-tuples.yaml"), "/gitclub-tuples.yaml")
             .WithCommand([
                 "store",
-                    "import",
-                    "--api-url", "http://openfga-server:8080",
-                    "--file", "/gitclub.fga.yaml",
-                    "--store-id", "01HP82R96XEJX1Q9YWA9XRQ4PM"
+                "import",
+                "--api-url", "http://openfga-server:8080",
+                "--file", "/gitclub.fga.yaml",
+                "--store-id", "01HP82R96XEJX1Q9YWA9XRQ4PM"
             ])
             .Build();
 
@@ -109,7 +109,7 @@ namespace GitClub.Tests
             await OpenFgaServerContainer.StartAsync();
             await OpenFgaModelContainer.StartAsync();
         }
-        
+
         public static async Task StopAllContainersAsync()
         {
             await PostgresContainer.StopAsync();
