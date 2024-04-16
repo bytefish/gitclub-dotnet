@@ -1,11 +1,6 @@
 // Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using DotNet.Testcontainers.Builders;
-using DotNet.Testcontainers.Configurations;
-using DotNet.Testcontainers.Containers;
-using DotNet.Testcontainers.Networks;
 using GitClub.Database;
-using GitClub.Infrastructure;
 using GitClub.Infrastructure.Authentication;
 using GitClub.Infrastructure.Constants;
 using GitClub.Services;
@@ -13,12 +8,10 @@ using GitClub.Tests.Infrastructure;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Npgsql;
 using OpenFga.Sdk.Client;
 using OpenFga.Sdk.Client.Model;
 using OpenFga.Sdk.Model;
 using System.Security.Claims;
-using System.Threading;
 
 namespace GitClub.Tests
 {
