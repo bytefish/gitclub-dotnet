@@ -83,10 +83,6 @@ namespace GitClub.Tests
             .WithImage("openfga/cli:latest")
             .DependsOn(OpenFgaServerContainer)
             .WithNetwork(OpenFgaNetwork)
-            .WithEnvironment(new Dictionary<string, string>
-            {
-                    {"FGA_STORE_ID", "01HP82R96XEJX1Q9YWA9XRQ4PM" }
-            })
             .WithBindMount(Path.Combine(Directory.GetCurrentDirectory(), "Resources/fga/gitclub.fga.yaml"), "/gitclub.fga.yaml")
             .WithBindMount(Path.Combine(Directory.GetCurrentDirectory(), "Resources/fga/gitclub-model.fga"), "/gitclub-model.fga")
             .WithBindMount(Path.Combine(Directory.GetCurrentDirectory(), "Resources/fga/gitclub-tuples.yaml"), "/gitclub-tuples.yaml")
