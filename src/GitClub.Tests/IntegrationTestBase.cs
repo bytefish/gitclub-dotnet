@@ -38,18 +38,32 @@ namespace GitClub.Tests
         /// </summary>
         protected IServiceProvider Services => Application.Services;
 
+        /// <summary>
+        /// Starts the Containers for the Tests.
+        /// </summary>
+        /// <param name="context">Required Test Context</param>
+        /// <returns>Awaitable Task</returns>
         [AssemblyInitialize]
         public static async Task AssemblyInitializeAsync(TestContext context)
         {
             await DockerContainers.StartAllContainersAsync();
         }
 
+        /// <summary>
+        /// Tears down the Containers for the Tests.
+        /// </summary>
+        /// <returns>Awaitable Task</returns>
         [AssemblyCleanup]
         public static async Task AssemblyCleanupAsync()
         {
             await DockerContainers.StopAllContainersAsync();
         }
 
+        /// <summary>
+        /// Prepares OpenFGA and the Postgres Database for the Tests, so 
+        /// each test runs in a clean environment.
+        /// </summary>
+        /// <returns>Awaitable Task</returns>
         [TestInitialize]
         public virtual async Task TestInitializeAsync()
         {

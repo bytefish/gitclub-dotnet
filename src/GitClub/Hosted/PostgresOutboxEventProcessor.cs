@@ -56,9 +56,6 @@ namespace GitClub.Hosted
         {
             _logger.TraceMethodEntry();
 
-            // We could also inject the Stream, but I think it's better to do it 
-            // this way, in case we have multiple consumers. I also played with 
-            // putting it in a static method... feels wrong.
             var outboxSubscriberOptions = new PostgresOutboxSubscriberOptions
             {
                 ConnectionString = _options.ConnectionString,
