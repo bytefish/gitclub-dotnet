@@ -282,6 +282,20 @@ namespace GitClub.Services
                 };
             }
 
+            bool isUpdateAuthorized = await _aclService
+                .CheckUserObjectAsync<Repository>(currentUser.UserId, repositoryId, RepositoryRoleEnum.Writer, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isUpdateAuthorized)
+            {
+                throw new EntityUnauthorizedAccessException()
+                {
+                    EntityName = nameof(Repository),
+                    EntityId = repositoryId,
+                    UserId = currentUser.UserId,
+                };
+            }
+
             using var applicationDbContext = await _dbContextFactory
                 .CreateDbContextAsync(cancellationToken)
                 .ConfigureAwait(false);
@@ -296,20 +310,6 @@ namespace GitClub.Services
                 {
                     EntityName = nameof(Repository),
                     EntityId = repositoryId,
-                };
-            }
-
-            bool isUpdateAuthorized = await _aclService
-                .CheckUserObjectAsync<Repository>(currentUser.UserId, repositoryId, RepositoryRoleEnum.Writer, cancellationToken)
-                .ConfigureAwait(false);
-
-            if (!isUpdateAuthorized)
-            {
-                throw new EntityUnauthorizedAccessException()
-                {
-                    EntityName = nameof(Repository),
-                    EntityId = repositoryId,
-                    UserId = currentUser.UserId,
                 };
             }
 

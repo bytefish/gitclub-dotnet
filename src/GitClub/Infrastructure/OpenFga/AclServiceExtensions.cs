@@ -8,7 +8,7 @@ namespace GitClub.Infrastructure.OpenFga
     public static class AclServiceExtensions
     {
         public static async Task<bool> CheckUserObjectAsync<TObjectType>(this AclService aclService, int userId, int objectId, OrganizationRoleEnum role, CancellationToken cancellationToken)
-    where TObjectType : Entity
+            where TObjectType : Entity
         {
             var relation = role.AsRelation();
 
