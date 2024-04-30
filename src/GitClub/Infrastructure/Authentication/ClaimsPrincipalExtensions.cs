@@ -12,10 +12,15 @@ namespace GitClub.Infrastructure.Authentication
 
             if (userId == null)
             {
-                throw new InvalidOperationException("No UserID found for User");
+                throw new InvalidOperationException("No UserID found for ClaimsPrincipal");
             }
 
-            return Convert.ToInt32(userId);
+            if(!int.TryParse(userId, out var result))
+            {
+                throw new InvalidOperationException("UserID could not be converted to an Int32");
+            }
+
+            return result;
         }
     }
 }
