@@ -7,7 +7,7 @@ namespace GitClub.Infrastructure.Exceptions
     public class CannotDeleteOwnUserException : ApplicationErrorException
     {
         /// <inheritdoc/>
-        public override string ErrorCode => ErrorCodes.CannotDeleteOwnUserException;
+        public override string ErrorCode => ErrorCodes.CannotDeleteOwnUser;
 
         /// <inheritdoc/>
         public override string ErrorMessage => $"CannotDeleteOwnUserException (UserId = {UserId})";

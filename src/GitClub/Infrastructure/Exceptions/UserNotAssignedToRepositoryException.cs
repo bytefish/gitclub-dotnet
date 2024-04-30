@@ -7,7 +7,7 @@ namespace GitClub.Infrastructure.Exceptions
     public class UserNotAssignedToRepositoryException : ApplicationErrorException
     {
         /// <inheritdoc/>
-        public override string ErrorCode => ErrorCodes.UserNotAssignedToTeam;
+        public override string ErrorCode => ErrorCodes.UserNotAssignedToRepository;
 
         /// <inheritdoc/>
         public override string ErrorMessage => $"UserNotAssignedToRepository (UserId = {UserId}, RepositoryId = {RepositoryId})";

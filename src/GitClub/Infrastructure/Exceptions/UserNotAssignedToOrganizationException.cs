@@ -5,7 +5,7 @@ using GitClub.Infrastructure.Errors;
 
 namespace GitClub.Infrastructure.Exceptions
 {
-    public class UserNotAssignedToOrganizationInRoleException : ApplicationErrorException
+    public class UserNotAssignedToOrganizationException : ApplicationErrorException
     {
         /// <inheritdoc/>
         public override string ErrorCode => ErrorCodes.UserNotAssignedToOrganization;
@@ -32,11 +32,11 @@ namespace GitClub.Infrastructure.Exceptions
         public required OrganizationRoleEnum Role { get; set; }
 
         /// <summary>
-        /// Creates a new <see cref="UserNotAssignedToOrganizationInRoleException"/>.
+        /// Creates a new <see cref="UserNotAssignedToOrganizationException"/>.
         /// </summary>
         /// <param name="message">Error Message</param>
         /// <param name="innerException">Reference to the Inner Exception</param>
-        public UserNotAssignedToOrganizationInRoleException(string? message = null, Exception? innerException = null)
+        public UserNotAssignedToOrganizationException(string? message = null, Exception? innerException = null)
             : base(message, innerException)
         {
         }

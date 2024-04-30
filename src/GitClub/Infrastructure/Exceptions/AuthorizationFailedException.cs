@@ -7,7 +7,7 @@ namespace GitClub.Infrastructure.Exceptions
     public class AuthorizationFailedException : ApplicationErrorException
     {
         /// <inheritdoc/>
-        public override string ErrorCode => ErrorCodes.AuthenticationFailed;
+        public override string ErrorCode => ErrorCodes.AuthorizationFailed;
 
         /// <inheritdoc/>
         public override string ErrorMessage => $"AuthorizationFailed";

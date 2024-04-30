@@ -476,7 +476,7 @@ namespace GitClub.Services
 
             if(organizationRole == null)
             {
-                throw new UserNotAssignedToOrganizationInRoleException
+                throw new UserNotAssignedToOrganizationException
                 {
                     OrganizationId = organizationId,
                     UserId = userId,

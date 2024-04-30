@@ -105,7 +105,7 @@ namespace GitClub.Infrastructure.Errors
         /// <summary>
         /// Prevent Users from deleting themselves.
         /// </summary>
-        public const string CannotDeleteOwnUserException = "ApiError_Users_000001";
+        public const string CannotDeleteOwnUser = "ApiError_Users_000001";
 
         /// <summary>
         /// Resource has not been found.
