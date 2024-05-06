@@ -9,24 +9,12 @@ namespace GitClub.Tests
 {
     public class DockerContainers
     {
-        public static INetwork? OpenFgaNetwork;
-
-        public static IContainer? PostgresContainer;
-
-        public static IContainer? OpenFgaMigrateContainer;
-
-        public static IContainer? OpenFgaServerContainer;
-
-        public static IContainer? OpenFgaModelContainer;
-
-        public static async Task StartAllContainersAsync()
-        {
-            OpenFgaNetwork = new NetworkBuilder()
+        public static INetwork OpenFgaNetwork = new NetworkBuilder()
                 .WithName("openfga")
                 .WithDriver(NetworkDriver.Bridge)
                 .Build();
 
-            PostgresContainer = new ContainerBuilder()
+        public static IContainer PostgresContainer = new ContainerBuilder()
                 .WithName("postgres")
                 .WithImage("postgres:16")
                 .WithNetwork(OpenFgaNetwork)
@@ -58,20 +46,21 @@ namespace GitClub.Tests
                     .UntilPortIsAvailable(5432))
                 .Build();
 
-            OpenFgaMigrateContainer = new ContainerBuilder()
-                .WithName("openfga-migration")
-                .WithImage("openfga/openfga:latest")
-                .DependsOn(PostgresContainer)
-                .WithNetwork(OpenFgaNetwork)
-                .WithEnvironment(new Dictionary<string, string>
-                {
+
+        public static IContainer OpenFgaMigrateContainer = new ContainerBuilder()
+                    .WithName("openfga-migration")
+                    .WithImage("openfga/openfga:latest")
+                    .DependsOn(PostgresContainer)
+                    .WithNetwork(OpenFgaNetwork)
+                    .WithEnvironment(new Dictionary<string, string>
+                    {
                     {"OPENFGA_DATASTORE_ENGINE", "postgres" },
                     {"OPENFGA_DATASTORE_URI", "postgres://postgres:password@postgres:5432/postgres?sslmode=disable&search_path=openfga" }
-                })
-                .WithCommand("migrate")
-                .Build();
+                    })
+                    .WithCommand("migrate")
+                    .Build();
 
-            OpenFgaServerContainer = new ContainerBuilder()
+        public static IContainer OpenFgaServerContainer = new ContainerBuilder()
                 .WithName("openfga-server")
                 .WithImage("openfga/openfga:latest")
                 .DependsOn(OpenFgaMigrateContainer)
@@ -90,7 +79,7 @@ namespace GitClub.Tests
                     .UntilMessageIsLogged("HTTP server listening on '0.0.0.0:8080'.."))
                 .Build();
 
-            OpenFgaModelContainer = new ContainerBuilder()
+        public static IContainer OpenFgaModelContainer = new ContainerBuilder()
                 .WithName("openfga-model")
                 .WithImage("openfga/cli:latest")
                 .DependsOn(OpenFgaServerContainer)
@@ -107,6 +96,8 @@ namespace GitClub.Tests
                 ])
                 .Build();
 
+        public static async Task StartAllContainersAsync()
+        {
             await PostgresContainer.StartAsync();
             await OpenFgaMigrateContainer.StartAsync();
             await OpenFgaServerContainer.StartAsync();
@@ -115,25 +106,10 @@ namespace GitClub.Tests
 
         public static async Task StopAllContainersAsync()
         {
-            if (PostgresContainer != null)
-            {
-                await PostgresContainer.StopAsync();
-            }
-
-            if (OpenFgaMigrateContainer != null)
-            {
-                await OpenFgaMigrateContainer.StopAsync();
-            }
-
-            if (OpenFgaServerContainer != null)
-            {
-                await OpenFgaServerContainer.StopAsync();
-            }
-
-            if (OpenFgaModelContainer != null)
-            {
-                await OpenFgaModelContainer.StopAsync();
-            }
+            await PostgresContainer.StopAsync();
+            await OpenFgaMigrateContainer.StopAsync();
+            await OpenFgaServerContainer.StopAsync();
+            await OpenFgaModelContainer.StopAsync();
         }
     }
 }

@@ -139,7 +139,7 @@ namespace GitClub.Services
                 .ConfigureAwait(false);
 
             var checkedIssues = await _aclService
-                .CheckUserObjectsParallelAsync<Issue>(currentUser.UserId, allIssuesForRepository, IssueRoleEnum.Reader.AsRelation(), cancellationToken)
+                .BatchCheckObjectsAsync<Issue, User>(allIssuesForRepository, IssueRoleEnum.Reader.AsRelation(), currentUser.UserId, cancellationToken)
                 .ConfigureAwait(false);
 
             var allowedIssues = checkedIssues
@@ -182,7 +182,7 @@ namespace GitClub.Services
                 .ConfigureAwait(false);
 
             var checkedIssues = await _aclService
-                .CheckUserObjectsParallelAsync<Issue>(currentUser.UserId, allIssuesForOrganization, IssueRoleEnum.Reader.AsRelation(), cancellationToken)
+                .BatchCheckObjectsAsync<Issue, User>(allIssuesForOrganization, IssueRoleEnum.Reader.AsRelation(), currentUser.UserId, cancellationToken)
                 .ConfigureAwait(false);
 
             var allowedIssues = checkedIssues
@@ -205,7 +205,7 @@ namespace GitClub.Services
                 .ToListAsync(cancellationToken);
 
             var checkedIssues = await _aclService
-                .CheckUserObjectsParallelAsync<Issue>(currentUser.UserId, allIssues, IssueRoleEnum.Reader.AsRelation(), cancellationToken)
+                .BatchCheckObjectsAsync<Issue, User>(allIssues, IssueRoleEnum.Reader.AsRelation(), currentUser.UserId, cancellationToken)
                 .ConfigureAwait(false);
 
             var allowedIssues = checkedIssues

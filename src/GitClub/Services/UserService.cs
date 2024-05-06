@@ -214,7 +214,6 @@ namespace GitClub.Services
                 .CreateDbContextAsync(cancellationToken)
                 .ConfigureAwait(false);
 
-
             var user = await applicationDbContext.Users.AsNoTracking()
                 .FirstOrDefaultAsync(x => x.Email == email, cancellationToken)
                 .ConfigureAwait(false);

@@ -43,8 +43,8 @@ namespace GitClub.Tests
         /// </summary>
         /// <param name="context">Required Test Context</param>
         /// <returns>Awaitable Task</returns>
-        [ClassInitialize(InheritanceBehavior.BeforeEachDerivedClass)]
-        public static async Task ClassInitializeAsync(TestContext context)
+        [AssemblyInitialize]
+        public static async Task AssemblyInitializeAsync(TestContext context)
         {
             await DockerContainers.StartAllContainersAsync();
         }
@@ -53,7 +53,7 @@ namespace GitClub.Tests
         /// Tears down the Containers for the Tests.
         /// </summary>
         /// <returns>Awaitable Task</returns>
-        [ClassCleanup(InheritanceBehavior.BeforeEachDerivedClass)]
+        [AssemblyCleanup]
         public static async Task ClassCleanupAsync()
         {
             await DockerContainers.StopAllContainersAsync();

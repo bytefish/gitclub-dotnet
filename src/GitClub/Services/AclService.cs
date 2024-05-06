@@ -77,46 +77,39 @@ namespace GitClub.Services
             return allowed;
         }
 
-        public async Task<List<(bool Allowed, TObjectType Object)>> CheckObjectsParallelAsync<TObjectType, TSubjectType>(List<TObjectType> objects, string relation, int subjectId, CancellationToken cancellationToken)
+        public async Task<List<(bool Allowed, TObjectType Object)>> BatchCheckObjectsAsync<TObjectType, TSubjectType>(List<TObjectType> objects, string relation, int subjectId, CancellationToken cancellationToken)
             where TSubjectType : Entity
             where TObjectType : Entity
         {
             _logger.TraceMethodEntry();
 
-            var results = new ConcurrentBag<(bool Allowed, int Index, TObjectType Object)>();
-
-            var objectsWithIndex = objects
-                .Select((o, i) => (Index: i, Object: o))
+            var clientCheckRequests = objects
+                // Enumerate Objects, so we can correlate with the response
+                .Select((obj, index) => new { Index = index, Object = obj })
+                // Now create the Check Requests and add the Context
+                .Select(x => new ClientCheckRequest
+                {
+                    Context = x.Index,
+                    Object = ZanzibarFormatters.ToZanzibarNotation<TObjectType>(x.Object.Id),
+                    User = ZanzibarFormatters.ToZanzibarNotation<TSubjectType>(subjectId),
+                    Relation = relation,
+                })
                 .ToList();
 
-            await Parallel.ForEachAsync(objectsWithIndex, async (o, ct) =>
-            {
-                bool isAuthorized = await this
-                    .CheckObjectAsync<TObjectType, TSubjectType>(o.Object, relation, subjectId, cancellationToken)
-                    .ConfigureAwait(false);
+            // Run the Batch Check in OpenFGA
+            var batchCheckResponse = await _openFgaClient
+                .BatchCheck(clientCheckRequests, null, cancellationToken)
+                .ConfigureAwait(false);
 
-                var result = (Allowed: isAuthorized, Index: o.Index, Object: o.Object);
-
-                results.Add(result);
-            });
-
-            var unorderedResults = results.ToList();
-
-            return unorderedResults
-                .OrderBy(x => x.Index)
-                .Select(x => (Allowed: x.Allowed, Object: x.Object))
+            // Sort the Results using the given Correlation
+            var sortedResults = batchCheckResponse.Responses
+                .OrderBy(x => x.Request.Context)
                 .ToList();
-        }
 
-        public async Task<List<(bool Allowed, TObjectType Object)>> CheckObjectsParallelAsync<TObjectType, TSubjectType>(List<TObjectType> objects, string relation, TSubjectType subject, CancellationToken cancellationToken)
-            where TSubjectType : Entity
-            where TObjectType : Entity
-        {
-            _logger.TraceMethodEntry();
-
-            var allowed = await CheckObjectsParallelAsync<TObjectType, TSubjectType>(objects, relation, subject.Id, cancellationToken).ConfigureAwait(false);
-
-            return allowed;
+            // And Zip them together again.
+            return Enumerable
+                .Zip(sortedResults.Select(x => x.Allowed), objects)
+                .ToList();
         }
 
         public async Task<bool> CheckUserObjectAsync<TObjectType>(int userId, int objectId, string relation, CancellationToken cancellationToken)
@@ -135,16 +128,6 @@ namespace GitClub.Services
             _logger.TraceMethodEntry();
 
             var allowed = await CheckObjectAsync<TObjectType, User>(@object.Id, relation, userId, cancellationToken).ConfigureAwait(false);
-
-            return allowed;
-        }
-
-        public async Task<List<(bool Allowed, TObjectType Object)>> CheckUserObjectsParallelAsync<TObjectType>(int userId, List<TObjectType> objects, string relation, CancellationToken cancellationToken)
-            where TObjectType : Entity
-        {
-            _logger.TraceMethodEntry();
-
-            var allowed = await CheckObjectsParallelAsync<TObjectType, User>(objects, relation, userId, cancellationToken).ConfigureAwait(false);
 
             return allowed;
         }

@@ -236,6 +236,5 @@ namespace GitClub.Tests.Services
 
             Assert.AreEqual(false, canReadIssue);
         }
-
     }
 }
