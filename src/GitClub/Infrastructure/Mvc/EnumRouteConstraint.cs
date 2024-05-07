@@ -1,4 +1,6 @@
-﻿namespace GitClub.Infrastructure.Mvc
+﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
+
+namespace GitClub.Infrastructure.Mvc
 {
     public class EnumRouteConstraint<TEnum> : IRouteConstraint
         where TEnum : struct
