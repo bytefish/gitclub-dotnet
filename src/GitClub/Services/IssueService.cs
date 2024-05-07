@@ -2,7 +2,6 @@
 
 using GitClub.Database;
 using GitClub.Database.Models;
-using GitClub.Infrastructure.Constants;
 using GitClub.Infrastructure.Exceptions;
 using GitClub.Infrastructure.Logging;
 using Microsoft.EntityFrameworkCore;
@@ -10,7 +9,6 @@ using GitClub.Infrastructure.OpenFga;
 using GitClub.Infrastructure.Authentication;
 using GitClub.Infrastructure.Outbox;
 using GitClub.Infrastructure.Outbox.Messages;
-using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 namespace GitClub.Services
 {
@@ -31,6 +29,21 @@ namespace GitClub.Services
         public async Task<Issue> CreateIssueAsync(Issue issue, CurrentUser currentUser, CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
+
+            // Only Readers of the Repository are allowed to create issues:
+            bool isReadRepositoryAuthorized = await _aclService
+                .CheckUserObjectAsync<Repository>(currentUser.UserId, issue.RepositoryId, RepositoryRoleEnum.Reader, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!isReadRepositoryAuthorized)
+            {
+                throw new EntityUnauthorizedAccessException()
+                {
+                    EntityName = nameof(Repository),
+                    EntityId = issue.RepositoryId,
+                    UserId = currentUser.UserId,
+                };
+            }
 
             using var applicationDbContext = await _dbContextFactory
                 .CreateDbContextAsync(cancellationToken)

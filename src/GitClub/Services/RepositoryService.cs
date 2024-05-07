@@ -57,8 +57,7 @@ namespace GitClub.Services
                 .AddAsync(repository, cancellationToken)
                 .ConfigureAwait(false);
 
-            // The User, that created the Repository is initially
-            // also the Administrator of the Repository.
+            // The User, that created the Repository is also the Administrator of the Repository.
             var userRepositoryRole = new UserRepositoryRole
             {
                 RepositoryId = repository.Id,
