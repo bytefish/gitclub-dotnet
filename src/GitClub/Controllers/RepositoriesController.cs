@@ -357,7 +357,7 @@ namespace GitClub.Controllers
             [FromServices] RepositoryService repositoryService,
             [FromServices] CurrentUser currentUser,
             [FromRoute(Name = "repositoryId")] int repositoryId,
-            [FromRoute(Name = "teamId")] int userId,
+            [FromRoute(Name = "teamId")] int teamId,
             CancellationToken cancellationToken)
         {
             _logger.TraceMethodEntry();
@@ -372,7 +372,7 @@ namespace GitClub.Controllers
                     };
                 }
 
-                await repositoryService.RemoveTeamFromRepositoryAsync(repositoryId, userId, currentUser, cancellationToken);
+                await repositoryService.RemoveTeamFromRepositoryAsync(repositoryId, teamId, currentUser, cancellationToken);
 
                 return StatusCode(StatusCodes.Status204NoContent);
             }
