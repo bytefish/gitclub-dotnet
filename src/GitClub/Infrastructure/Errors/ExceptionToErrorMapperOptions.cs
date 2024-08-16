@@ -5,7 +5,7 @@ namespace GitClub.Infrastructure.Errors
     /// <summary>
     /// Options for the <see cref="ExceptionToODataErrorMapper"/>.
     /// </summary>
-    public class ExceptionToApplicationErrorMapperOptions
+    public class ExceptionToErrorMapperOptions
     {
         /// <summary>
         /// Gets or sets the option to include the Exception Details in the response.

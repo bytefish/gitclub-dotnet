@@ -1,10 +1,11 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using GitClub.Infrastructure.Exceptions;
-using GitClub.Infrastructure.Logging;
-using GitClub.Models;
+using SqliteFulltextSearch.Api.Infrastructure.Exceptions;
+using SqliteFulltextSearch.Api.Models;
+using SqliteFulltextSearch.Shared.Infrastructure;
+using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace GitClub.Infrastructure.Errors.Translators
+namespace SqliteFulltextSearch.Api.Infrastructure.Errors.Translators
 {
     public class ApplicationErrorExceptionTranslator : IExceptionTranslator
     {
@@ -16,7 +17,7 @@ namespace GitClub.Infrastructure.Errors.Translators
         }
 
         /// <inheritdoc/>
-        public ApplicationErrorResult GetApplicationErrorResult(Exception exception, bool includeExceptionDetails)
+        public JsonHttpResult<ApplicationError> GetApplicationErrorResult(Exception exception, bool includeExceptionDetails)
         {
             _logger.TraceMethodEntry();
 
@@ -25,7 +26,7 @@ namespace GitClub.Infrastructure.Errors.Translators
             return InternalGetApplicationErrorResult(applicationErrorException, includeExceptionDetails);
         }
 
-        private ApplicationErrorResult InternalGetApplicationErrorResult(ApplicationErrorException exception, bool includeExceptionDetails)
+        private JsonHttpResult<ApplicationError> InternalGetApplicationErrorResult(ApplicationErrorException exception, bool includeExceptionDetails)
         {
             var error = new ApplicationError
             {
@@ -43,11 +44,7 @@ namespace GitClub.Infrastructure.Errors.Translators
                 error.InnerError.Target = exception.GetType().Name;
             }
 
-            return new ApplicationErrorResult
-            {
-                Error = error,
-                HttpStatusCode = exception.HttpStatusCode,
-            };
+            return TypedResults.Json(error, statusCode: exception.HttpStatusCode);
         }
 
         /// <inheritdoc/>

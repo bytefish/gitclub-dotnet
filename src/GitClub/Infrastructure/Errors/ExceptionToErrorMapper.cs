@@ -1,34 +1,33 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using GitClub.Infrastructure.Exceptions;
-using GitClub.Infrastructure.Logging;
-using GitClub.Models;
+using SqliteFulltextSearch.Api.Infrastructure.Exceptions;
+using SqliteFulltextSearch.Api.Models;
+using SqliteFulltextSearch.Shared.Infrastructure;
 using Microsoft.Extensions.Options;
+using Microsoft.AspNetCore.Http.HttpResults;
 
 namespace GitClub.Infrastructure.Errors
 {
     /// <summary>
     /// Handles errors returned by the application.
     /// </summary>
-    public class ExceptionToApplicationErrorMapper
+    public class ExceptionToErrorMapper
     {
-        private readonly ILogger<ExceptionToApplicationErrorMapper> _logger;
+        private readonly ILogger<ExceptionToErrorMapper> _logger;
 
-        private readonly ExceptionToApplicationErrorMapperOptions _options;
+        private readonly ExceptionToErrorMapperOptions _options;
         private readonly Dictionary<Type, IExceptionTranslator> _translators;
 
-        public ExceptionToApplicationErrorMapper(ILogger<ExceptionToApplicationErrorMapper> logger, IOptions<ExceptionToApplicationErrorMapperOptions> options, IEnumerable<IExceptionTranslator> translators)
+        public ExceptionToErrorMapper(ILogger<ExceptionToErrorMapper> logger, IOptions<ExceptionToErrorMapperOptions> options, IEnumerable<IExceptionTranslator> translators)
         {
             _logger = logger;
             _options = options.Value;
             _translators = translators.ToDictionary(x => x.ExceptionType, x => x);
         }
 
-        public ApplicationErrorResult CreateApplicationErrorResult(HttpContext httpContext, Exception exception)
+        public JsonHttpResult<ApplicationError> CreateApplicationErrorResult(HttpContext httpContext, Exception exception)
         {
             _logger.TraceMethodEntry();
-
-            _logger.LogError(exception, "Call to '{RequestPath}' failed due to an Exception", httpContext.Request.Path);
 
             // Get the best matching translator for the exception ...
             var translator = GetTranslator(exception);
@@ -43,14 +42,19 @@ namespace GitClub.Infrastructure.Errors
             return error;
         }
 
-        private void AddMetadata(HttpContext httpContext, ApplicationErrorResult result)
+        private void AddMetadata(HttpContext httpContext, JsonHttpResult<ApplicationError> result)
         {
-            if (result.Error.InnerError == null)
+            if(result.Value == null)
             {
-                result.Error.InnerError = new ApplicationInnerError();
+                return;
             }
 
-            result.Error.InnerError.AdditionalProperties["trace-id"] = httpContext.TraceIdentifier;
+            if (result.Value.InnerError == null)
+            {
+                result.Value.InnerError = new ApplicationInnerError();
+            }
+
+            result.Value.InnerError.AdditionalProperties["trace-id"] = httpContext.TraceIdentifier;
         }
 
         private IExceptionTranslator GetTranslator(Exception e)

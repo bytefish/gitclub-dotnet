@@ -205,12 +205,6 @@ namespace GitClub.Database
                     .HasColumnType("integer")
                     .HasColumnName("last_edited_by")
                     .IsRequired(true);
-
-                entity.Property(e => e.SysPeriod)
-                    .HasColumnType("tstzrange")
-                    .HasColumnName("sys_period")
-                    .IsRequired(false)
-                    .ValueGeneratedOnAddOrUpdate();
             });
             
             modelBuilder.Entity<User>(entity =>
@@ -249,12 +243,6 @@ namespace GitClub.Database
                     .HasColumnType("integer")
                     .HasColumnName("last_edited_by")
                     .IsRequired(true);
-
-                entity.Property(e => e.SysPeriod)
-                    .HasColumnType("tstzrange")
-                    .HasColumnName("sys_period")
-                    .IsRequired(false)
-                    .ValueGeneratedOnAddOrUpdate();
             });
 
             modelBuilder.Entity<RepositoryRole>(entity =>
@@ -291,12 +279,6 @@ namespace GitClub.Database
                     .HasColumnType("integer")
                     .HasColumnName("last_edited_by")
                     .IsRequired(true);
-
-                entity.Property(e => e.SysPeriod)
-                    .HasColumnType("tstzrange")
-                    .HasColumnName("sys_period")
-                    .IsRequired(false)
-                    .ValueGeneratedOnAddOrUpdate();
             });
 
             modelBuilder.Entity<OrganizationRole>(entity =>
@@ -333,12 +315,6 @@ namespace GitClub.Database
                     .HasColumnType("integer")
                     .HasColumnName("last_edited_by")
                     .IsRequired(true);
-
-                entity.Property(e => e.SysPeriod)
-                    .HasColumnType("tstzrange")
-                    .HasColumnName("sys_period")
-                    .IsRequired(false)
-                    .ValueGeneratedOnAddOrUpdate();
             });
 
             modelBuilder.Entity<TeamRole>(entity =>
@@ -375,12 +351,6 @@ namespace GitClub.Database
                     .HasColumnType("integer")
                     .HasColumnName("last_edited_by")
                     .IsRequired(true);
-
-                entity.Property(e => e.SysPeriod)
-                    .HasColumnType("tstzrange")
-                    .HasColumnName("sys_period")
-                    .IsRequired(false)
-                    .ValueGeneratedOnAddOrUpdate();
             });
 
             modelBuilder.Entity<Issue>(entity =>
@@ -434,12 +404,6 @@ namespace GitClub.Database
                     .HasColumnType("integer")
                     .HasColumnName("last_edited_by")
                     .IsRequired(true);
-
-                entity.Property(e => e.SysPeriod)
-                    .HasColumnType("tstzrange")
-                    .HasColumnName("sys_period")
-                    .IsRequired(false)
-                    .ValueGeneratedOnAddOrUpdate();
             });
 
             modelBuilder.Entity<IssueRole>(entity =>
@@ -476,12 +440,6 @@ namespace GitClub.Database
                     .HasColumnType("integer")
                     .HasColumnName("last_edited_by")
                     .IsRequired(true);
-
-                entity.Property(e => e.SysPeriod)
-                    .HasColumnType("tstzrange")
-                    .HasColumnName("sys_period")
-                    .IsRequired(false)
-                    .ValueGeneratedOnAddOrUpdate();
             });
 
 
@@ -525,12 +483,6 @@ namespace GitClub.Database
                     .HasColumnType("integer")
                     .HasColumnName("last_edited_by")
                     .IsRequired(true);
-
-                entity.Property(e => e.SysPeriod)
-                    .HasColumnType("tstzrange")
-                    .HasColumnName("sys_period")
-                    .IsRequired(false)
-                    .ValueGeneratedOnAddOrUpdate();
             });
 
             modelBuilder.Entity<UserOrganizationRole>(entity =>
@@ -573,12 +525,6 @@ namespace GitClub.Database
                     .HasColumnType("integer")
                     .HasColumnName("last_edited_by")
                     .IsRequired(true);
-
-                entity.Property(e => e.SysPeriod)
-                    .HasColumnType("tstzrange")
-                    .HasColumnName("sys_period")
-                    .IsRequired(false)
-                    .ValueGeneratedOnAddOrUpdate();
             });
 
             modelBuilder.Entity<Repository>(entity =>
@@ -615,12 +561,6 @@ namespace GitClub.Database
                     .HasColumnType("integer")
                     .HasColumnName("last_edited_by")
                     .IsRequired(true);
-
-                entity.Property(e => e.SysPeriod)
-                    .HasColumnType("tstzrange")
-                    .HasColumnName("sys_period")
-                    .IsRequired(false)
-                    .ValueGeneratedOnAddOrUpdate();
             });
 
             modelBuilder.Entity<UserRepositoryRole>(entity =>
@@ -663,12 +603,6 @@ namespace GitClub.Database
                     .HasColumnType("integer")
                     .HasColumnName("last_edited_by")
                     .IsRequired(true);
-
-                entity.Property(e => e.SysPeriod)
-                    .HasColumnType("tstzrange")
-                    .HasColumnName("sys_period")
-                    .IsRequired(false)
-                    .ValueGeneratedOnAddOrUpdate();
             });
             
             modelBuilder.Entity<Team>(entity =>
@@ -705,12 +639,6 @@ namespace GitClub.Database
                     .HasColumnType("integer")
                     .HasColumnName("last_edited_by")
                     .IsRequired(true);
-
-                entity.Property(e => e.SysPeriod)
-                    .HasColumnType("tstzrange")
-                    .HasColumnName("sys_period")
-                    .IsRequired(false)
-                    .ValueGeneratedOnAddOrUpdate();
             });
 
 
@@ -754,12 +682,6 @@ namespace GitClub.Database
                     .HasColumnType("integer")
                     .HasColumnName("last_edited_by")
                     .IsRequired(true);
-
-                entity.Property(e => e.SysPeriod)
-                    .HasColumnType("tstzrange")
-                    .HasColumnName("sys_period")
-                    .IsRequired(false)
-                    .ValueGeneratedOnAddOrUpdate();
             });
 
             modelBuilder.Entity<UserTeamRole>(entity =>
@@ -802,12 +724,6 @@ namespace GitClub.Database
                     .HasColumnType("integer")
                     .HasColumnName("last_edited_by")
                     .IsRequired(true);
-
-                entity.Property(e => e.SysPeriod)
-                    .HasColumnType("tstzrange")
-                    .HasColumnName("sys_period")
-                    .IsRequired(false)
-                    .ValueGeneratedOnAddOrUpdate();
             });
 
             modelBuilder.Entity<UserIssueRole>(entity =>
@@ -850,12 +766,6 @@ namespace GitClub.Database
                     .HasColumnType("integer")
                     .HasColumnName("last_edited_by")
                     .IsRequired(true);
-
-                entity.Property(e => e.SysPeriod)
-                    .HasColumnType("tstzrange")
-                    .HasColumnName("sys_period")
-                    .IsRequired(false)
-                    .ValueGeneratedOnAddOrUpdate();
             });
 
             // History Tables

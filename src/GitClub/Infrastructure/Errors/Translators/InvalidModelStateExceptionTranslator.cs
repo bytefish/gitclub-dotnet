@@ -1,11 +1,12 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using GitClub.Infrastructure.Exceptions;
-using GitClub.Infrastructure.Logging;
-using GitClub.Models;
+using SqliteFulltextSearch.Api.Infrastructure.Exceptions;
+using SqliteFulltextSearch.Api.Models;
+using SqliteFulltextSearch.Shared.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
+using Microsoft.AspNetCore.Http.HttpResults;
 
-namespace GitClub.Infrastructure.Errors.Translators
+namespace SqliteFulltextSearch.Api.Infrastructure.Errors.Translators
 {
     public class InvalidModelStateExceptionTranslator : IExceptionTranslator
     {
@@ -17,7 +18,7 @@ namespace GitClub.Infrastructure.Errors.Translators
         }
 
         /// <inheritdoc/>
-        public ApplicationErrorResult GetApplicationErrorResult(Exception exception, bool includeExceptionDetails)
+        public JsonHttpResult<ApplicationError> GetApplicationErrorResult(Exception exception, bool includeExceptionDetails)
         {
             var invalidModelStateException = (InvalidModelStateException)exception;
 
@@ -27,7 +28,7 @@ namespace GitClub.Infrastructure.Errors.Translators
         /// <inheritdoc/>
         public Type ExceptionType => typeof(InvalidModelStateException);
 
-        private ApplicationErrorResult InternalGetODataErrorResult(InvalidModelStateException exception, bool includeExceptionDetails)
+        private JsonHttpResult<ApplicationError> InternalGetODataErrorResult(InvalidModelStateException exception, bool includeExceptionDetails)
         {
             _logger.TraceMethodEntry();
 
@@ -40,7 +41,7 @@ namespace GitClub.Infrastructure.Errors.Translators
             {
                 Code = ErrorCodes.ValidationFailed,
                 Message = "One or more validation errors occured",
-                Details = GetODataErrorDetails(exception.ModelStateDictionary),
+                Details = GetApplicationErrorDetails(exception.ModelStateDictionary),
             };
 
             // Create the Inner Error
@@ -70,11 +71,7 @@ namespace GitClub.Infrastructure.Errors.Translators
                 };
             }
 
-            return new ApplicationErrorResult
-            {
-                HttpStatusCode = StatusCodes.Status400BadRequest,
-                Error = error
-            };
+            return TypedResults.Json(error, statusCode: StatusCodes.Status400BadRequest);
         }
 
         private Exception? GetFirstException(ModelStateDictionary modelStateDictionary)
@@ -95,7 +92,7 @@ namespace GitClub.Infrastructure.Errors.Translators
             return null;
         }
 
-        private List<ApplicationErrorDetail> GetODataErrorDetails(ModelStateDictionary modelStateDictionary)
+        private List<ApplicationErrorDetail> GetApplicationErrorDetails(ModelStateDictionary modelStateDictionary)
         {
             _logger.TraceMethodEntry();
 

@@ -20,10 +20,5 @@ namespace GitClub.Database.Models
         /// Gets or sets the user, that made the latest modifications.
         /// </summary>
         public required int LastEditedBy { get; set; }
-
-        /// <summary>
-        /// Gets or sets the SysPeriod.
-        /// </summary>
-        public Interval? SysPeriod { get; set; }
     }
 }

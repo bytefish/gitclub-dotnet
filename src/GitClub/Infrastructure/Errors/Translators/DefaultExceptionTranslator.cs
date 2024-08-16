@@ -1,9 +1,10 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using GitClub.Infrastructure.Logging;
-using GitClub.Models;
+using Microsoft.AspNetCore.Http.HttpResults;
+using SqliteFulltextSearch.Api.Models;
+using SqliteFulltextSearch.Shared.Infrastructure;
 
-namespace GitClub.Infrastructure.Errors.Translators
+namespace SqliteFulltextSearch.Api.Infrastructure.Errors.Translators
 {
     public class DefaultExceptionTranslator : IExceptionTranslator
     {
@@ -16,7 +17,7 @@ namespace GitClub.Infrastructure.Errors.Translators
 
         public Type ExceptionType => typeof(Exception);
 
-        public ApplicationErrorResult GetApplicationErrorResult(Exception exception, bool includeExceptionDetails)
+        public JsonHttpResult<ApplicationError> GetApplicationErrorResult(Exception exception, bool includeExceptionDetails)
         {
             _logger.TraceMethodEntry();
 
@@ -36,11 +37,7 @@ namespace GitClub.Infrastructure.Errors.Translators
                 error.InnerError.Target = exception.GetType().Name;
             }
 
-            return new ApplicationErrorResult
-            {
-                Error = error,
-                HttpStatusCode = StatusCodes.Status500InternalServerError,
-            };
+            return TypedResults.Json(error, statusCode: StatusCodes.Status500InternalServerError);
         }
     }
 }

@@ -7,6 +7,9 @@ using Microsoft.Extensions.Options;
 
 namespace GitClub.Hosted
 {
+    /// <summary>
+    /// Options to configure the OutboxEvent Processor.
+    /// </summary>
     public class PostgresOutboxEventProcessorOptions
     {
         /// <summary>

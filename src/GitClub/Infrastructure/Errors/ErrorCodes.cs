@@ -66,7 +66,7 @@ namespace GitClub.Infrastructure.Errors
         /// User has not been assigned to the Organization.
         /// </summary>
         public const string UserNotAssignedToOrganization = "ApiError_Organization_000001";
-        
+
         /// <summary>
         /// User has already been assigned to the Organization.
         /// </summary>
@@ -76,7 +76,7 @@ namespace GitClub.Infrastructure.Errors
         /// Team has not been assigned to the Organization.
         /// </summary>
         public const string TeamNotAssignedToOrganization = "ApiError_Organization_000003";
-        
+
         /// <summary>
         /// Team has already been assigned to the Organization.
         /// </summary>
@@ -86,22 +86,22 @@ namespace GitClub.Infrastructure.Errors
         /// User has not been assigned to the Repo.
         /// </summary>
         public const string UserNotAssignedToRepository = "ApiError_Repository_000001";
-        
+
         /// <summary>
         /// User has already been assigned to the Repo.
         /// </summary>
         public const string UserAlreadyAssignedToRepository = "ApiError_Repository_000002";
-        
+
         /// <summary>
         /// User has not been assigned to the Repo.
         /// </summary>
         public const string TeamNotAssignedToRepository = "ApiError_Repository_000003";
-        
+
         /// <summary>
         /// User has already been assigned to the Repo.
         /// </summary>
         public const string TeamAlreadyAssignedToRepository = "ApiError_Repository_000004";
-        
+
         /// <summary>
         /// Prevent Users from deleting themselves.
         /// </summary>

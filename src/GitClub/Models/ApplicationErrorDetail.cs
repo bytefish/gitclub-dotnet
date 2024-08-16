@@ -26,7 +26,7 @@ namespace GitClub.Models
         /// The value for the target name/value pair is a potentially empty string indicating the target of the error (for 
         /// example, the name of the property in error). It can be null.
         /// </summary>
-        public required string? Target { get; set; }
+        public required string Target { get; set; }
 
         /// <summary>
         /// Additional Properties.
