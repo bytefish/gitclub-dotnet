@@ -14,75 +14,48 @@ namespace GitClub.Endpoints
 {
     public static partial class RepositoryEndpoints
     {
-        private const string Tags = "gitclub";
+        private const string Tags = "repositories";
 
-        public static IEndpointRouteBuilder MapGitClubEndpoints(this IEndpointRouteBuilder app)
+        public static IEndpointRouteBuilder MapRepositoriesEndpoints(this IEndpointRouteBuilder app)
         {
-            app.MapGet("/repositories/{repositoryId}", GetRepositoryAsync)
-                .WithName("GetRepository")
+            var group = app
+                .MapGroup("/repositories")
                 .WithTags(Tags)
                 .WithOpenApi()
                 .AddEndpointFilter<ApplicationErrorExceptionFilter>();
 
-            app.MapGet("/repositories", GetRepositoriesAsync)
-                .WithName("GetRepositories")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapGet("/{repositoryId}", GetRepositoryAsync)
+                .WithName("GetRepository");
 
-            app.MapPost("/repositories", PostRepositoryAsync)
-                .WithName("PostRepository")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapGet("/", GetRepositoriesAsync)
+                .WithName("GetRepositories");
 
-            app.MapPut("/repositories/{repositoryId}", PutRepositoryAsync)
-                .WithName("PutRepository")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapPost("/", PostRepositoryAsync)
+                .WithName("PostRepository");
 
-            app.MapDelete("/repositories/{repositoryId}", DeleteRepositoryAsync)
-                .WithName("DeleteRepository")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapPut("/{repositoryId}", PutRepositoryAsync)
+                .WithName("PutRepository");
 
-            app.MapGet("/repositories/{repositoryId}/collaborators", GetCollaboratorsAsync)
-                .WithName("GetUserRepositoryRoles")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapDelete("/{repositoryId}", DeleteRepositoryAsync)
+                .WithName("DeleteRepository");
 
-            app.MapGet("/repositories/{repositoryId}/collaborators/{userId}/{role:RepositoryRoleEnum}", AddCollaboratorAsync)
-                .WithName("GetUserRepositoryRoles")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapGet("/{repositoryId}/collaborators", GetCollaboratorsAsync)
+                .WithName("GetUserRepositoryRoles");
 
-            app.MapDelete("/repositories/{repositoryId}/collaborators/{userId}", DeleteCollaboratorAsync)
-                .WithName("GetUserRepositoryRoles")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapGet("/{repositoryId}/collaborators/{userId}/{role:RepositoryRoleEnum}", AddCollaboratorAsync)
+                .WithName("GetUserRepositoryRoles");
 
-            app.MapGet("/repositories/{repositoryId}/teams", GetTeamsAsync)
-                .WithName("GetUserRepositoryRoles")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapDelete("/{repositoryId}/collaborators/{userId}", DeleteCollaboratorAsync)
+                .WithName("GetUserRepositoryRoles");
 
-            app.MapGet("/repositories/{repositoryId}/teams/{teamId}/{role:RepositoryRoleEnum}", AddTeamAsync)
-                .WithName("GetUserRepositoryRoles")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapGet("/{repositoryId}/teams", GetTeamsAsync)
+                .WithName("GetUserRepositoryRoles");
 
-            app.MapDelete("/repositories/{repositoryId}/teams/{teamId}", DeleteTeamAsync)
-                .WithName("GetUserRepositoryRoles")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapGet("/{repositoryId}/teams/{teamId}/{role:RepositoryRoleEnum}", AddTeamAsync)
+                .WithName("GetUserRepositoryRoles");
+
+            group.MapDelete("/{repositoryId}/teams/{teamId}", DeleteTeamAsync)
+                .WithName("GetUserRepositoryRoles");
 
             return app;
         }
@@ -98,14 +71,14 @@ namespace GitClub.Endpoints
             return TypedResults.Ok(repository);
         }
 
-        public static async Task<IResult> GetRepositorysAsync(
+        public static async Task<IResult> GetRepositoriesAsync(
             [FromServices] RepositoryService RepositoryService,
             [FromServices] CurrentUser currentUser,
             [FromServices] CancellationToken cancellationToken)
         {
-            var repository = await RepositoryService.GetRepositoriesAsync(currentUser, cancellationToken);
+            var repositories = await RepositoryService.GetRepositoriesAsync(currentUser, cancellationToken);
 
-            return TypedResults.Ok(repository);
+            return TypedResults.Ok(repositoriesW);
         }
 
         public static async Task<IResult> PostRepositoryAsync(

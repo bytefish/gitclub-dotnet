@@ -1,7 +1,5 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using GitClub.Database.Models;
-using GitClub.Infrastructure.Authentication;
 using GitClub.Infrastructure.Errors;
 using GitClub.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
@@ -9,7 +7,6 @@ using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using System.Security.Claims;
 using GitClub.Models;
-using System.Text.RegularExpressions;
 
 namespace GitClub.Endpoints
 {
@@ -21,7 +18,9 @@ namespace GitClub.Endpoints
         {
             var group = routes
                 .MapGroup("/auth")
-                .WithTags("Auth API");
+                .WithTags(Tags)
+                .WithOpenApi()
+                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
 
             group.MapGet("login", LoginAsync)
                 .WithName("Login")
@@ -30,10 +29,7 @@ namespace GitClub.Endpoints
                 .AddEndpointFilter<ApplicationErrorExceptionFilter>();
 
             group.MapGet("logout", LogoutAsync)
-                .WithName("Logout")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+                .WithName("Logout");
 
             return group;
         }

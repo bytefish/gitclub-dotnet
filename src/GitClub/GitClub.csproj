@@ -9,16 +9,15 @@
   <ItemGroup>
     <PackageReference Include="Fga.Net.AspNetCore" Version="1.2.0" />
     <PackageReference Include="Fga.Net.DependencyInjection" Version="1.2.0" />
-    <PackageReference Include="NodaTime" Version="3.1.11" />
-    <PackageReference Include="NodaTime.Serialization.SystemTextJson" Version="1.2.0" />
-    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" Version="8.0.2" />
-    <PackageReference Include="OpenFga.Sdk" Version="0.3.1" />
-    <PackageReference Include="Serilog" Version="3.1.1" />
-    <PackageReference Include="Serilog.Enrichers.Environment" Version="2.3.0" />
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="8.0.8" />
+    <PackageReference Include="Npgsql.EntityFrameworkCore.PostgreSQL.NodaTime" Version="8.0.4" />
+    <PackageReference Include="OpenFga.Sdk" Version="0.3.2" />
+    <PackageReference Include="Serilog" Version="4.0.1" />
+    <PackageReference Include="Serilog.Enrichers.Environment" Version="3.0.1" />
     <PackageReference Include="Serilog.Extensions.Logging" Version="8.0.0" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="5.0.1" />
-    <PackageReference Include="Serilog.Sinks.File" Version="5.0.0" />
-    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.4.0" />
+    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" />
+    <PackageReference Include="Serilog.Sinks.File" Version="6.0.0" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.7.0" />
     <PackageReference Include="System.Memory.Data" Version="8.0.0" />
   </ItemGroup>
 

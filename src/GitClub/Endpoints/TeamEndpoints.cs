@@ -10,39 +10,30 @@ namespace GitClub.Endpoints
 {
     public static partial class TeamEndpoints
     {
-        private const string Tags = "gitclub";
+        private const string Tags = "teams";
 
-        public static IEndpointRouteBuilder MapGitClubEndpoints(this IEndpointRouteBuilder app)
+        public static IEndpointRouteBuilder MapTeamsEndpoints(this IEndpointRouteBuilder app)
         {
-            app.MapGet("/teams/{teamId}", GetTeamAsync)
-                .WithName("GetTeam")
+            var group = app
+                .MapGroup("/teams")
                 .WithTags(Tags)
                 .WithOpenApi()
                 .AddEndpointFilter<ApplicationErrorExceptionFilter>();
 
-            app.MapGet("/teams", GetTeamsAsync)
-                .WithName("GetTeams")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
-            
-            app.MapPost("/teams", PostTeamAsync)
-                .WithName("PostTeam")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapGet("/{teamId}", GetTeamAsync)
+                .WithName("GetTeam");
 
-            app.MapPut("/teams/{teamId}", PutTeamAsync)
-                .WithName("PutTeam")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapGet("/", GetTeamsAsync)
+                .WithName("GetTeams");
 
-            app.MapDelete("/teams/{teamId}", DeleteTeamAsync)
-                .WithName("DeleteTeam")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapPost("/", PostTeamAsync)
+                .WithName("PostTeam");
+
+            group.MapPut("/{teamId}", PutTeamAsync)
+                .WithName("PutTeam");
+
+            group.MapDelete("/{teamId}", DeleteTeamAsync)
+                .WithName("DeleteTeam");
 
             return app;
         }

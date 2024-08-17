@@ -12,38 +12,28 @@ namespace GitClub.Endpoints
     {
         private const string Tags = "issues";
 
-        public static IEndpointRouteBuilder MapGitClubEndpoints(this IEndpointRouteBuilder app)
+        public static IEndpointRouteBuilder MapIssuesEndpoints(this IEndpointRouteBuilder app)
         {
-            app.MapGet("/issues/{issueId}", GetIssueAsync)
-                .WithName("GetIssue")
+            var group = app
+                .MapGroup("issues")
                 .WithTags(Tags)
                 .WithOpenApi()
                 .AddEndpointFilter<ApplicationErrorExceptionFilter>();
 
-            app.MapGet("/issues", GetIssuesAsync)
-                .WithName("GetIssues")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
-            
-            app.MapPost("/issues", PostIssueAsync)
-                .WithName("PostIssue")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapGet("/{issueId}", GetIssueAsync)
+                .WithName("GetIssue");
 
-            app.MapPut("/issues/{issueId}", PutIssueAsync)
-                .WithName("PutIssue")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapGet("/", GetIssuesAsync)
+                .WithName("GetIssues");
 
-            app.MapDelete("/issues/{issueId}", DeleteIssueAsync)
-                .WithName("DeleteIssue")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapPost("/", PostIssueAsync)
+                .WithName("PostIssue");
 
+            group.MapPut("/{issueId}", PutIssueAsync)
+                .WithName("PutIssue");
+
+            group.MapDelete("/{issueId}", DeleteIssueAsync)
+                .WithName("DeleteIssue");
 
             return app;
         }

@@ -250,6 +250,7 @@ try
     }
 
     // CORS
+
     app.UseCors("CorsPolicy");
 
     app.UseRateLimiter();
@@ -258,7 +259,6 @@ try
 
     app.UseAuthorization();
     app.UseRateLimiter();
-    app.MapControllers();
 
     app.Run();
 }

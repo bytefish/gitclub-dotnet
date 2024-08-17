@@ -2,13 +2,9 @@
 
 using GitClub.Database.Models;
 using GitClub.Infrastructure.Authentication;
-using GitClub.Infrastructure.Constants;
 using GitClub.Infrastructure.Errors;
-using GitClub.Infrastructure.Exceptions;
 using GitClub.Services;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.RateLimiting;
 
 namespace GitClub.Endpoints
 {
@@ -16,61 +12,40 @@ namespace GitClub.Endpoints
     {
         private const string Tags = "organizations";
 
-        public static IEndpointRouteBuilder MapOrganizationEndpoints(this IEndpointRouteBuilder app)
+        public static IEndpointRouteBuilder MapOrganizationsEndpoints(this IEndpointRouteBuilder app)
         {
-            app.MapGet("/organizations/{organizationId}", GetOrganizationAsync)
-                .WithName("GetOrganization")
+            var group = app
+                .MapGroup("/organizations")
                 .WithTags(Tags)
                 .WithOpenApi()
                 .AddEndpointFilter<ApplicationErrorExceptionFilter>();
 
-            app.MapGet("/organizations", GetOrganizationsAsync)
-                .WithName("GetOrganizations")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapGet("/{organizationId}", GetOrganizationAsync)
+                .WithName("GetOrganization");
 
-            app.MapPost("/organizations", PostOrganizationAsync)
-                .WithName("PostOrganization")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapGet("/", GetOrganizationsAsync)
+                .WithName("GetOrganizations");
 
-            app.MapPut("/organizations/{organizationId}", PutOrganizationAsync)
-                .WithName("PutOrganization")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapPost("/", PostOrganizationAsync)
+                .WithName("PostOrganization");
 
-            app.MapDelete("/organizations/{organizationId}", DeleteOrganizationAsync)
-                .WithName("DeleteOrganization")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapPut("/{organizationId}", PutOrganizationAsync)
+                .WithName("PutOrganization");
 
-            app.MapGet("/organizations/{organizationId}/members", GetOrganizationMembersAsync)
-                .WithName("GetMembers")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapDelete("/{organizationId}", DeleteOrganizationAsync)
+                .WithName("DeleteOrganization");
 
-            app.MapGet("/organizations/{organizationId}/organization-roles/{role:OrganizationRoleEnum}/users", GetUserOrganizationRole)
-                .WithName("GetUserOrganizationRoles")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapGet("/{organizationId}/members", GetOrganizationMembersAsync)
+                .WithName("GetMembers");
 
-            app.MapPut("/organizations/{organizationId}/organization-roles/users/{userId}/{role:OrganizationRoleEnum}", AddUserOrganizationRole)
-                .WithName("AssignOrganizationRoleToUser")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapGet("/{organizationId}/organization-roles/{role:OrganizationRoleEnum}/users", GetUserOrganizationRole)
+                .WithName("GetUserOrganizationRoles");
 
-            app.MapDelete("/organizations/{organizationId}/organization-roles/users/{userId}/{role:OrganizationRoleEnum}", DeleteUserOrganizationRole)
-                .WithName("UnassignOrganizationRoleFromUser")
-                .WithTags(Tags)
-                .WithOpenApi()
-                .AddEndpointFilter<ApplicationErrorExceptionFilter>();
+            group.MapPut("/{organizationId}/organization-roles/users/{userId}/{role:OrganizationRoleEnum}", AddUserOrganizationRole)
+                .WithName("AssignOrganizationRoleToUser");
+
+            group.MapDelete("/{organizationId}/organization-roles/users/{userId}/{role:OrganizationRoleEnum}", DeleteUserOrganizationRole)
+                .WithName("UnassignOrganizationRoleFromUser");
 
             return app;
         }
