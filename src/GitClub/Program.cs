@@ -11,10 +11,8 @@ using Npgsql;
 using GitClub.Infrastructure.Constants;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
-using GitClub.Infrastructure.Errors.Translators;
 using GitClub.Infrastructure.Errors;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using NodaTime.Serialization.SystemTextJson;
 using NodaTime;
 using GitClub.Infrastructure.Mvc;
 using GitClub.Database.Models;
@@ -48,7 +46,10 @@ try
     var builder = WebApplication.CreateBuilder(args);
 
     builder.Configuration
-        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+        .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+        .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true)
+        .AddEnvironmentVariables()
+        .AddUserSecrets<Program>();
 
     // Logging
     builder.Services.AddLogging(loggingBuilder => loggingBuilder.AddSerilog(dispose: true));
