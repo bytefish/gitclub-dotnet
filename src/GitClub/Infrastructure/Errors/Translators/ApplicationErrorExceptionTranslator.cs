@@ -1,11 +1,11 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using SqliteFulltextSearch.Api.Infrastructure.Exceptions;
-using SqliteFulltextSearch.Api.Models;
-using SqliteFulltextSearch.Shared.Infrastructure;
 using Microsoft.AspNetCore.Http.HttpResults;
+using GitClub.Models;
+using GitClub.Infrastructure.Logging;
+using GitClub.Infrastructure.Exceptions;
 
-namespace SqliteFulltextSearch.Api.Infrastructure.Errors.Translators
+namespace GitClub.Infrastructure.Errors.Translators
 {
     public class ApplicationErrorExceptionTranslator : IExceptionTranslator
     {

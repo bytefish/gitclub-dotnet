@@ -1,8 +1,7 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
+using GitClub.Models;
 using Microsoft.AspNetCore.Http.HttpResults;
-using SqliteFulltextSearch.Api.Models;
-using System;
 
 namespace GitClub.Infrastructure.Errors
 {

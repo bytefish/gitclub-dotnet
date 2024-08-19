@@ -20,6 +20,7 @@ using GitClub.Infrastructure.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using GitClub.Hosted;
 using GitClub.Infrastructure.Outbox.Consumer;
+using GitClub.Infrastructure.Errors.Translators;
 
 // We will log to %LocalAppData%/GitClub to store the Logs, so it doesn't need to be configured 
 // to a different path, when you run it on your machine.
@@ -145,12 +146,10 @@ try
     builder.Services.AddSingleton<IExceptionTranslator, ApplicationErrorExceptionTranslator>();
     builder.Services.AddSingleton<IExceptionTranslator, InvalidModelStateExceptionTranslator>();
 
-    builder.Services.Configure<ExceptionToApplicationErrorMapperOptions>(o =>
+    builder.Services.Configure<ExceptionToErrorMapperOptions>(o =>
     {
         o.IncludeExceptionDetails = builder.Environment.IsDevelopment() || builder.Environment.IsStaging();
     });
-
-    builder.Services.AddSingleton<ExceptionToApplicationErrorMapper>();
 
     // Application Services
     builder.Services.AddSingleton<UserService>();

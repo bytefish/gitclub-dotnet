@@ -1,12 +1,13 @@
 ﻿// Licensed under the MIT license. See LICENSE file in the project root for full license information.
 
-using SqliteFulltextSearch.Api.Infrastructure.Exceptions;
-using SqliteFulltextSearch.Api.Models;
-using SqliteFulltextSearch.Shared.Infrastructure;
 using Microsoft.AspNetCore.Mvc.ModelBinding;
 using Microsoft.AspNetCore.Http.HttpResults;
+using GitClub.Infrastructure.Errors;
+using GitClub.Models;
+using GitClub.Infrastructure.Exceptions;
+using GitClub.Infrastructure.Logging;
 
-namespace SqliteFulltextSearch.Api.Infrastructure.Errors.Translators
+namespace GitClub.Infrastructure.Errors.Translators
 {
     public class InvalidModelStateExceptionTranslator : IExceptionTranslator
     {
