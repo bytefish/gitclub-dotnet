@@ -2,7 +2,6 @@
 
 using GitClub.Infrastructure.Logging;
 using Microsoft.AspNetCore.Diagnostics;
-using SqliteFulltextSearch.Api.Infrastructure.Errors;
 
 namespace GitClub.Infrastructure.Errors
 {

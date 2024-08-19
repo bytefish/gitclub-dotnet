@@ -151,6 +151,10 @@ try
         o.IncludeExceptionDetails = builder.Environment.IsDevelopment() || builder.Environment.IsStaging();
     });
 
+    builder.Services.AddSingleton<ExceptionToErrorMapper>();
+
+    builder.Services.AddExceptionHandler<ApplicationErrorExceptionHandler>();
+
     // Application Services
     builder.Services.AddSingleton<UserService>();
     builder.Services.AddSingleton<TeamService>();
